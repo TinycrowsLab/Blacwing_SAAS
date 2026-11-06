@@ -86,18 +86,23 @@ describe('duration and stopLine', () => {
   });
   it('says why the run stopped, in words', () => {
     const base = { createdAt: '2026-11-06T10:00:00.000Z', startedAt: '2026-11-06T10:00:00.000Z', finishedAt: '2026-11-06T10:18:12.000Z' };
-    expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed', { reason: 'duration_budget' })] }, 0)).toEqual({
+    expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed', { reason: 'duration_budget' })], gate2: [] }, 0)).toEqual({
       tone: 'ok',
       text: 'Finished in 18m 12s · stopped at the time limit',
     });
-    expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')] }, 0).text).toContain('finished its plan');
+    expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0).text).toContain('finished its plan');
     // No reason from the runner: the words follow the cases, never "finished its plan" when a third was not run.
     expect(
-      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')] }, 0, { executed: 6, skipped: 2, blocked: 0, total: 9 })
+      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, { executed: 6, skipped: 2, blocked: 0, total: 9 })
         .text,
-    ).toBe('Finished in 18m 12s · Claude ended after 6 of 9 test cases (skipped 2, 1 not reached)');
-    expect(stopLine({ ...base, state: 'killed', events: [] }, 0).text).toBe('Stopped after 18m 12s · you stopped testing');
-    expect(stopLine({ ...base, state: 'failed', events: [ev(1, 'run.failed', { reason: 'model_error' })] }, 0).tone).toBe('bad');
+    ).toBe('Finished in 18m 12s · Claude finished after 6 of 9 test cases (2 skipped as not relevant, 1 not reached)');
+    // "Blocked" is said in plain words: with a denied request, that is why.
+    expect(
+      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [gate2('a', 'denied')] }, 0, { executed: 6, skipped: 0, blocked: 2, total: 8 })
+        .text,
+    ).toBe('Finished in 18m 12s · Claude finished after 6 of 8 test cases (2 needed requests that were denied)');
+    expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe('Stopped after 18m 12s · you stopped testing');
+    expect(stopLine({ ...base, state: 'failed', events: [ev(1, 'run.failed', { reason: 'model_error' })], gate2: [] }, 0).tone).toBe('bad');
   });
 });
 
@@ -106,7 +111,7 @@ describe('gate2Outcome', () => {
     expect(gate2Outcome([])).toEqual({ asked: 0, label: 'none' });
     expect(gate2Outcome([gate2('a', 'denied'), gate2('b', 'expired')])).toEqual({ asked: 2, label: 'both denied' });
     expect(gate2Outcome([gate2('a', 'approved')])).toEqual({ asked: 1, label: 'allowed' });
-    expect(gate2Outcome([gate2('a', 'approved'), gate2('b', 'denied'), gate2('c', 'denied')]).label).toBe('1 allowed, 2 denied');
+    expect(gate2Outcome([gate2('a', 'approved'), gate2('b', 'denied'), gate2('c', 'denied')]).label).toBe('(1 allowed, 2 denied)');
   });
 });
 
@@ -189,6 +194,8 @@ describe('issue proof copy', () => {
 describe('actionLabel', () => {
   it('words known ledger actions and passes unknown ones through', () => {
     expect(actionLabel('gate2.deny')).toBe('Denied a request');
+    expect(actionLabel('gate1.reject', { reason: 'Replaced by an edited plan' })).toBe('Edited a plan (replaced the draft)');
+    expect(actionLabel('gate1.reject', { reason: 'Out of scope' })).toBe('Rejected a plan');
     expect(actionLabel('asset.created')).toBe('asset.created');
   });
 });

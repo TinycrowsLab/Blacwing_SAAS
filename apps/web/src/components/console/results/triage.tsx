@@ -3,8 +3,9 @@
 // Gate 3 on one finding (experience spec §6.3): `Release to report` (gold, key R) and `Dismiss…` (reason required).
 // A proven finding is released with the reason "Proven by replay", which the person can change first; a kept-back
 // finding needs its own reason. Decisions wait for the server (they must be true); the action's response carries the
-// refreshed page. Esc closes a reason form.
-import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+// refreshed page, and the decision is committed in the same transition, so the issue, the banner and the report card
+// change together. Esc closes a reason form; Ctrl+Enter sends it.
+import { type KeyboardEvent, type ReactNode, startTransition, useEffect, useRef, useState, useTransition } from 'react';
 
 import { triageFindingAction } from '../../../app/(console)/findings/actions';
 import { reasonEnough } from '../../../lib/normalize';
@@ -19,6 +20,34 @@ export const PROVEN_REASON = 'Proven by replay';
 const HTTP_CONFLICT = 409;
 const COPIED_MS = 1600;
 const DISMISS_SUGGESTIONS = ['Not exploitable here', 'Accepted risk, tracked', 'Duplicate of another issue'];
+
+/** The reason form's footnote: where the reason goes and how to send it without the mouse. */
+export const REASON_NOTE = 'Kept on the ledger with your name · Ctrl+Enter to send';
+
+/**
+ * Runs a server action as a React transition and resolves once React has committed everything it changed, the
+ * refreshed page included. Updates made after the action's `await` go through `startTransition` so they land in the
+ * same commit as the page (no row says "Released" while the banner still counts it).
+ */
+export function useSettledAction(): { settling: boolean; run: (action: () => Promise<void>) => Promise<void> } {
+  const [settling, start] = useTransition();
+  const waiting = useRef<{ seen: boolean; done: () => void } | null>(null);
+  useEffect(() => {
+    const w = waiting.current;
+    if (w === null) return;
+    if (settling) w.seen = true;
+    else if (w.seen) {
+      waiting.current = null;
+      w.done();
+    }
+  }, [settling]);
+  const run = (action: () => Promise<void>): Promise<void> =>
+    new Promise((resolve) => {
+      waiting.current = { seen: false, done: resolve };
+      start(action);
+    });
+  return { settling, run };
+}
 
 /** Every mutation tells the sidebar to refresh (spec §10.5); the page itself comes back with the action's response. */
 export function announceChange(): void {
@@ -114,26 +143,27 @@ export function TriageControls({
   const [mode, setMode] = useState<'idle' | 'release' | 'dismiss'>('idle');
   const [reason, setReason] = useState(proven ? PROVEN_REASON : '');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { settling: busy, run } = useSettledAction();
 
-  async function decide(decision: 'release' | 'dismiss', why: string): Promise<boolean> {
+  async function decide(decision: 'release' | 'dismiss', why: string): Promise<void> {
     if (!reasonEnough(why)) {
       setError('Give a reason of at least 8 characters. It is kept on the ledger.');
-      return false;
+      return;
     }
     setError(null);
-    setBusy(true);
-    const result = await triageFindingAction(finding.id, decision, why);
-    setBusy(false);
-    if (!result.ok && result.status !== HTTP_CONFLICT) {
-      setError(result.message);
-      return false;
-    }
-    // 409: someone already decided; refreshing shows their decision.
-    onDone(result.ok ? result.data : null);
-    setMode('idle');
-    announceChange();
-    return true;
+    await run(async () => {
+      const result = await triageFindingAction(finding.id, decision, why);
+      startTransition(() => {
+        if (!result.ok && result.status !== HTTP_CONFLICT) {
+          setError(result.message);
+          return;
+        }
+        // 409: someone already decided; the refreshed page shows their decision.
+        onDone(result.ok ? result.data : null);
+        setMode('idle');
+      });
+      if (result.ok || result.status === HTTP_CONFLICT) announceChange();
+    });
   }
 
   const canRelease = finding.status === 'confirmed' || finding.status === 'suspected';
@@ -176,25 +206,33 @@ export function TriageControls({
           value={reason}
           onChange={setReason}
           autoFocus
+          footnote={REASON_NOTE}
           suggestions={release ? (proven ? [PROVEN_REASON] : []) : DISMISS_SUGGESTIONS}
           onSubmit={() => {
             void decide(mode, reason);
           }}
           rows={2}
         />
+        {release ? null : (
+          <p className="m-0 flex items-start gap-1.5 text-[12.5px] leading-5 text-foreground">
+            <Icon name="info" size={14} className="mt-[3px] shrink-0 text-muted-foreground" />
+            A dismissal can&rsquo;t be undone: the issue stays off the report for good. If you are unsure, leave it
+            awaiting release.
+          </p>
+        )}
         {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
         <div className="flex flex-wrap items-center gap-2">
           <PendingButton
             variant={release ? 'primary' : 'deny'}
             pendingLabel={release ? 'Releasing…' : 'Dismissing…'}
-            disabled={!reasonEnough(reason)}
+            disabled={!reasonEnough(reason) || busy}
             stayPending
             onAction={async () => {
               await decide(mode, reason);
               return false;
             }}
           >
-            {release ? 'Release to report' : 'Dismiss'}
+            {release ? 'Release to report' : 'Dismiss for good'}
           </PendingButton>
           <button
             type="button"
@@ -211,14 +249,16 @@ export function TriageControls({
   return (
     <div className="flex flex-col gap-2.5">
       <Decided finding={finding} viewerName={viewerName} />
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Under 640 px the two decisions share a row in equal halves; the key hint is for keyboards only. */}
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
         {canRelease ? (
           <PendingButton
             variant="primary"
             icon="check"
             {...(bindRelease === undefined ? {} : { shortcut: 'R' })}
             pendingLabel="Releasing…"
-            className="h-11 px-5"
+            disabled={busy}
+            className={`h-11 px-5 max-sm:px-3 max-sm:[&_kbd]:hidden ${canDismiss ? '' : 'col-span-2'}`}
             stayPending
             onAction={async () => {
               if (proven) await decide('release', reason);
@@ -232,7 +272,8 @@ export function TriageControls({
         {canDismiss ? (
           <button
             type="button"
-            className={buttonClass('secondary', 'h-11 px-4')}
+            disabled={busy}
+            className={buttonClass('secondary', `h-11 px-4 ${canRelease ? '' : 'col-span-2 justify-self-start'}`)}
             onClick={() => {
               setMode('dismiss');
               setReason('');
@@ -241,7 +282,9 @@ export function TriageControls({
             Dismiss…
           </button>
         ) : null}
-        {trailing === undefined ? null : <span className="ml-auto flex flex-wrap items-center gap-1">{trailing}</span>}
+        {trailing === undefined ? null : (
+          <span className="col-span-2 flex flex-wrap items-center gap-1 sm:ml-auto">{trailing}</span>
+        )}
       </div>
       {proven ? (
         <p className="m-0 text-[12px] text-muted-foreground">

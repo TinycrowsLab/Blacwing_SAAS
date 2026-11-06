@@ -3,10 +3,12 @@
 // The findings list with its filters (experience spec §2, §8). The server sends every finding once; filtering happens
 // here, so a filter click is instant (local state, no server round trip). The URL follows with history.replaceState,
 // and the list re-reads it whenever the router's URL changes (useSearchParams), so Back, a reload or a shared link all
-// show the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key).
+// show the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key). With more than
+// one audit, an Audit filter tells a retest's findings from the first run's (each audit is named by when it found its
+// first issue).
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
@@ -17,12 +19,14 @@ import { FINDING_STATUSES, SEVERITIES, type FindingSummary } from './model';
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
 /** A URL value this long may be the start of a label ("kept" for Kept back). */
 const PREFIX_MIN = 4;
+const SHORT_ID = 8;
 const fold = (v: string): string => v.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
 
 export interface FindingFilters {
   readonly status?: string | undefined;
   readonly severity?: string | undefined;
   readonly target?: string | undefined;
+  readonly audit?: string | undefined;
 }
 type Key = keyof FindingFilters;
 
@@ -30,6 +34,7 @@ type Key = keyof FindingFilters;
 export function parseFilters(
   read: (key: Key) => string | null,
   targets: readonly string[],
+  audits: readonly string[] = [],
 ): FindingFilters {
   const want = (key: Key): string | null => {
     const v = read(key);
@@ -38,6 +43,7 @@ export function parseFilters(
   const status = want('status');
   const severity = want('severity');
   const target = want('target');
+  const audit = want('audit');
   return {
     status: FINDING_STATUSES.find(
       (s) =>
@@ -46,6 +52,8 @@ export function parseFilters(
     )?.key,
     severity: SEVERITIES.find((s) => s === severity),
     target: targets.find((t) => target !== null && fold(t) === target),
+    // An audit id, or its first 8 characters (the short id people copy).
+    audit: audits.find((a) => audit !== null && audit.length >= SHORT_ID && fold(a).startsWith(audit)),
   };
 }
 
@@ -54,9 +62,9 @@ function pillClass(active: boolean, empty: boolean): string {
   const state = active
     ? 'border-gold-line bg-gold-soft text-gold-ink'
     : empty
-      ? 'cursor-default border-transparent bg-surface-2 text-muted-foreground opacity-60'
+      ? 'cursor-default border-dashed border-border-strong bg-transparent text-muted-foreground'
       : 'border-transparent bg-surface-2 text-foreground hover:border-border-strong';
-  return `inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${state}`;
+  return `inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${state}`;
 }
 
 function FilterRow({
@@ -66,13 +74,18 @@ function FilterRow({
   onPick,
 }: {
   readonly label: string;
-  readonly options: readonly { key: string; label: string; count: number }[];
+  readonly options: readonly { key: string; label: ReactNode; count: number }[];
   readonly active: string | undefined;
   readonly onPick: (key: string | undefined) => void;
 }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5" role="group" aria-label={label}>
-      <span className="w-[68px] shrink-0 text-[12px] text-muted-foreground">{label}</span>
+    // Under 640 px each group is one line that scrolls sideways, so the list starts on the first screen.
+    <div
+      className="-mx-4 flex min-w-0 items-center gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      role="group"
+      aria-label={label}
+    >
+      <span className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]">{label}</span>
       {[{ key: undefined, label: 'All', count: -1 }, ...options].map((o) => (
         <button
           key={o.key ?? 'all'}
@@ -86,7 +99,7 @@ function FilterRow({
           className={pillClass(active === o.key, o.count === 0)}
         >
           {o.label}
-          {o.count < 0 ? null : <span className="ml-1.5 tabular-nums opacity-60">{o.count}</span>}
+          {o.count < 0 ? null : <span className="ml-1.5 tabular-nums text-muted-foreground">{o.count}</span>}
         </button>
       ))}
     </div>
@@ -96,11 +109,20 @@ function FilterRow({
 export function FindingsTable({ items }: { readonly items: readonly FindingSummary[] }) {
   const params = useSearchParams();
   const targets = [...new Set(items.map((f) => f.assetName).filter((n): n is string => n !== null))].sort();
-  const fromUrl = parseFilters((k) => params.get(k), targets);
+  // Each audit, named by when it found its first issue; newest first.
+  const firstAt = new Map<string, string>();
+  for (const f of items)
+    if (f.runId !== undefined) {
+      const at = f.createdAt ?? '';
+      const seen = firstAt.get(f.runId);
+      if (seen === undefined || at < seen) firstAt.set(f.runId, at);
+    }
+  const audits = [...firstAt.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(([id]) => id);
+  const fromUrl = parseFilters((k) => params.get(k), targets, audits);
   const [filters, setFilters] = useState<FindingFilters>(fromUrl);
   const urlKey = params.toString();
   useEffect(() => {
-    setFilters(parseFilters((k) => new URLSearchParams(urlKey).get(k), targets));
+    setFilters(parseFilters((k) => new URLSearchParams(urlKey).get(k), targets, audits));
     // targets derive from items; the URL is what changes on Back.
   }, [urlKey]);
 
@@ -117,7 +139,8 @@ export function FindingsTable({ items }: { readonly items: readonly FindingSumma
   const match = (f: FindingSummary, skip?: Key): boolean =>
     (skip === 'status' || filters.status === undefined || f.status === filters.status) &&
     (skip === 'severity' || filters.severity === undefined || f.severity === filters.severity) &&
-    (skip === 'target' || filters.target === undefined || f.assetName === filters.target);
+    (skip === 'target' || filters.target === undefined || f.assetName === filters.target) &&
+    (skip === 'audit' || filters.audit === undefined || f.runId === filters.audit);
   const countBy = (skip: Key, test: (f: FindingSummary) => boolean): number =>
     items.filter((f) => match(f, skip) && test(f)).length;
   const shown = items.filter((f) => match(f));
@@ -151,13 +174,30 @@ export function FindingsTable({ items }: { readonly items: readonly FindingSumma
             options={targets.map((t) => ({ key: t, label: t, count: countBy('target', (f) => f.assetName === t) }))}
           />
         ) : null}
+        {audits.length > 1 ? (
+          <FilterRow
+            label="Audit"
+            active={filters.audit}
+            onPick={(v) => {
+              pick('audit', v);
+            }}
+            options={audits.map((a) => {
+              const at = firstAt.get(a) ?? '';
+              return {
+                key: a,
+                label: at === '' ? a.slice(0, SHORT_ID) : <LocalTime iso={at} style="datetime" />,
+                count: countBy('audit', (f) => f.runId === a),
+              };
+            })}
+          />
+        ) : null}
       </div>
 
       {shown.length === 0 ? (
         <div className="mx-auto w-full max-w-[560px]">
         <EmptyState
           title="No findings match these filters."
-          body="Try another status, severity or target."
+          body="Try another status, severity, target or audit."
           action={
             <button
               type="button"

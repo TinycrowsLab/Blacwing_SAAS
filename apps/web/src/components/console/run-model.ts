@@ -950,8 +950,8 @@ export function stages(
         ? missed
         : state === 'stopped'
           ? r.key === 'testing' && plan.total > 0
-            ? `stopped at ${plan.counts.executed.toLocaleString('en-US')} of ${plan.total.toLocaleString('en-US')}`
-            : `stopped${r.detail === '' ? '' : ` · ${r.detail}`}`
+            ? `${opts.stopped === true ? 'stopped at ' : ''}${plan.counts.executed.toLocaleString('en-US')} of ${plan.total.toLocaleString('en-US')}${opts.stopped === true ? '' : ' done'}`
+            : `${opts.stopped === true ? 'stopped' : 'unfinished'}${r.detail === '' ? '' : ` · ${r.detail}`}`
           : r.detail;
     // Nothing was found: the run's end is not a gold "your turn". A finished run is done, a stopped one stopped.
     if (r.key === 'review' && opts.terminal && cands.length === 0)

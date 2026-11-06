@@ -1,8 +1,8 @@
 // Settings (experience spec §2, §8): the workspace name (editable by an administrator), your account and theme, and
 // the settings your administrator sets on the server, shown read-only with where they come from.
 import { Chip, Icon, InlineMessage } from '../../../components/console/design';
+import { readApi } from '../../../components/console/results/load';
 import { RetryButton, ThemeSetting, WorkspaceNameForm } from '../../../components/console/results/settings-form';
-import { callApi } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { usd } from '../../../lib/plan-text';
 import { workspaceSchema } from '../../../lib/schemas';
@@ -51,7 +51,7 @@ function Fact({ label, children, id }: { readonly label: string; readonly childr
 export default async function SettingsPage(): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
-  const workspace = await callApi(session, '/workspace')
+  const workspace = await readApi('/workspace')
     .then((b) => workspaceSchema.parse(b))
     .catch(() => null);
   const isAdmin = session.roles.includes('org-admin');

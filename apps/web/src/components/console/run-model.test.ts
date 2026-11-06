@@ -439,6 +439,8 @@ suite('stages', () => {
   it('never ticks work a stopped run left open', () => {
     const s = stages(RUN, { terminal: true, approvedBy: 'you', stopped: true });
     expect(s.find((x) => x.key === 'testing')).toMatchObject({ state: 'stopped', label: 'Testing', detail: 'stopped at 1 of 2' });
+    // A run that finished on its own left cases undone, but nothing was stopped.
+    expect(stages(RUN, { terminal: true, approvedBy: 'you' }).find((x) => x.key === 'testing')).toMatchObject({ detail: '1 of 2 done' });
     expect(s.find((x) => x.key === 'proving')).toMatchObject({ state: 'done', label: 'Proved' });
     expect(s.at(-1)).toMatchObject({ state: 'current' });
   });

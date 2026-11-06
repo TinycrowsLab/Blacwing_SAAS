@@ -14,17 +14,31 @@ import { useDarkTheme } from '../theme-toggle';
 
 /** "  Tinycrows   Security " is saved as "Tinycrows Security". */
 const tidy = (name: string): string => name.trim().replace(/\s+/g, ' ');
+/** The shared check, with the upper bound said exactly (60 itself is allowed). */
+const nameError = (name: string): string | null =>
+  name.length > WORKSPACE_NAME_MAX
+    ? `Keep it to ${WORKSPACE_NAME_MAX} characters or fewer.`
+    : workspaceNameError(name);
 
-export function WorkspaceNameForm({ current, canEdit }: { readonly current: string; readonly canEdit: boolean }) {
+export function WorkspaceNameForm({
+  current,
+  canEdit,
+}: {
+  readonly current: string;
+  readonly canEdit: boolean;
+}) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
-  const [saved, setSaved] = useState(current);
-  const [name, setName] = useState(current);
+  // A name stored untidied (from an older form) opens tidied and unchanged: a pristine page never looks dirty.
+  const [saved, setSaved] = useState(tidy(current));
+  const [name, setName] = useState(tidy(current));
   const [touched, setTouched] = useState(false);
-  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'saved' } | { kind: 'failed'; message: string }>({
+  const [state, setState] = useState<
+    { kind: 'idle' } | { kind: 'saved' } | { kind: 'failed'; message: string }
+  >({
     kind: 'idle',
   });
-  const invalid = workspaceNameError(tidy(name));
+  const invalid = nameError(tidy(name));
   const changed = tidy(name) !== saved;
   // The error shows as soon as an edit makes the name invalid, and on Enter or leaving the field.
   const showError = (touched || changed) && invalid !== null;
@@ -62,24 +76,45 @@ export function WorkspaceNameForm({ current, canEdit }: { readonly current: stri
         Workspace name
       </label>
       <div className="flex flex-wrap items-start gap-2">
-        <input
-          ref={input}
-          id="ws-name"
-          value={name}
-          disabled={!canEdit}
-          autoComplete="organization"
-          maxLength={WORKSPACE_NAME_MAX * 2}
-          aria-invalid={showError}
-          aria-describedby="ws-name-help"
-          onChange={(e) => {
-            setName(e.target.value);
-            setState({ kind: 'idle' });
-          }}
-          onBlur={() => {
-            setTouched(true);
-          }}
-          className={`${INPUT_CLASS} min-w-0 flex-1 basis-64`}
-        />
+        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1.5">
+          <input
+            ref={input}
+            id="ws-name"
+            value={name}
+            disabled={!canEdit}
+            autoComplete="organization"
+            maxLength={WORKSPACE_NAME_MAX * 2}
+            aria-invalid={showError}
+            aria-describedby="ws-name-help"
+            onChange={(e) => {
+              setName(e.target.value);
+              setState({ kind: 'idle' });
+            }}
+            onBlur={() => {
+              setTouched(true);
+            }}
+            className={`${INPUT_CLASS} w-full`}
+          />
+          {/* Directly under the field at every width, so the message sits next to what it describes. */}
+          <div id="ws-name-help" aria-live="polite" className="flex flex-col gap-1">
+            {showError ? <InlineMessage tone="bad">{invalid}</InlineMessage> : null}
+            {state.kind === 'failed' ? (
+              <InlineMessage tone="bad">{state.message}</InlineMessage>
+            ) : null}
+            {state.kind === 'saved' ? (
+              <InlineMessage tone="ok">
+                Saved. Everyone in the workspace sees the new name.
+              </InlineMessage>
+            ) : null}
+            {state.kind === 'idle' && !showError ? (
+              <span className="text-[12.5px] text-muted-foreground">
+                {canEdit
+                  ? '2 to 60 characters. The change is recorded in the ledger.'
+                  : 'Only an administrator can rename the workspace.'}
+              </span>
+            ) : null}
+          </div>
+        </div>
         <PendingButton
           type="submit"
           variant={changed && invalid === null ? 'primary' : 'secondary'}
@@ -109,16 +144,6 @@ export function WorkspaceNameForm({ current, canEdit }: { readonly current: stri
           </button>
         ) : null}
       </div>
-      <div id="ws-name-help" aria-live="polite" className="flex flex-col gap-1">
-        {showError ? <InlineMessage tone="bad">{invalid}</InlineMessage> : null}
-        {state.kind === 'failed' ? <InlineMessage tone="bad">{state.message}</InlineMessage> : null}
-        {state.kind === 'saved' ? <InlineMessage tone="ok">Saved. Everyone in the workspace sees the new name.</InlineMessage> : null}
-        {state.kind === 'idle' && !showError ? (
-          <span className="text-[12.5px] text-muted-foreground">
-            {canEdit ? '2 to 60 characters. The change is recorded in the ledger.' : 'Only an administrator can rename the workspace.'}
-          </span>
-        ) : null}
-      </div>
     </form>
   );
 }
@@ -127,7 +152,11 @@ export function ThemeSetting() {
   const [dark, toggle] = useDarkTheme();
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div role="radiogroup" aria-label="Theme" className="inline-grid grid-cols-2 gap-1 rounded-[10px] bg-surface-2 p-1">
+      <div
+        role="radiogroup"
+        aria-label="Theme"
+        className="inline-grid grid-cols-2 gap-1 rounded-[10px] bg-surface-2 p-1"
+      >
         {[
           { key: false, label: 'Light', icon: 'sun' as const },
           { key: true, label: 'Dark', icon: 'moon' as const },

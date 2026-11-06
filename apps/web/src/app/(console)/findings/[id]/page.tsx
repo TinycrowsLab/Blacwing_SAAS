@@ -9,11 +9,12 @@ import { cache, type ReactNode } from 'react';
 import { Card, CardHeader, Icon, SeverityChip } from '../../../../components/console/design';
 import { IssueBody } from '../../../../components/console/results/issue-body';
 import { IssueStatus } from '../../../../components/console/results/issue-list';
+import { readApi } from '../../../../components/console/results/load';
 import { LocalTime } from '../../../../components/console/results/local-time';
 import { findingDetailSchema, type FindingDetail } from '../../../../components/console/results/model';
 import { FINDING_FORMATS, ReportDownload } from '../../../../components/console/results/report-download';
 import { CopyButton, FindingTriage } from '../../../../components/console/results/triage';
-import { ApiError, callApi } from '../../../../lib/api';
+import { ApiError } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -25,10 +26,9 @@ const READ_ONLY = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /** Cached per request, so the title (metadata) and the page share one API call. */
 const load = cache(async (id: string): Promise<FindingDetail | null> => {
-  const session = await getViewer();
-  if (session === null || !UUID.test(id)) return null;
+  if (!UUID.test(id)) return null;
   try {
-    return findingDetailSchema.parse(await callApi(session, `/findings/${encodeURIComponent(id)}`));
+    return findingDetailSchema.parse(await readApi(`/findings/${encodeURIComponent(id)}`));
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) return null;
     throw caught;
@@ -55,7 +55,7 @@ function Excerpt({ title, side }: { readonly title: string; readonly side: Findi
         {title}
         {side.response === undefined ? null : <span className="font-mono text-muted-foreground"> · HTTP {side.response.status}</span>}
       </span>
-      <pre className="m-0 max-h-56 overflow-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
+      <pre className="m-0 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
         {side.response?.bodyExcerpt ?? 'No body recorded.'}
       </pre>
     </div>
@@ -97,13 +97,14 @@ export default async function FindingPage({
         <h1 id="finding-h" className="m-0 text-[26px] font-semibold leading-[34px] tracking-[-0.01em] text-foreground">
           {finding.title}
         </h1>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-[13px] text-muted-foreground">
+        {/* Spaced by gap, not by dots, so a wrapped line never starts with a separator. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
           <SeverityChip severity={finding.severity} />
           <IssueStatus status={finding.status} />
-          {finding.assetName === null ? null : <span>· on {finding.assetName}</span>}
+          {finding.assetName === null ? null : <span>on {finding.assetName}</span>}
           {finding.createdAt === undefined ? null : (
             <span>
-              <LocalTime iso={finding.createdAt} style="datetime" prefix="· found " />
+              <LocalTime iso={finding.createdAt} style="datetime" prefix="found " />
             </span>
           )}
         </div>
@@ -139,7 +140,7 @@ export default async function FindingPage({
                     <span className="whitespace-nowrap font-mono">HTTP {r.status}</span>
                     <span className={`ml-auto inline-flex items-center gap-1.5 font-medium ${r.matched ? 'text-ok' : 'text-muted-foreground'}`}>
                       <Icon name={r.matched ? 'check' : 'minus'} size={13} />
-                      {r.matched ? 'Matched' : 'No match'}
+                      {r.matched ? 'Showed it' : 'Did not show it'}
                     </span>
                   </li>
                 ))
@@ -150,7 +151,7 @@ export default async function FindingPage({
                   <span className="whitespace-nowrap font-mono">HTTP {finding.replay.control.status}</span>
                   <span className={`ml-auto inline-flex items-center gap-1.5 font-medium ${finding.replay.control.matched ? 'text-muted-foreground' : 'text-ok'}`}>
                     <Icon name={finding.replay.control.matched ? 'minus' : 'check'} size={13} />
-                    {finding.replay.control.matched ? 'Matched too' : 'No match, as expected'}
+                    {finding.replay.control.matched ? 'Showed it too' : 'Clean, as expected'}
                   </span>
                 </li>
               )}
@@ -190,7 +191,7 @@ export default async function FindingPage({
                   The same probe the validator sent. It is a {method} request: it reads and changes nothing.
                 </p>
               )}
-              <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
+              <pre className="m-0 max-h-60 overflow-auto whitespace-pre rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
                 {finding.reproCurl}
               </pre>
             </section>

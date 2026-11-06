@@ -6,9 +6,9 @@ import { z } from 'zod';
 
 import { Chip, EmptyState, Icon } from '../../../components/console/design';
 import { Path } from '../../../components/console/results/decisions';
+import { readApi } from '../../../components/console/results/load';
 import { LocalTime } from '../../../components/console/results/local-time';
-import { actionLabel, ledgerSchema, type LedgerItem } from '../../../components/console/results/model';
-import { callApi } from '../../../lib/api';
+import { actionLabel, ledgerSchema, PLAN_REPLACED_REASON, type LedgerItem } from '../../../components/console/results/model';
 import { getViewer } from '../../../lib/auth';
 
 import type { Metadata } from 'next';
@@ -45,7 +45,8 @@ function Detail({ item, title }: { readonly item: LedgerItem; readonly title: st
   const method = text(p.method);
   const url = text(p.url);
   const name = text(p.name);
-  const reason = text(p.reason);
+  // A replaced draft already reads as "edited a plan"; its stock reason would only repeat that.
+  const reason = text(p.reason) === PLAN_REPLACED_REASON ? null : text(p.reason);
   return (
     <span className="text-muted-foreground">
       {method !== null && url !== null ? (
@@ -71,8 +72,8 @@ export default async function LedgerPage({
   const all = (await searchParams).all !== undefined;
   // The ledger stores ids; the findings list names them. Without it the entries still read, just unnamed.
   const [{ items, chain }, findings] = await Promise.all([
-    callApi(session, '/audit').then((b) => ledgerSchema.parse(b)),
-    callApi(session, '/findings')
+    readApi('/audit').then((b) => ledgerSchema.parse(b)),
+    readApi('/findings')
       .then((b) => findingTitles.parse(b).items)
       .catch(() => []),
   ]);
@@ -154,7 +155,7 @@ export default async function LedgerPage({
                     <LocalTime iso={e.at} style="datetime" />
                   </span>
                   <span className="min-w-0 break-words text-[13.5px] leading-[21px] text-foreground">
-                    <span className="font-medium">{e.actor.name}</span> · {actionLabel(e.action).toLowerCase()}
+                    <span className="font-medium">{e.actor.name}</span> · {actionLabel(e.action, e.payload).toLowerCase()}
                     <Detail item={e} title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined} />
                     {(e.action === 'gate1.approve' || e.action === 'gate2.approve') && e.payload.selfApproved === true ? (
                       <span className="ml-2 inline-flex align-middle">
@@ -166,7 +167,7 @@ export default async function LedgerPage({
                         {' '}
                         <Link
                           href={target.href(e.targetId)}
-                          className="whitespace-nowrap text-[12.5px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                          className="whitespace-nowrap text-[12.5px] font-medium text-gold-ink underline-offset-2 hover:underline"
                         >
                           {target.label}
                         </Link>

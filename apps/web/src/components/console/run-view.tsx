@@ -160,7 +160,7 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
         <span className="block truncate font-semibold">{decisionTitle(g.method, g.url)}</span>
         <span className="block truncate text-[11.5px] text-muted-foreground">
           {agentName(g.agent)}
-          {more > 0 ? ` · ${more} more waiting` : ''}
+          {more > 0 ? ` · +${more} more` : ''}
         </span>
       </span>
       <span className="font-semibold tabular-nums text-gold-ink">{clock?.label ?? ''}</span>
@@ -574,7 +574,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5 md:gap-2.5">
           {terminal || !mounted || !synced ? null : <Liveness tone={live.tone} text={live.text} />}
           <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
             {terminal ? 'Ran for' : 'Elapsed'}
@@ -589,13 +589,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           ) : (
             <PendingButton
               variant="secondary"
-              className="max-md:h-11"
+              className="max-md:h-11 max-md:w-11 max-md:px-0 max-md:[&_[aria-live]]:sr-only"
+              title={run.paused ? 'Resume' : 'Pause'}
               icon={run.paused ? 'replay' : 'pause'}
               pendingLabel={run.paused ? 'Resuming…' : 'Pausing…'}
               disabled={stopping || run.state === 'queued'}
               onAction={() => control(run.paused ? 'resume' : 'pause')}
             >
-              {run.paused ? 'Resume' : 'Pause'}
+              {/* Phones: icon only (44 px), so liveness, Pause, Team and More share one row. */}
+              <span className="max-md:sr-only">{run.paused ? 'Resume' : 'Pause'}</span>
             </PendingButton>
           )}
           {/* Phones stop from the top bar's red icon (spec §9), which targets this audit on its own page. */}
@@ -605,7 +607,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             onClick={() => {
               setTeam(true);
             }}
-            className="inline-flex h-11 items-center gap-1.5 rounded-[10px] border border-input-strong bg-card px-3.5 text-[13px] font-medium md:hidden"
+            className="inline-flex h-11 items-center gap-1.5 rounded-[10px] border border-input-strong bg-card px-3 text-[13px] font-medium md:hidden"
           >
             <Icon name="team" size={15} />
             Team
@@ -679,7 +681,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         )}
       </header>
 
-      <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)} resultsHref={terminal ? resultsHref : null} />
+      {/* The approval time is on the team map's first diamond: the spine keeps one line at 1440. */}
+      <StageSpine stages={spine} approvedAt={null} resultsHref={terminal ? resultsHref : null} />
 
       {run.paused && !terminal && !stopping ? (
         <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">

@@ -270,10 +270,11 @@ function KillDialog({
               <Icon name="check" size={16} className="text-kill" />
               <span className="flex min-w-0 flex-col">
                 <span className="text-[13.5px] font-semibold">This audit</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {run.assetName}
-                  {run.startedAt === undefined || run.startedAt === null ? '' : ` · started ${time(run.startedAt)}`} ·{' '}
-                  <span className="font-mono">{shortId(run.id)}</span>
+                <span className="truncate text-xs text-muted-foreground">{run.assetName}</span>
+                {/* Two audits of one target read the same by name: the run id and start time tell them apart. */}
+                <span className="text-xs text-muted-foreground">
+                  Run <span className="font-mono">{shortId(run.id)}</span>
+                  {run.startedAt === undefined || run.startedAt === null ? '' : ` · started ${time(run.startedAt)}`}
                 </span>
               </span>
             </div>

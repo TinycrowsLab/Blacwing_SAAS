@@ -1,10 +1,12 @@
 // What Claude asked with (the request body and the test-account role), read from the run's gate2.requested events,
-// and which audit asked (target name, start time). Server only: shared by the Decisions inbox and the decision page.
+// which audit asked (target name, start time, who started it) and the audit's other Gate 2 requests (so a second ask
+// says what was decided before). Server only: shared by the Decisions inbox and the decision page.
 import { z } from 'zod';
 
 import { callApi } from '../../../lib/api';
-import { runSchema } from '../../../lib/schemas';
+import { requestSchema, runSchema, type Gate2 } from '../../../lib/schemas';
 
+import type { AuditContext } from '../../../components/console/gate2-view';
 import type { Viewer } from '../../../lib/auth';
 
 export interface Asked {
@@ -12,15 +14,10 @@ export interface Asked {
   readonly asRole: string | null;
 }
 
-/** The audit a request belongs to, so two identical requests from two audits never look the same. */
-export interface AuditContext {
-  readonly assetName: string | null;
-  readonly startedAt: string;
-}
-
 export interface RunAsks {
   readonly asked: ReadonlyMap<string, Asked>;
   readonly audit: AuditContext | null;
+  readonly history: readonly Gate2[];
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,7 +36,10 @@ export async function askedInRun(session: Viewer, runId: string): Promise<RunAsk
   const run = runSchema.safeParse(
     await callApi(session, `/runs/${encodeURIComponent(runId)}`).catch(() => null),
   );
-  if (!run.success) return { asked, audit: null };
+  if (!run.success) return { asked, audit: null, history: [] };
+  const request = requestSchema.safeParse(
+    await callApi(session, `/requests/${encodeURIComponent(run.data.requestId)}`).catch(() => null),
+  );
   for (const e of run.data.events) {
     const data = e.kind === 'gate2.requested' ? requestedSchema.safeParse(e.data) : null;
     if (data?.success === true)
@@ -53,6 +53,9 @@ export async function askedInRun(session: Viewer, runId: string): Promise<RunAsk
     audit: {
       assetName: run.data.pins.asset?.name ?? null,
       startedAt: run.data.startedAt ?? run.data.createdAt,
+      requester: request.success ? request.data.requester.name : null,
+      mine: request.success && request.data.viewerIsRequester,
     },
+    history: run.data.gate2,
   };
 }

@@ -6,6 +6,7 @@
 // page's new numbers (banner, report card, "Your decisions") and nothing on screen is stale after a decision.
 import { revalidatePath } from 'next/cache';
 
+import { retryBusy } from '../../../components/console/results/load';
 import { type FindingDetail, findingDetailSchema } from '../../../components/console/results/model';
 import { callApi, toResult, type ActionResult } from '../../../lib/api';
 import { getViewer, type Viewer } from '../../../lib/auth';
@@ -15,8 +16,6 @@ const HTTP_UNAUTHORIZED = 401;
 const HTTP_CONFLICT = 409;
 const HTTP_UNPROCESSABLE = 422;
 const REASON_MAX = 500;
-/** "Release all" sends this many triage calls at once; the API serialises ledger appends under a lock. */
-const BATCH_PARALLEL = 4;
 const BATCH_MAX = 200;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -41,13 +40,19 @@ function reasonRefusal(reason: string): Refusal | null {
   return null;
 }
 
+/** A reason is one line on the ledger: runs of spaces and newlines fold to one space. */
+const tidyReason = (reason: string): string => reason.trim().replace(/\s+/g, ' ');
+
+// A 429 (the API's per-workspace rate limit) is retried after a short wait: a decision is never lost to a busy moment.
 const triage = (session: Viewer, findingId: string, decision: 'release' | 'dismiss', reason: string) =>
   toResult(async () =>
     findingDetailSchema.parse(
-      await callApi(session, `/findings/${encodeURIComponent(findingId)}/triage`, {
-        method: 'POST',
-        body: { decision: decision === 'dismiss' ? 'dismiss' : 'release', reason: reason.trim() },
-      }),
+      await retryBusy(() =>
+        callApi(session, `/findings/${encodeURIComponent(findingId)}/triage`, {
+          method: 'POST',
+          body: { decision: decision === 'dismiss' ? 'dismiss' : 'release', reason: tidyReason(reason) },
+        }),
+      ),
     ),
   );
 
@@ -68,7 +73,10 @@ export async function triageFindingAction(
   return result;
 }
 
-/** "Release all proven": one triage call per finding (one ledger event each), then one refresh of the page. */
+/**
+ * "Release all proven": one triage call per finding (one ledger event each), one after another so a burst never meets
+ * the rate limit, then one refresh of the page.
+ */
 export async function releaseFindingsAction(
   findingIds: readonly string[],
   reason: string,
@@ -80,12 +88,10 @@ export async function releaseFindingsAction(
   const ids = [...new Set(findingIds)].filter((id) => UUID.test(id)).slice(0, BATCH_MAX);
   let released = 0;
   let failed = 0;
-  for (let i = 0; i < ids.length; i += BATCH_PARALLEL) {
-    const results = await Promise.all(ids.slice(i, i + BATCH_PARALLEL).map((id) => triage(session, id, 'release', reason)));
-    for (const r of results) {
-      if (r.ok) released += 1;
-      else if (r.status !== HTTP_CONFLICT) failed += 1;
-    }
+  for (const id of ids) {
+    const r = await triage(session, id, 'release', reason);
+    if (r.ok) released += 1;
+    else if (r.status !== HTTP_CONFLICT) failed += 1;
   }
   revalidatePath('/', 'layout');
   return { ok: true, data: { released, failed } };

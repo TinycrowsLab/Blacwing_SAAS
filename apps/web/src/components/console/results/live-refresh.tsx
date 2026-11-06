@@ -11,7 +11,9 @@ export function LiveRefresh() {
   const router = useRouter();
   useEffect(() => {
     const tick = (): void => {
-      if (document.visibilityState === 'visible') router.refresh();
+      // Not while someone types (a reason): the refresh waits for the next tick instead of racing the keyboard.
+      const typing = document.activeElement instanceof HTMLTextAreaElement || document.activeElement instanceof HTMLInputElement;
+      if (document.visibilityState === 'visible' && !typing) router.refresh();
     };
     const timer = window.setInterval(tick, POLL_MS);
     document.addEventListener('visibilitychange', tick);

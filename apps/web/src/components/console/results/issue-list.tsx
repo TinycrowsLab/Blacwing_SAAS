@@ -3,15 +3,24 @@
 // The issue list of the results page (experience spec §7): the first issue is open, the rest expand in place (fetched
 // once through /api/findings/[id] and cached). Gate 3 sits on each open issue; "Release all proven" sends one request
 // per finding with the shared reason (one server action, so the ledger records one event each and the page refreshes
-// once). R releases the open issue.
+// once). R releases the issue you opened last, or else the first open one that still awaits release.
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 
 import { buttonClass, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
 import { IssueBody } from './issue-body';
 import { findingDetailSchema, type FindingDetail, type FindingSummary } from './model';
-import { announceChange, CopyButton, escapeCloses, PROVEN_REASON, TriageControls, useReleaseKey } from './triage';
+import {
+  announceChange,
+  CopyButton,
+  escapeCloses,
+  PROVEN_REASON,
+  REASON_NOTE,
+  TriageControls,
+  useReleaseKey,
+  useSettledAction,
+} from './triage';
 import { releaseFindingsAction } from '../../../app/(console)/findings/actions';
 import { reasonEnough } from '../../../lib/normalize';
 
@@ -83,6 +92,7 @@ export function IssueList({
   initial,
   viewerName,
   openFirst = true,
+  openId,
   shortcuts = false,
   dashed = false,
 }: {
@@ -90,15 +100,21 @@ export function IssueList({
   readonly initial: readonly FindingDetail[];
   readonly viewerName: string;
   readonly openFirst?: boolean;
+  /** The issue to open first (default: the first in the list). */
+  readonly openId?: string | undefined;
   /** Bind R to the open issue's release (one list per page). */
   readonly shortcuts?: boolean;
   readonly dashed?: boolean;
 }) {
   const { details, load, put, drop } = useDetails(initial);
   const [open, setOpen] = useState<ReadonlySet<string>>(
-    () => new Set(openFirst && items[0] !== undefined ? [items[0].id] : []),
+    () => {
+      const first = openId ?? items[0]?.id;
+      return new Set(openFirst && first !== undefined ? [first] : []);
+    },
   );
   const release = useReleaseKey(shortcuts);
+  const lastOpened = useRef<string | null>(null);
 
   // After a refresh the server's list wins: a status that changed elsewhere (another tab, Release all) reloads the issue.
   const seen = useRef(new Map(items.map((s) => [s.id, s.status])));
@@ -117,11 +133,19 @@ export function IssueList({
     if (next.has(id)) next.delete(id);
     else {
       next.add(id);
+      lastOpened.current = id;
       load(id);
     }
     setOpen(next);
   };
-  const firstOpen = items.find((s) => open.has(s.id))?.id;
+  const statusOf = (s: FindingSummary): string => {
+    const d = details[s.id];
+    return d?.state === 'ready' ? d.finding.status : s.status;
+  };
+  const releasable = (s: FindingSummary): boolean =>
+    open.has(s.id) && (statusOf(s) === 'confirmed' || statusOf(s) === 'suspected');
+  // R follows your attention: the issue you opened last, else the first open one still awaiting release.
+  const keyTarget = (items.find((s) => s.id === lastOpened.current && releasable(s)) ?? items.find((s) => releasable(s)))?.id;
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -191,7 +215,7 @@ export function IssueList({
                           if (updated === null) drop(s.id);
                           else put(updated);
                         }}
-                        {...(shortcuts && s.id === firstOpen
+                        {...(shortcuts && s.id === keyTarget
                           ? {
                               bindRelease: (fn: (() => void) | null) => {
                                 release.current = fn;
@@ -225,45 +249,47 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState(PROVEN_REASON);
   const [error, setError] = useState<string | null>(null);
-  const busy = useRef(false);
+  const { settling, run } = useSettledAction();
   if (ids.length < 2) return null;
 
   async function releaseAll(): Promise<void> {
-    if (busy.current || !reasonEnough(reason)) return;
-    busy.current = true;
+    if (settling || !reasonEnough(reason)) return;
     setError(null);
-    const result = await releaseFindingsAction(ids, reason);
-    busy.current = false;
-    if (!result.ok) setError(result.message);
-    else if (result.data.failed > 0)
-      setError(`${result.data.failed} of ${ids.length} could not be released. The others are released; try again.`);
-    else setAsking(false);
-    announceChange();
+    await run(async () => {
+      const result = await releaseFindingsAction(ids, reason);
+      startTransition(() => {
+        if (!result.ok) setError(result.message);
+        else if (result.data.failed > 0)
+          setError(`${result.data.failed} of ${ids.length} could not be released. The others are released; try again.`);
+        else setAsking(false);
+      });
+      announceChange();
+    });
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-gold-line bg-gold-soft px-4 py-3 sm:px-5">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-3 rounded-2xl border border-gold-line bg-gold-soft px-4 py-2.5 sm:px-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="m-0 min-w-0 flex-1 basis-56 text-[13.5px] leading-5 text-foreground">
           <b className="font-semibold">{ids.length} proven issues wait for your release.</b>{' '}
-          <span className="text-muted-foreground">Release them together with one reason, or one at a time below.</span>
+          <span className="text-muted-foreground">One reason for all, or one at a time below.</span>
         </p>
         {asking ? null : (
           <button
             type="button"
-            className={buttonClass('secondary', 'h-10')}
+            className={buttonClass('secondary', 'h-9 px-3.5 text-[13px]')}
             onClick={() => {
               setAsking(true);
             }}
           >
-            <Icon name="check" size={15} />
-            Release all proven
+            <Icon name="check" size={14} />
+            Release all {ids.length}
           </button>
         )}
       </div>
       {asking ? (
         <div
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 pb-1.5"
           onKeyDown={escapeCloses(() => {
             setAsking(false);
           })}
@@ -274,7 +300,7 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
             onChange={setReason}
             autoFocus
             rows={2}
-            footnote="Kept on the ledger with your name, once per issue"
+            footnote={REASON_NOTE.replace('with your name', 'with your name, once per issue')}
             onSubmit={() => {
               void releaseAll();
             }}
@@ -283,7 +309,7 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
           <div className="flex flex-wrap items-center gap-2">
             <PendingButton
               pendingLabel={`Releasing ${ids.length} issues…`}
-              disabled={!reasonEnough(reason)}
+              disabled={!reasonEnough(reason) || settling}
               stayPending
               onAction={async () => {
                 await releaseAll();
@@ -295,6 +321,7 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
             <button
               type="button"
               className={buttonClass('ghost')}
+              disabled={settling}
               onClick={() => {
                 setAsking(false);
               }}

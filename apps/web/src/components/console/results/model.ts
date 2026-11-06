@@ -54,7 +54,7 @@ const rank = (severity: string): number => {
 };
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
 
-/** Severity first, then the oldest first (the API has no confidence on summaries). */
+/** Severity first, then the oldest first (the API has no confidence on summaries). Results and Findings share it. */
 export function bySeverity(a: FindingSummary, b: FindingSummary): number {
   return rank(a.severity) - rank(b.severity) || (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
 }
@@ -135,23 +135,41 @@ export function duration(ms: number): string {
   return `${Math.floor(m / MIN_PER_H)}h ${String(m % MIN_PER_H).padStart(2, '0')}m`;
 }
 
-/** Why a completed run ended, from the runner's reason or else from how far it got through its test cases. */
-function completedWhy(reason: unknown, cases: CaseCounts | undefined): string {
+/**
+ * Why cases did not run, in words. "Blocked" is the model's own status; when the audit had a request that was denied,
+ * that is the plain reason (the agent needed it), otherwise the safety rules or "could not run".
+ */
+function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[] {
+  const denied = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
+  const refused = run.events.some((e) => e.kind === 'policy.blocked');
+  const b = cases.blocked;
+  const blocked =
+    b === 0
+      ? null
+      : denied
+        ? `${b} needed ${b === 1 ? 'a request that was' : 'requests that were'} denied`
+        : refused
+          ? `${b} ${b === 1 ? 'was' : 'were'} stopped by the safety rules`
+          : `${b} could not run`;
+  const rest = cases.total - cases.executed - cases.skipped - cases.blocked;
+  return [
+    blocked,
+    cases.skipped > 0 ? `${cases.skipped} skipped as not relevant` : null,
+    rest > 0 ? `${rest} not reached` : null,
+  ].filter((x): x is string => x !== null);
+}
+
+/** Why a completed run ended: the runner's reason, then how far it got through its test cases when it did not finish all. */
+function completedWhy(reason: unknown, cases: CaseCounts | undefined, run: Pick<Run, 'events' | 'gate2'>): string {
   if (typeof reason === 'string' && reason !== '') return finishReason(reason);
-  if (cases === undefined || cases.total === 0 || cases.executed >= cases.total) return finishReason(reason);
-  const rest = [
-    cases.skipped > 0 ? `skipped ${cases.skipped}` : null,
-    cases.blocked > 0 ? `${cases.blocked} blocked` : null,
-    cases.total - cases.executed - cases.skipped - cases.blocked > 0
-      ? `${cases.total - cases.executed - cases.skipped - cases.blocked} not reached`
-      : null,
-  ].filter(Boolean);
-  return `Claude ended after ${cases.executed} of ${cases.total} test cases${rest.length === 0 ? '' : ` (${rest.join(', ')})`}`;
+  if (cases === undefined || cases.total === 0 || cases.executed >= cases.total) return 'Claude finished its plan';
+  const rest = notRun(cases, run);
+  return `Claude finished after ${cases.executed} of ${cases.total} test cases${rest.length === 0 ? '' : ` (${rest.join(', ')})`}`;
 }
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
 export function stopLine(
-  run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events'>,
+  run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events' | 'gate2'>,
   now: number,
   cases?: CaseCounts,
 ): { tone: 'ok' | 'muted' | 'bad'; text: string } {
@@ -161,7 +179,7 @@ export function stopLine(
   switch (run.state) {
     case 'completed': {
       const done = run.events.findLast((e) => e.kind === 'run.completed');
-      return { tone: 'ok', text: `Finished in ${took} · ${completedWhy(done?.data.reason, cases)}` };
+      return { tone: 'ok', text: `Finished in ${took} · ${completedWhy(done?.data.reason, cases, run)}` };
     }
     case 'killed':
       return { tone: 'muted', text: `Stopped after ${took} · you stopped testing` };
@@ -185,9 +203,10 @@ export function gate2Outcome(gate2: Run['gate2']): { asked: number; label: strin
   if (allowed > 0) parts.push(`${allowed} allowed`);
   if (denied > 0) parts.push(`${denied} denied`);
   if (pending > 0) parts.push(`${pending} open`);
-  let label = parts.join(', ');
+  // Mixed outcomes go in brackets, so the count never runs into them ("2 (1 denied, 1 open)", not "2 1 denied").
+  let label = `(${parts.join(', ')})`;
   if (parts.length === 1) {
-    const word = label.replace(/^\d+ /, '');
+    const word = (parts[0] ?? '').replace(/^\d+ /, '');
     label = gate2.length === 1 ? word : gate2.length === 2 ? `both ${word}` : `all ${word}`;
   }
   return { asked: gate2.length, label: gate2.length === 0 ? 'none' : label };
@@ -323,5 +342,9 @@ const ACTIONS: Readonly<Record<string, string>> = {
   'run.kill': 'Stopped an audit',
 };
 
-/** A ledger action in words; an action without words shows as itself. */
-export const actionLabel = (action: string): string => ACTIONS[action] ?? action;
+/** The reason the plan form records when an edited plan replaces the draft (audits/actions.ts): not a rejection. */
+export const PLAN_REPLACED_REASON = 'Replaced by an edited plan';
+
+/** A ledger action in words; an action without words shows as itself. A replaced draft reads as the edit it was. */
+export const actionLabel = (action: string, payload: Readonly<Record<string, unknown>> = {}): string =>
+  action === 'gate1.reject' && payload.reason === PLAN_REPLACED_REASON ? 'Edited a plan (replaced the draft)' : (ACTIONS[action] ?? action);

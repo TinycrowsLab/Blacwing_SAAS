@@ -1,6 +1,6 @@
 // Help (experience spec §2): how an audit works, where you stay in control (the gates and Stop), Claude's team, the
-// three voices, the words we use (plain first, technical second) and the keyboard shortcuts.
-import { Kbd, VoiceTag, type Voice } from '../../../components/console/design';
+// three voices, the words we use (plain first, technical second) and the keyboard shortcuts. It ends with the next step.
+import { LinkButton, VoiceTag, type Voice } from '../../../components/console/design';
 import { AGENT_IDS, agentDoes, agentName } from '../../../lib/agents';
 
 import type { Metadata } from 'next';
@@ -58,8 +58,19 @@ const GLOSSARY: readonly [string, string][] = [
   ['As a visitor / Signed-in testing', 'black box / grey box'],
   ['Proven', 'confirmed by deterministic replay'],
   ['Kept back', 'suspected queue'],
+  ['Shows it / Clean', 'probe and control result: the expected response appeared, or did not'],
+  ['Blocked (a test case)', 'could not run: it needed a request that was denied, or the safety rules refused it'],
   ['Ledger', 'hash-chained audit ledger'],
 ];
+
+/** A keycap that is the content here, not a hint: full-strength muted ink at a readable size (spec §11). */
+function Kbd({ children }: { readonly children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-border-strong bg-surface-2 px-1.5 font-mono text-[12px] font-medium leading-none text-foreground">
+      {children}
+    </kbd>
+  );
+}
 
 const SHORTCUTS: readonly [ReactNode, string][] = [
   [<Kbd key="n">N</Kbd>, 'New audit'],
@@ -198,6 +209,16 @@ export default function HelpPage(): ReactNode {
           ))}
         </dl>
       </Section>
+
+      <section className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-gold-soft px-4 py-3.5">
+        <p className="m-0 min-w-0 flex-1 basis-60 text-[14px] leading-[22px] text-foreground">
+          <b className="font-semibold">Ready?</b> Paste the address of a site you own. Claude proposes the plan; nothing
+          runs until you approve it.
+        </p>
+        <LinkButton href="/audits/new" variant="primary" icon="plus">
+          Start an audit
+        </LinkButton>
+      </section>
     </div>
   );
 }

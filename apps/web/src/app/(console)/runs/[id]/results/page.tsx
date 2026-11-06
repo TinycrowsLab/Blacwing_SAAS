@@ -8,6 +8,7 @@ import { EmptyState, Icon } from '../../../../../components/console/design';
 import { YourDecisions } from '../../../../../components/console/results/decisions';
 import { IssueList, KeptBack, ReleaseAll } from '../../../../../components/console/results/issue-list';
 import { LiveRefresh } from '../../../../../components/console/results/live-refresh';
+import { readApi } from '../../../../../components/console/results/load';
 import {
   decisions,
   findingDetailSchema,
@@ -20,7 +21,7 @@ import {
   type FindingDetail,
 } from '../../../../../components/console/results/model';
 import { ReportCard } from '../../../../../components/console/results/report-card';
-import { ApiError, callApi } from '../../../../../lib/api';
+import { ApiError } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 import { LIVE_RUN_STATES, requestSchema, runSchema, workspaceSchema, type Run } from '../../../../../lib/schemas';
 
@@ -57,26 +58,27 @@ export default async function ResultsPage({
   if (!UUID.test(id)) notFound();
   let run: Run;
   try {
-    run = runSchema.parse(await callApi(session, `/runs/${encodeURIComponent(id)}`));
+    run = runSchema.parse(await readApi(`/runs/${encodeURIComponent(id)}`));
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;
   }
 
   const { proven, kept } = splitFindings(run);
-  const first = proven[0];
+  // The issue that opens is the first one still awaiting your release (else the most severe), so the decision is in view.
+  const first = proven.find((f) => f.status === 'confirmed') ?? proven[0];
   // The side calls are optional: a failure leaves its line out (or says so) instead of failing the page.
   const [rawRequest, ledger, workspace, firstDetail] = await Promise.all([
-    callApi(session, `/requests/${encodeURIComponent(run.requestId)}`).catch(() => null),
-    callApi(session, '/audit')
+    readApi(`/requests/${encodeURIComponent(run.requestId)}`).catch(() => null),
+    readApi('/audit')
       .then((b) => ledgerSchema.parse(b))
       .catch(() => null),
-    callApi(session, '/workspace')
+    readApi('/workspace')
       .then((b) => workspaceSchema.parse(b))
       .catch(() => null),
     first === undefined
       ? Promise.resolve(null)
-      : callApi(session, `/findings/${encodeURIComponent(first.id)}`)
+      : readApi(`/findings/${encodeURIComponent(first.id)}`)
           .then((b) => findingDetailSchema.parse(b))
           .catch(() => null),
   ]);
@@ -85,9 +87,11 @@ export default async function ResultsPage({
   const live = LIVE_RUN_STATES.includes(run.state);
   const cases = testCases(run.events);
   const stop = stopLine(run, Date.now(), cases);
-  const severities = proven.map((f) => f.severity);
+  // The report card counts what can still reach the report: a dismissed issue is proven but never reported.
+  const severities = proven.filter((f) => f.status !== 'dismissed').map((f) => f.severity);
   const awaiting = proven.filter((f) => f.status === 'confirmed');
   const released = proven.filter((f) => f.status === 'released').length;
+  const allDecided = !live && proven.length > 0 && awaiting.length === 0;
   const request = requestSchema.safeParse(rawRequest).data ?? null;
   // Read from the raw answer: the schema defaults a missing mode, and an unknown mode says nothing rather than guess.
   const releaseMode = releaseModeSchema.safeParse(rawRequest).data?.releaseProven ?? null;
@@ -98,9 +102,13 @@ export default async function ResultsPage({
     viewerName: session.user.name,
     gate2TimeoutS: workspace?.settings.gate2TimeoutS ?? null,
   });
+  const ran =
+    cases.executed < cases.total
+      ? `${cases.executed.toLocaleString()} of ${plural(cases.total, 'planned test case', 'planned test cases')}`
+      : plural(cases.executed, 'test case', 'test cases');
   const did =
     cases.total > 0
-      ? `The team ran ${plural(cases.executed, 'test case', 'test cases')} and sent ${plural(run.requestsUsed, 'request', 'requests')}.`
+      ? `The team ran ${ran} and sent ${plural(run.requestsUsed, 'request', 'requests')}.`
       : `The team sent ${plural(run.requestsUsed, 'request', 'requests')}.`;
   const initial: FindingDetail[] = firstDetail === null ? [] : [firstDetail];
 
@@ -111,6 +119,12 @@ export default async function ResultsPage({
           <nav aria-label="Breadcrumb">
             <ol className="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[12.5px] text-muted-foreground">
               <li>
+                <Link href="/" className="hover:text-foreground">
+                  Home
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li className="min-w-0 truncate">
                 <Link href={`/runs/${run.id}`} className="hover:text-foreground">
                   {host}
                 </Link>
@@ -130,7 +144,7 @@ export default async function ResultsPage({
               </Link>
             ) : null}
           </p>
-          <h1 id="results-h" className="m-0 text-balance text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]">
+          <h1 id="results-h" className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]">
             {live
               ? proven.length === 0
                 ? 'Claude is still testing. Nothing is proven yet.'
@@ -143,7 +157,7 @@ export default async function ResultsPage({
                 {did} Each issue below was replayed by the validator with a control.
                 {releaseMode === 'auto'
                   ? ' Proven issues were released automatically, as you chose on the plan.'
-                  : releaseMode === null
+                  : allDecided || releaseMode === null
                     ? null
                     : ' Nothing reaches your report until you release it.'}
               </>
@@ -155,6 +169,12 @@ export default async function ResultsPage({
               </>
             )}
           </p>
+          {allDecided ? (
+            <p className="m-0 flex items-center gap-1.5 text-[14px] font-medium text-ok">
+              <Icon name="check" size={15} />
+              All decided. Your report is ready to download.
+            </p>
+          ) : null}
         </div>
 
         {proven.length === 0 ? (
@@ -170,7 +190,7 @@ export default async function ResultsPage({
         ) : (
           <>
             <ReleaseAll ids={awaiting.map((f) => f.id)} />
-            <IssueList items={proven} initial={initial} viewerName={session.user.name} shortcuts />
+            <IssueList items={proven} initial={initial} openId={first?.id} viewerName={session.user.name} shortcuts />
           </>
         )}
         <KeptBack items={kept} viewerName={session.user.name} />
@@ -183,9 +203,9 @@ export default async function ResultsPage({
           requestId={run.requestId}
           host={host}
           severities={severities}
+          dismissed={proven.length - severities.length}
           released={released}
           awaiting={awaiting.length}
-          undecided={kept.filter((f) => f.status === 'suspected').length}
           live={live}
           cases={cases}
           requests={{ used: run.requestsUsed, cap: run.budget.requests }}

@@ -1,5 +1,6 @@
-// Decisions: everything that waits for a person, soonest deadline first (experience spec §2). Requests during a run
-// (Gate 2) are decided right here; plans (Gate 1) and proven findings (Gate 3) open where they are decided.
+// Decisions: everything that waits for a person (experience spec §2). Requests during an audit (Gate 2, they have a
+// deadline) come first and are decided right here; plans (Gate 1) and findings to review (Gate 3: proven ones to
+// release, kept-back ones to triage) open where they are decided.
 import Link from 'next/link';
 import { z } from 'zod';
 
@@ -14,7 +15,7 @@ import {
 import { callApi } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { objectivePhrase } from '../../../lib/plan-text';
-import { dashboardSchema, findingSummarySchema } from '../../../lib/schemas';
+import { dashboardSchema, findingSummarySchema, toSidebar } from '../../../lib/schemas';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -25,6 +26,11 @@ export const metadata: Metadata = { title: 'Decisions' };
 const findingsSchema = z.object({ items: z.array(findingSummarySchema) });
 
 const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+const CARE: Readonly<Record<string, string>> = {
+  passive: 'Look, don’t touch',
+  active_safe: 'Probe gently',
+};
+const MINUTE_S = 60;
 
 function Section({
   title,
@@ -107,21 +113,33 @@ export default async function DecisionsPage(): Promise<ReactNode> {
       // Unknown (the event was not found): the card reads the role from the gate key.
       asRole: a === undefined ? undefined : a.asRole,
       audit: run?.audit ?? null,
+      history: run?.history ?? [],
     };
   });
   const plans = dashboard.requests.filter((r) => r.status === 'pending_gate1');
-  const releases = (findings ?? dashboard.findings).filter((f) => f.status === 'confirmed');
-  const nothing = gate2.length === 0 && plans.length === 0 && releases.length === 0;
+  const all = findings ?? dashboard.findings;
+  const releases = all.filter((f) => f.status === 'confirmed');
+  const keptBack = all.filter((f) => f.status === 'suspected').length;
+  const nothing =
+    gate2.length === 0 && plans.length === 0 && releases.length === 0 && keptBack === 0;
+  // The same slice the sidebar polls, so the inbox refreshes only when what waits changes.
+  const slice = toSidebar(dashboard);
+  const waiting = {
+    gate2: slice.gate2.map((g) => g.id),
+    plans: slice.plans.map((p) => p.id),
+    releases: slice.releases.map((r) => r.id),
+  };
 
   return (
     <div className="flex max-w-[880px] flex-col gap-7">
-      <InboxRefresh />
+      <InboxRefresh waiting={waiting} />
       <header className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
           Decisions
         </h1>
         <p className="m-0 text-[14px] leading-[22px] text-muted-foreground">
-          What waits for you, soonest deadline first. Claude never decides these for you.
+          What waits for you. Requests with a deadline come first. Claude never decides these for
+          you.
         </p>
       </header>
 
@@ -132,7 +150,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
         <EmptyState
           icon="check"
           title="Nothing needs you right now."
-          body="When Claude asks to send a request that changes data, a plan waits for your approval, or a proven issue is ready to release, it shows up here."
+          body="When Claude asks to send a request that changes data, a plan waits for your approval, or an issue is ready for your review, it shows up here."
           action={
             <LinkButton href="/audits/new" icon="plus">
               New audit
@@ -156,8 +174,13 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 title={`Approve the plan for ${p.assetName ?? 'your site'}`}
                 sub={
                   <>
-                    {capital(objectivePhrase(p.objective))} · asked by{' '}
-                    {p.requester.name ?? 'a teammate'}, <When iso={p.createdAt} />
+                    {capital(objectivePhrase(p.objective))} ·{' '}
+                    {CARE[p.intrusiveness] ?? p.intrusiveness} ·{' '}
+                    {Math.round(p.budget.seconds / MINUTE_S)} min · asked by{' '}
+                    {p.requester.id === dashboard.actor.id
+                      ? 'you'
+                      : (p.requester.name ?? 'a teammate')}
+                    , <When iso={p.createdAt} />
                   </>
                 }
               />
@@ -166,12 +189,12 @@ export default async function DecisionsPage(): Promise<ReactNode> {
         </Section>
       )}
 
-      {releases.length === 0 ? null : (
+      {releases.length === 0 && keptBack === 0 ? null : (
         <Section
-          title="Findings to release"
+          title="Findings to review"
           term="Gate 3"
-          lede="Proven issues stay private until you release them to the report."
-          count={releases.length}
+          lede="Proven issues stay private until you release them. Kept-back ones were not proven: release or dismiss them."
+          count={releases.length + keptBack}
         >
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {releases.map((f) => (
@@ -183,6 +206,14 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 sub={`Proven by replay${f.assetName === null ? '' : ` · ${f.assetName}`} · release or dismiss`}
               />
             ))}
+            {keptBack === 0 ? null : (
+              <Row
+                href="/findings?status=suspected"
+                lead={<Icon name="eye" size={16} className="shrink-0 text-muted-foreground" />}
+                title={`${keptBack} kept back, not proven`}
+                sub="Claude raised them but the validator could not prove them · review each one"
+              />
+            )}
           </ul>
         </Section>
       )}

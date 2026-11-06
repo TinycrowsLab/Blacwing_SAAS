@@ -69,7 +69,7 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
 
 function Label({ voice, children }: { readonly voice?: 'claude' | 'blackwing'; readonly children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[11.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-2 text-[11.5px] font-medium text-muted-foreground">
       {voice === undefined ? null : <VoiceTag voice={voice} />}
       <span className="normal-case tracking-normal [&_b]:font-semibold [&_b]:uppercase [&_b]:tracking-[0.04em]">
         {children}
@@ -87,7 +87,7 @@ function ProofSide({
   readonly title: string;
   readonly note?: string;
   readonly side: Side;
-  readonly verdict: { text: string; tone: 'ok' | 'neutral' } | null;
+  readonly verdict: { text: string; tone: 'ok' | 'neutral'; title?: string } | null;
 }) {
   const line = requestLine(side);
   return (
@@ -97,6 +97,7 @@ function ProofSide({
         {note === undefined ? null : <span className="text-[12px] text-muted-foreground">{note}</span>}
         {verdict === null ? null : (
           <span
+            title={verdict.title}
             className={`ml-auto rounded-md px-2 py-0.5 font-mono text-[11.5px] font-medium ${verdict.tone === 'ok' ? 'bg-ok-soft text-ok' : 'bg-surface-2 text-foreground'}`}
           >
             {verdict.text}
@@ -147,7 +148,15 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
           <ProofSide
             title="Probe"
             side={probe}
-            verdict={probeStatus === undefined ? null : { text: `${probeStatus} · ${proof.proven ? 'matched' : 'sent'}`, tone: proof.proven ? 'ok' : 'neutral' }}
+            verdict={
+              probeStatus === undefined
+                ? null
+                : {
+                    text: `${probeStatus} · ${proof.proven ? 'shows it' : 'sent'}`,
+                    tone: proof.proven ? 'ok' : 'neutral',
+                    ...(check === null ? {} : { title: `Checked that ${check}` }),
+                  }
+            }
           />
           <ProofSide
             title="Control"
@@ -156,13 +165,17 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
             verdict={
               controlStatus === undefined
                 ? null
-                : { text: `${controlStatus}${controlMatched === undefined ? '' : controlMatched ? ' · matched' : ' · no match'}`, tone: 'neutral' }
+                : {
+                    text: `${controlStatus}${controlMatched === undefined ? '' : controlMatched ? ' · shows it too' : ' · clean'}`,
+                    tone: 'neutral',
+                    ...(check === null ? {} : { title: `Checked that ${check}; the control should not show it` }),
+                  }
             }
           />
         </div>
         {check === null ? null : (
           <p className="m-0 text-[12.5px] text-muted-foreground">
-            Blackwing checked that {check}.
+            Blackwing checked that {check}: the probe should show it, the control should not.
           </p>
         )}
         <p className={`m-0 flex items-start gap-2 text-[13px] leading-5 ${proof.proven ? 'text-ok' : 'text-muted-foreground'}`}>

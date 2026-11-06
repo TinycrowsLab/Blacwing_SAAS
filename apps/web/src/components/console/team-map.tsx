@@ -104,7 +104,7 @@ function Diamond({ label, term, who, done }: { readonly label: string; readonly 
 /** A connector. `wide` ones keep room for a count ("3 proven") from the start, so a label appearing moves nothing. */
 function Arrow({ label, wide = false }: { readonly label?: string | undefined; readonly wide?: boolean }) {
   return (
-    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-[56px]' : 'w-5'}`}>
+    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-[48px]' : 'w-5'}`}>
       <small className="whitespace-nowrap text-[10.5px] text-muted-foreground">{label ?? '\u00a0'}</small>
       <span aria-hidden="true" className="relative h-[1.5px] w-full bg-border-strong">
         <span className="absolute -right-px -top-[3px] border-y-[3.5px] border-l-[5px] border-y-transparent border-l-border-strong" />
@@ -222,7 +222,7 @@ export function TeamMap({
       <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
       <Arrow />
       {team.planner === null ? null : (
-        <div className="w-[112px] shrink-0">
+        <div className="w-[104px] shrink-0">
           <NodeButton node={team.planner} mono="orchestrator" stacked selected={filter === team.planner.id} onSelect={select} />
         </div>
       )}
@@ -231,7 +231,7 @@ export function TeamMap({
       ) : (
         <>
           <Fan rows={team.specialists.length} />
-          <div className="flex min-w-[180px] max-w-[340px] flex-1 flex-col gap-[5px]">
+          <div className="flex min-w-[168px] max-w-[340px] flex-1 flex-col gap-[5px]">
             {team.specialists.map((n) => (
               <NodeButton key={n.id} node={n} mono={n.id} selected={filter === n.id} onSelect={select} />
             ))}
@@ -240,7 +240,7 @@ export function TeamMap({
         </>
       )}
       {team.validator === null ? null : (
-        <div className="w-[112px] shrink-0">
+        <div className="w-[104px] shrink-0">
           <NodeButton node={team.validator} mono="replay, no model" stacked selected={filter === 'validator'} onSelect={select} />
         </div>
       )}

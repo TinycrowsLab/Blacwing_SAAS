@@ -4,7 +4,7 @@
 import { notFound } from 'next/navigation';
 
 import { PageHeader } from '../../../../../components/console/design';
-import { Gate2Card, hostOf } from '../../../../../components/console/gate2-view';
+import { Gate2Card } from '../../../../../components/console/gate2-view';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 import { gate2DetailSchema } from '../../../../../lib/schemas';
@@ -41,17 +41,15 @@ export default async function Gate2Page({
       notFound();
     throw caught;
   }
-  const { asked, audit } = await askedInRun(session, gate2.runId);
+  const { asked, audit, history } = await askedInRun(session, gate2.runId);
   const ask = asked.get(gate2.id) ?? null;
-  const name = audit?.assetName ?? gate2.run?.assetName ?? hostOf(gate2.url);
+  // Plain fallback: functions of the client card module cannot run here.
+  const name = audit?.assetName ?? gate2.run?.assetName ?? 'Request during an audit';
   return (
     <>
       <div className="hidden md:block">
         <PageHeader
-          crumbs={[
-            { label: 'Decisions', href: '/decisions' },
-            { label: 'Request during an audit' },
-          ]}
+          crumbs={[{ label: 'Decisions', href: '/decisions' }, { label: 'Your decision' }]}
           title={name}
         />
       </div>
@@ -62,6 +60,7 @@ export default async function Gate2Page({
         variant="page"
         viewerName={session.user.name}
         audit={audit}
+        history={history}
       />
     </>
   );

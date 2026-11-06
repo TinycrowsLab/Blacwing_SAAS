@@ -532,11 +532,22 @@ function AgentLanes({
       <div className="grid grid-cols-[200px_minmax(0,1fr)] py-1.5 text-[11px] text-muted-foreground lg:grid-cols-[300px_minmax(0,1fr)]">
         <span />
         <span className="flex justify-between pr-2">
-          <span>2 min ago</span>
-          <span>90 s</span>
-          <span>60 s</span>
-          <span>30 s</span>
-          <span className="font-medium text-gold-ink">Now</span>
+          {running ? (
+            <>
+              <span>2 min ago</span>
+              <span>90 s</span>
+              <span>60 s</span>
+              <span>30 s</span>
+              <span className="font-medium text-gold-ink">Now</span>
+            </>
+          ) : (
+            // A finished run: its start, its quarters and its end, in minutes from the start.
+            [0, 0.25, 0.5, 0.75, 1].map((q) => (
+              <span key={q} className={q === 1 ? 'font-medium text-foreground' : ''}>
+                {q === 0 ? 'Start' : q === 1 ? 'End' : `${Math.round((spanMs * q) / 60_000)} min`}
+              </span>
+            ))
+          )}
         </span>
       </div>
     </Card>

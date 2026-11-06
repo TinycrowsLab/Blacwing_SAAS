@@ -1,15 +1,25 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- display truncation (hashes) */
 // The report card (experience spec §7): a receipt of what the audit did (the runner's numbers), what the report holds
-// (released issues only), the download, the webhook line (truthful: the configured host, who can connect one, or a
-// link to Settings when the status is unknown) and the ledger seal. Then the retest card, once the audit has ended.
+// (released issues only), the download, the webhook line (truthful: the configured host, or "connect a webhook" linking
+// to Settings, never a tool we do not know about) and the ledger seal. Then the retest card, once the audit has ended.
 import Link from 'next/link';
 
 import { usd } from '../../../lib/plan-text';
-import { Icon, SeverityChip } from '../design';
+import { Icon } from '../design';
 import { SEVERITIES } from './model';
 import { ReportDownload, RunAgain } from './report-download';
 
 import type { ReactNode } from 'react';
+
+/** The severity chip with its count inside ("1 Critical"), in the severity's own tone (the design's chip pairs). */
+const SEVERITY_TONE: Readonly<Record<string, string>> = {
+  critical: 'bg-crit text-crit-fg',
+  high: 'bg-high-soft text-high',
+  medium: 'bg-med-soft text-med',
+  low: 'bg-low-soft text-low',
+  info: 'bg-sinfo-soft text-sinfo',
+};
+const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
 
 function Row({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (
@@ -27,17 +37,18 @@ export function ReportCard(props: {
   readonly runId: string;
   readonly requestId: string;
   readonly host: string;
+  /** Severities of the proven issues that can still reach the report (dismissed ones are left out). */
   readonly severities: readonly string[];
+  /** Proven issues dismissed: proven, never reported. */
+  readonly dismissed: number;
   readonly released: number;
   readonly awaiting: number;
-  /** Kept-back findings nobody has decided on yet: Download stays secondary until they are. */
-  readonly undecided: number;
   readonly live: boolean;
   readonly cases: { executed: number; total: number };
   readonly requests: { used: number; cap: number };
   readonly cost: { used: number; cap: number };
   readonly gate2: { asked: number; label: string };
-  /** null: the workspace settings could not be read, so the line is left out rather than guessed. */
+  /** null: the workspace settings could not be read, so the line links to Settings rather than guess. */
   readonly webhook: { configured: boolean; host: string | null } | null;
   readonly ledgerHead: string | null;
 }) {
@@ -58,13 +69,18 @@ export function ReportCard(props: {
           </h2>
         </div>
         <div className="flex flex-col gap-2.5 px-5">
-          <Row label="Proven issues">{n}</Row>
+          <Row label="Proven issues">
+            {n}
+            {props.dismissed > 0 ? <small> + {props.dismissed} dismissed</small> : null}
+          </Row>
           {counts.length === 0 ? null : (
-            <ul className="m-0 grid list-none grid-cols-2 gap-1.5 p-0">
+            <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label="By severity">
               {counts.map(([s, c]) => (
-                <li key={s} className="flex items-center gap-2 rounded-lg border border-border px-2 py-1">
-                  <b className="min-w-4 text-[13px] tabular-nums text-foreground">{c}</b>
-                  <SeverityChip severity={s} />
+                <li
+                  key={s}
+                  className={`inline-flex h-[24px] items-center gap-1 rounded-md px-2 text-[12px] font-medium ${SEVERITY_TONE[s] ?? ''}`}
+                >
+                  <b className="font-semibold tabular-nums">{c}</b> {cap(s)}
                 </li>
               ))}
             </ul>
@@ -83,13 +99,7 @@ export function ReportCard(props: {
           </Row>
         </div>
         <p className="mx-5 mb-0 mt-3 border-t border-dashed border-border-strong pt-3 text-[13px] leading-5 text-muted-foreground">
-          {n === 0 ? (
-            props.live ? (
-              'Nothing is proven yet. The report fills in as Claude proves issues.'
-            ) : (
-              'Nothing was proven, so the report lists what was tested and no issues.'
-            )
-          ) : (
+          {n > 0 ? (
             <>
               <b className="font-semibold text-foreground">
                 {props.released} of {n} released.
@@ -97,25 +107,36 @@ export function ReportCard(props: {
               The report includes released issues only
               {props.awaiting > 0 ? '; release the others to include them.' : '.'}
             </>
+          ) : props.dismissed > 0 ? (
+            'Every proven issue was dismissed, so the report lists what was tested and no issues.'
+          ) : props.live ? (
+            'Nothing is proven yet. The report fills in as Claude proves issues.'
+          ) : (
+            'Nothing was proven, so the report lists what was tested and no issues.'
           )}
         </p>
         <div className="flex flex-col gap-2.5 px-5 pb-4 pt-3">
-          <ReportDownload
-            href={`/api/runs/${props.runId}/report`}
-            primary={!props.live && props.awaiting === 0 && props.undecided === 0}
-          />
-          <p className="m-0 text-center text-[12.5px] leading-5 text-muted-foreground">
-            {props.webhook === null ? (
-              <Link href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
-                Where released issues are sent
-              </Link>
-            ) : props.webhook.configured ? (
-              <>
+          {/* Gold once every proven issue is decided: kept-back ones are optional reviews, not a gate on the report. */}
+          <ReportDownload href={`/api/runs/${props.runId}/report`} primary={!props.live && props.awaiting === 0} />
+          <p className="m-0 flex items-start gap-1.5 text-[12.5px] leading-5 text-muted-foreground">
+            <Icon name="arrow" size={13} className="mt-[3px] shrink-0" />
+            {props.webhook?.configured === true ? (
+              <span>
                 Released issues are also posted to{' '}
                 <span className="font-medium text-foreground">{props.webhook.host ?? 'your webhook'}</span>.
-              </>
+              </span>
+            ) : props.webhook === null ? (
+              // The status could not be read: point to where it is shown rather than guess.
+              <Link href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+                See where released issues are sent
+              </Link>
             ) : (
-              'Released issues stay in Blackwing. Ask your administrator to connect a webhook to send them to your tools.'
+              <span>
+                Send released issues to your tools:{' '}
+                <Link href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+                  connect a webhook
+                </Link>
+              </span>
             )}
           </p>
         </div>

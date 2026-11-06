@@ -1,10 +1,11 @@
-// Findings (experience spec §2, §8): every finding in the workspace, newest first, filtered by status (including Kept
-// back), severity and target. Filtering is instant on the client and the URL keeps the filters.
+// Findings (experience spec §2, §8): every finding in the workspace, most severe first (as on Results), filtered by
+// status (including Kept back), severity, target and audit. Filtering is instant on the client and the URL keeps the filters.
 import { z } from 'zod';
 
 import { EmptyState, LinkButton } from '../../../components/console/design';
 import { FindingsTable } from '../../../components/console/results/findings-table';
-import { callApi } from '../../../lib/api';
+import { readApi } from '../../../components/console/results/load';
+import { bySeverity } from '../../../components/console/results/model';
 import { getViewer } from '../../../lib/auth';
 import { findingSummarySchema } from '../../../lib/schemas';
 
@@ -19,7 +20,7 @@ const listSchema = z.object({ items: z.array(findingSummarySchema) });
 export default async function FindingsPage(): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
-  const { items } = listSchema.parse(await callApi(session, '/findings'));
+  const items = listSchema.parse(await readApi('/findings')).items.sort(bySeverity);
 
   return (
     <div className="flex w-full max-w-[1100px] flex-col gap-5">
