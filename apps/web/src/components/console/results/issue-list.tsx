@@ -28,12 +28,21 @@ import { reasonEnough } from '../../../lib/normalize';
  * One short status, the same everywhere (lists, issue headers, detail): who decided and when is said once, in the
  * open issue. Each state has its own mark, so none looks like missing styling.
  */
-export function IssueStatus({ status, pill = false }: { readonly status: string; readonly pill?: boolean }) {
-  const base = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium';
+export function IssueStatus({
+  status,
+  pill = false,
+}: {
+  readonly status: string;
+  readonly pill?: boolean;
+}) {
+  const base =
+    'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium';
   if (status === 'confirmed')
     return (
       // On an open issue the decision it waits for anchors the header as a gold pill; in lists it stays a dot.
-      <span className={`${base} text-gold-ink ${pill ? 'h-[24px] rounded-full border border-gold-line bg-gold-soft px-2.5' : ''}`}>
+      <span
+        className={`${base} text-gold-ink ${pill ? 'h-[24px] rounded-full border border-gold-line bg-gold-soft px-2.5' : ''}`}
+      >
         <span aria-hidden="true" className="size-2 rounded-full bg-current" />
         Awaiting your release
       </span>
@@ -53,7 +62,9 @@ export function IssueStatus({ status, pill = false }: { readonly status: string;
       </span>
     );
   return (
-    <span className={`${base} h-[22px] rounded-full border border-dashed border-border-strong px-2 text-muted-foreground`}>
+    <span
+      className={`${base} h-[22px] rounded-full border border-dashed border-border-strong px-2 text-muted-foreground`}
+    >
       Kept back
     </span>
   );
@@ -108,12 +119,10 @@ export function IssueList({
   readonly dashed?: boolean;
 }) {
   const { details, load, put, drop } = useDetails(initial);
-  const [open, setOpen] = useState<ReadonlySet<string>>(
-    () => {
-      const first = openId ?? items[0]?.id;
-      return new Set(openFirst && first !== undefined ? [first] : []);
-    },
-  );
+  const [open, setOpen] = useState<ReadonlySet<string>>(() => {
+    const first = openId ?? items[0]?.id;
+    return new Set(openFirst && first !== undefined ? [first] : []);
+  });
   const release = useReleaseKey(shortcuts);
   const lastOpened = useRef<string | null>(null);
 
@@ -124,7 +133,13 @@ export function IssueList({
       const before = seen.current.get(s.id);
       seen.current.set(s.id, s.status);
       const d = details[s.id];
-      if (before !== undefined && before !== s.status && d?.state === 'ready' && d.finding.status !== s.status) drop(s.id);
+      if (
+        before !== undefined &&
+        before !== s.status &&
+        d?.state === 'ready' &&
+        d.finding.status !== s.status
+      )
+        drop(s.id);
     }
     for (const id of open) if (details[id] === undefined) load(id);
   });
@@ -146,7 +161,10 @@ export function IssueList({
   const releasable = (s: FindingSummary): boolean =>
     open.has(s.id) && (statusOf(s) === 'confirmed' || statusOf(s) === 'suspected');
   // R follows your attention: the issue you opened last, else the first open one still awaiting release.
-  const keyTarget = (items.find((s) => s.id === lastOpened.current && releasable(s)) ?? items.find((s) => releasable(s)))?.id;
+  const keyTarget = (
+    items.find((s) => s.id === lastOpened.current && releasable(s)) ??
+    items.find((s) => releasable(s))
+  )?.id;
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -226,8 +244,13 @@ export function IssueList({
                           : {})}
                         trailing={
                           <>
-                            {d.finding.reproCurl === '' ? null : <CopyButton text={d.finding.reproCurl} label="Copy as curl" />}
-                            <NavLink href={`/findings/${s.id}`} className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}>
+                            {d.finding.reproCurl === '' ? null : (
+                              <CopyButton text={d.finding.reproCurl} label="Copy as curl" />
+                            )}
+                            <NavLink
+                              href={`/findings/${s.id}`}
+                              className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}
+                            >
                               <Icon name="file" size={14} />
                               Full evidence
                             </NavLink>
@@ -262,7 +285,9 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
       startTransition(() => {
         if (!result.ok) setError(result.message);
         else if (result.data.failed > 0)
-          setError(`${result.data.failed} of ${ids.length} could not be released. The others are released; try again.`);
+          setError(
+            `${result.data.failed} of ${ids.length} could not be released. The others are released; try again.`,
+          );
         else setAsking(false);
       });
       announceChange();
@@ -359,7 +384,8 @@ export function KeptBack({
     ) : (
       <>
         <b className="font-semibold text-foreground">
-          You reviewed the {items.length === 1 ? 'issue' : `${items.length} issues`} that {items.length === 1 ? 'was' : 'were'} kept back.
+          You reviewed the {items.length === 1 ? 'issue' : `${items.length} issues`} that{' '}
+          {items.length === 1 ? 'was' : 'were'} kept back.
         </b>{' '}
         Your decisions are listed below.
       </>
@@ -368,7 +394,9 @@ export function KeptBack({
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-border-strong px-4 py-3 sm:px-5">
         <Icon name="eye" size={16} className="text-muted-foreground" />
-        <p className="m-0 min-w-0 flex-1 basis-56 text-[13px] leading-5 text-muted-foreground">{text}</p>
+        <p className="m-0 min-w-0 flex-1 basis-56 text-[13px] leading-5 text-muted-foreground">
+          {text}
+        </p>
         <button
           type="button"
           aria-expanded={open}

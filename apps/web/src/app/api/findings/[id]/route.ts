@@ -9,5 +9,7 @@ export async function GET(
   { params }: { readonly params: Promise<{ readonly id: string }> },
 ): Promise<Response> {
   const { id } = await params;
-  return getAsUser(`/findings/${encodeURIComponent(id)}`, (body) => findingDetailSchema.parse(body));
+  return getAsUser(`/findings/${encodeURIComponent(id)}`, (body) =>
+    findingDetailSchema.parse(body),
+  );
 }

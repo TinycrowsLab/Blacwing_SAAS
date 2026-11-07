@@ -15,11 +15,19 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function runAgainAction(requestId: string): Promise<ActionResult<{ id: string }>> {
   const session = await getViewer();
   if (session === null)
-    return { ok: false, code: 'unauthenticated', message: 'Your session ended. Sign in again.', status: HTTP_UNAUTHORIZED };
-  if (!UUID.test(requestId)) return { ok: false, code: 'not_found', message: 'That audit does not exist.', status: 404 };
+    return {
+      ok: false,
+      code: 'unauthenticated',
+      message: 'Your session ended. Sign in again.',
+      status: HTTP_UNAUTHORIZED,
+    };
+  if (!UUID.test(requestId))
+    return { ok: false, code: 'not_found', message: 'That audit does not exist.', status: 404 };
   const result = await toResult(async () => {
     const created = requestSchema.parse(
-      await callApi(session, `/requests/${encodeURIComponent(requestId)}/clone`, { method: 'POST' }),
+      await callApi(session, `/requests/${encodeURIComponent(requestId)}/clone`, {
+        method: 'POST',
+      }),
     );
     return { id: created.id };
   });

@@ -44,13 +44,21 @@ function reasonRefusal(reason: string): Refusal | null {
 const tidyReason = (reason: string): string => reason.trim().replace(/\s+/g, ' ');
 
 // A 429 (the API's per-workspace rate limit) is retried after a short wait: a decision is never lost to a busy moment.
-const triage = (session: Viewer, findingId: string, decision: 'release' | 'dismiss', reason: string) =>
+const triage = (
+  session: Viewer,
+  findingId: string,
+  decision: 'release' | 'dismiss',
+  reason: string,
+) =>
   toResult(async () =>
     findingDetailSchema.parse(
       await retryBusy(() =>
         callApi(session, `/findings/${encodeURIComponent(findingId)}/triage`, {
           method: 'POST',
-          body: { decision: decision === 'dismiss' ? 'dismiss' : 'release', reason: tidyReason(reason) },
+          body: {
+            decision: decision === 'dismiss' ? 'dismiss' : 'release',
+            reason: tidyReason(reason),
+          },
         }),
       ),
     ),
@@ -66,7 +74,12 @@ export async function triageFindingAction(
   const refused = reasonRefusal(reason);
   if (refused !== null) return refused;
   if (!UUID.test(findingId))
-    return { ok: false, code: 'not_found', message: 'That finding does not exist.', status: HTTP_UNPROCESSABLE };
+    return {
+      ok: false,
+      code: 'not_found',
+      message: 'That finding does not exist.',
+      status: HTTP_UNPROCESSABLE,
+    };
   const result = await triage(session, findingId, decision, reason);
   // 409: someone already decided; the refreshed page shows their decision.
   if (result.ok || result.status === HTTP_CONFLICT) revalidatePath('/', 'layout');

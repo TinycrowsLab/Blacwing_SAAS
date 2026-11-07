@@ -24,7 +24,8 @@ export async function retryBusy<T>(call: () => Promise<T>): Promise<T> {
     try {
       return await call();
     } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== HTTP_TOO_MANY || attempt > RETRIES) throw error;
+      if (!(error instanceof ApiError) || error.status !== HTTP_TOO_MANY || attempt > RETRIES)
+        throw error;
       await wait(BACKOFF_MS * attempt);
     }
   }

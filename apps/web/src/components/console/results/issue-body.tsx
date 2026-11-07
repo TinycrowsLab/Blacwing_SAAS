@@ -48,13 +48,18 @@ export function plainReason(reason: string): string {
   if (replay !== null) return `replay ${replay[1]} did not show the issue again`;
   if (/^the negative control also matched the oracle$/i.test(reason.trim()))
     return 'the control showed the same result, so the probe proves nothing';
-  return reason.replace(/\bthe oracle\b/gi, 'the expected result').replace(/\boracle\b/gi, 'expected result');
+  return reason
+    .replace(/\bthe oracle\b/gi, 'the expected result')
+    .replace(/\boracle\b/gi, 'expected result');
 }
 
 /** Proven, or why not: counts come from the stored replays, never from the model. */
 export function proofSentence(f: FindingDetail): { proven: boolean; text: string } {
   if (f.evidence.reason !== undefined)
-    return { proven: false, text: `Not proven: ${plainReason(f.evidence.reason)}. Kept back from the report.` };
+    return {
+      proven: false,
+      text: `Not proven: ${plainReason(f.evidence.reason)}. Kept back from the report.`,
+    };
   const n = f.evidence.replays.length;
   const matched = f.evidence.replays.filter((r) => r.matched).length;
   const control = f.replay?.control;
@@ -64,10 +69,19 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
       : control.matched
         ? ', but the control matched too'
         : ', the control behaved as expected';
-  return { proven: true, text: `Proven: replayed ${matched} of ${n} times${controlText}. No model involved.` };
+  return {
+    proven: true,
+    text: `Proven: replayed ${matched} of ${n} times${controlText}. No model involved.`,
+  };
 }
 
-function Label({ voice, children }: { readonly voice?: 'claude' | 'blackwing'; readonly children: ReactNode }) {
+function Label({
+  voice,
+  children,
+}: {
+  readonly voice?: 'claude' | 'blackwing';
+  readonly children: ReactNode;
+}) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-[11.5px] font-medium text-muted-foreground">
       {voice === undefined ? null : <VoiceTag voice={voice} />}
@@ -107,12 +121,20 @@ function ProofSide({
         {line === null ? 'Not recorded' : <Path text={line} />}
       </pre>
       {/* What this side is for, so a control on another path still makes sense. */}
-      <p className="m-0 px-3.5 pb-3 pt-1 text-[12px] leading-[18px] text-muted-foreground">{note}</p>
+      <p className="m-0 px-3.5 pb-3 pt-1 text-[12px] leading-[18px] text-muted-foreground">
+        {note}
+      </p>
     </div>
   );
 }
 
-export function IssueBody({ finding, children }: { readonly finding: FindingDetail; readonly children?: ReactNode }) {
+export function IssueBody({
+  finding,
+  children,
+}: {
+  readonly finding: FindingDetail;
+  readonly children?: ReactNode;
+}) {
   const { probe, control } = finding.evidence;
   const proof = proofSentence(finding);
   const check = oracleWords(finding.oracle);
@@ -148,7 +170,9 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
         <div className="grid gap-2.5 md:grid-cols-2">
           <ProofSide
             title="Probe"
-            note={proof.proven ? 'The request that shows the issue.' : 'The request Claude suspected.'}
+            note={
+              proof.proven ? 'The request that shows the issue.' : 'The request Claude suspected.'
+            }
             side={probe}
             verdict={
               probeStatus === undefined
@@ -170,7 +194,9 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
                 : {
                     text: `${controlStatus}${controlMatched === undefined ? '' : controlMatched ? ' · shows it too' : ' · clean'}`,
                     tone: 'neutral',
-                    ...(check === null ? {} : { title: `Checked that ${check}; the control should not show it` }),
+                    ...(check === null
+                      ? {}
+                      : { title: `Checked that ${check}; the control should not show it` }),
                   }
             }
           />
@@ -180,7 +206,9 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
             Blackwing checked that {check}: the probe should show it, the control should not.
           </p>
         )}
-        <p className={`m-0 flex items-start gap-2 text-[13px] font-medium leading-5 ${proof.proven ? 'text-ok' : 'text-muted-foreground'}`}>
+        <p
+          className={`m-0 flex items-start gap-2 text-[13px] font-medium leading-5 ${proof.proven ? 'text-ok' : 'text-muted-foreground'}`}
+        >
           <Icon name={proof.proven ? 'check' : 'minus'} size={14} className="mt-[3px] shrink-0" />
           {proof.text}
         </p>
@@ -208,7 +236,9 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
         )}
       </div>
       {finding.delivery === null ? null : (
-        <p className={`m-0 flex items-center gap-1.5 text-[12.5px] ${finding.delivery.status === 'delivered' ? 'text-muted-foreground' : 'text-bad'}`}>
+        <p
+          className={`m-0 flex items-center gap-1.5 text-[12.5px] ${finding.delivery.status === 'delivered' ? 'text-muted-foreground' : 'text-bad'}`}
+        >
           <Icon name={finding.delivery.status === 'delivered' ? 'check' : 'warn'} size={13} />
           {finding.delivery.status === 'delivered'
             ? `Sent to your webhook (${finding.delivery.detail}).`

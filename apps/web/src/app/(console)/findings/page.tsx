@@ -18,7 +18,15 @@ export const metadata: Metadata = { title: 'Findings' };
 const listSchema = z.object({ items: z.array(findingSummarySchema) });
 /** Only what names an audit in the filter: its target and start time. */
 const runsSchema = z.object({
-  runs: z.array(z.object({ id: z.string(), assetName: z.string().optional(), startedAt: z.string().nullable().default(null) })).default([]),
+  runs: z
+    .array(
+      z.object({
+        id: z.string(),
+        assetName: z.string().optional(),
+        startedAt: z.string().nullable().default(null),
+      }),
+    )
+    .default([]),
 });
 
 export default async function FindingsPage(): Promise<ReactNode> {
@@ -28,7 +36,11 @@ export default async function FindingsPage(): Promise<ReactNode> {
   const [list, runs] = await Promise.all([
     readApi('/findings').then((b) => listSchema.parse(b)),
     readApi('/dashboard')
-      .then((b) => runsSchema.parse(b).runs.map((r) => ({ id: r.id, target: r.assetName ?? null, startedAt: r.startedAt })))
+      .then((b) =>
+        runsSchema
+          .parse(b)
+          .runs.map((r) => ({ id: r.id, target: r.assetName ?? null, startedAt: r.startedAt })),
+      )
       .catch(() => []),
   ]);
   const items = list.items.sort(bySeverity);
@@ -36,7 +48,9 @@ export default async function FindingsPage(): Promise<ReactNode> {
   return (
     <div className="flex w-full max-w-[1100px] flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Findings</h1>
+        <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
+          Findings
+        </h1>
         <p className="m-0 max-w-[68ch] text-[14px] leading-[22px] text-muted-foreground">
           {items.length === 0
             ? 'The issues Claude finds on your sites appear here.'

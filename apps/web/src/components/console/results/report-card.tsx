@@ -19,7 +19,13 @@ const SEVERITY_TONE: Readonly<Record<string, string>> = {
   low: 'bg-low-soft text-low',
   info: 'bg-sinfo-soft text-sinfo',
 };
-const LEVEL: Readonly<Record<string, number>> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+const LEVEL: Readonly<Record<string, number>> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+  info: 0,
+};
 
 /** The same signal-bar glyph as the issue's SeverityChip (design.tsx), drawn here because the chip carries a count. */
 function Bars({ level }: { readonly level: number }) {
@@ -41,7 +47,10 @@ function Row({ label, children }: { readonly label: string; readonly children: R
   return (
     <div className="flex items-baseline gap-2 text-[13px]">
       <span className="text-muted-foreground">{label}</span>
-      <span aria-hidden="true" className="min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-border-strong" />
+      <span
+        aria-hidden="true"
+        className="min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-border-strong"
+      />
       <span className="text-right font-semibold tabular-nums text-foreground [&_small]:text-[12px] [&_small]:font-normal [&_small]:text-muted-foreground">
         {children}
       </span>
@@ -55,7 +64,9 @@ function inReportNote(awaiting: number, dismissed: number): string {
     awaiting > 0 ? `${awaiting} still ${awaiting === 1 ? 'awaits' : 'await'} your release` : null,
     dismissed > 0 ? `${dismissed} dismissed` : null,
   ].filter((x): x is string => x !== null);
-  return parts.length === 0 ? 'Only released issues go into it.' : `${parts.join(', ')}. Only released issues go into it.`;
+  return parts.length === 0
+    ? 'Only released issues go into it.'
+    : `${parts.join(', ')}. Only released issues go into it.`;
 }
 
 export function ReportCard(props: {
@@ -80,9 +91,9 @@ export function ReportCard(props: {
   readonly ledgerHead: string | null;
 }) {
   const n = props.severities.length;
-  const counts = SEVERITIES.map((s) => [s, props.severities.filter((x) => x === s).length] as const).filter(
-    ([, c]) => c > 0,
-  );
+  const counts = SEVERITIES.map(
+    (s) => [s, props.severities.filter((x) => x === s).length] as const,
+  ).filter(([, c]) => c > 0);
   return (
     <div className="flex flex-col gap-3 lg:sticky lg:top-6">
       <section
@@ -90,12 +101,16 @@ export function ReportCard(props: {
         className="overflow-hidden rounded-[18px] border border-border bg-card shadow-[0_8px_28px_rgba(31,23,4,.06)]"
       >
         <div className="flex flex-col gap-1 px-5 pb-3 pt-4">
-          <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-gold-ink">The report</span>
+          <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-gold-ink">
+            The report
+          </span>
           <h2 id="report-h" className="m-0 break-words text-[17px] font-semibold text-foreground">
             {props.name}
           </h2>
           {props.host === props.name ? null : (
-            <span className="break-all font-mono text-[12px] text-muted-foreground">{props.host}</span>
+            <span className="break-all font-mono text-[12px] text-muted-foreground">
+              {props.host}
+            </span>
           )}
         </div>
         <div className="flex flex-col gap-2.5 px-5">
@@ -116,10 +131,12 @@ export function ReportCard(props: {
             </ul>
           )}
           <Row label="Test cases">
-            {props.cases.executed.toLocaleString()} <small>of {props.cases.total.toLocaleString()}</small>
+            {props.cases.executed.toLocaleString()}{' '}
+            <small>of {props.cases.total.toLocaleString()}</small>
           </Row>
           <Row label="Requests sent">
-            {props.requests.used.toLocaleString()} <small>of {props.requests.cap.toLocaleString()}</small>
+            {props.requests.used.toLocaleString()}{' '}
+            <small>of {props.requests.cap.toLocaleString()}</small>
           </Row>
           <Row label="Decisions asked">
             {props.gate2.asked}
@@ -133,14 +150,16 @@ export function ReportCard(props: {
           {props.released > 0 ? (
             <>
               <b className="font-semibold text-foreground">
-                {props.released === n ? `All ${n} in the report.` : `${props.released} of ${n} in the report.`}
+                {props.released === n
+                  ? `All ${n} in the report.`
+                  : `${props.released} of ${n} in the report.`}
               </b>{' '}
               {inReportNote(props.awaiting, props.dismissed)}
             </>
           ) : n > props.dismissed ? (
             <>
-              <b className="font-semibold text-foreground">None released yet.</b> The report includes released issues
-              only; release them to include them.
+              <b className="font-semibold text-foreground">None released yet.</b> The report
+              includes released issues only; release them to include them.
             </>
           ) : n > 0 ? (
             'Every proven issue was dismissed, so the report lists what was tested and no issues.'
@@ -162,17 +181,26 @@ export function ReportCard(props: {
             {props.webhook?.configured === true ? (
               <span>
                 Released issues are also posted to{' '}
-                <span className="font-medium text-foreground">{props.webhook.host ?? 'your webhook'}</span>.
+                <span className="font-medium text-foreground">
+                  {props.webhook.host ?? 'your webhook'}
+                </span>
+                .
               </span>
             ) : props.webhook === null ? (
               // The status could not be read: point to where it is shown rather than guess.
-              <NavLink href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+              <NavLink
+                href="/settings#webhook"
+                className="font-medium text-gold-ink underline-offset-2 hover:underline"
+              >
                 See where released issues are sent
               </NavLink>
             ) : (
               <span>
                 Send released issues to your tools:{' '}
-                <NavLink href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+                <NavLink
+                  href="/settings#webhook"
+                  className="font-medium text-gold-ink underline-offset-2 hover:underline"
+                >
                   connect a webhook
                 </NavLink>
               </span>
@@ -185,24 +213,30 @@ export function ReportCard(props: {
             <span className="min-w-0 flex-1 truncate font-mono">
               ledger · sha256 {props.ledgerHead.slice(0, 4)}…{props.ledgerHead.slice(-4)}
             </span>
-            <NavLink href="/ledger#verify" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+            <NavLink
+              href="/ledger#verify"
+              className="font-medium text-gold-ink underline-offset-2 hover:underline"
+            >
               Verify
             </NavLink>
           </div>
         )}
       </section>
       {props.live ? null : (
-      <section aria-labelledby="again-h" className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-card px-4 py-3.5">
-        <h2 id="again-h" className="m-0 text-[14.5px] font-semibold text-foreground">
-          After you fix them
-        </h2>
-        <p className="m-0 text-[13px] leading-5 text-muted-foreground">
-          Run the same audit again. It keeps your answers and goes straight to your approval.
-        </p>
-        <div className="pt-1.5">
-          <RunAgain requestId={props.requestId} />
-        </div>
-      </section>
+        <section
+          aria-labelledby="again-h"
+          className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-card px-4 py-3.5"
+        >
+          <h2 id="again-h" className="m-0 text-[14.5px] font-semibold text-foreground">
+            After you fix them
+          </h2>
+          <p className="m-0 text-[13px] leading-5 text-muted-foreground">
+            Run the same audit again. It keeps your answers and goes straight to your approval.
+          </p>
+          <div className="pt-1.5">
+            <RunAgain requestId={props.requestId} />
+          </div>
+        </section>
       )}
     </div>
   );

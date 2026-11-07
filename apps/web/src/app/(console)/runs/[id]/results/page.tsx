@@ -1,12 +1,16 @@
 // Results (experience spec §7; prototype 05): what Claude proved, in three voices, Gate 3 per issue, what was kept back,
 // every decision you made, and the report. Every number is the runner's; the headline and lede are templates.
 import { notFound } from 'next/navigation';
-import { cache ,type  ReactNode } from 'react';
+import { cache, Fragment, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
 import { YourDecisions } from '../../../../../components/console/results/decisions';
-import { IssueList, KeptBack, ReleaseAll } from '../../../../../components/console/results/issue-list';
+import {
+  IssueList,
+  KeptBack,
+  ReleaseAll,
+} from '../../../../../components/console/results/issue-list';
 import { LiveRefresh } from '../../../../../components/console/results/live-refresh';
 import { readApi } from '../../../../../components/console/results/load';
 import {
@@ -24,7 +28,13 @@ import { NavLink } from '../../../../../components/console/results/nav-link';
 import { ReportCard } from '../../../../../components/console/results/report-card';
 import { ApiError } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
-import { LIVE_RUN_STATES, requestSchema, runSchema, workspaceSchema, type Run } from '../../../../../lib/schemas';
+import {
+  LIVE_RUN_STATES,
+  requestSchema,
+  runSchema,
+  workspaceSchema,
+  type Run,
+} from '../../../../../lib/schemas';
 
 import type { Metadata } from 'next';
 
@@ -34,7 +44,8 @@ const HTTP_NOT_FOUND = 404;
 const releaseModeSchema = z.object({ releaseProven: z.enum(['hold', 'auto']) });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const plural = (n: number, one: string, many: string): string => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many: string): string =>
+  `${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 /** The run, or null when there is no such run (the page and its title share one API call per request). */
 const loadRun = cache(async (id: string): Promise<Run | null> => {
@@ -152,10 +163,16 @@ export default async function ResultsPage({
           <p
             className={`m-0 flex items-center gap-1.5 text-[13px] font-medium ${stop.tone === 'ok' ? 'text-ok' : stop.tone === 'bad' ? 'text-bad' : 'text-muted-foreground'}`}
           >
-            <Icon name={stop.tone === 'ok' ? 'check' : stop.tone === 'bad' ? 'warn' : 'clock'} size={14} />
+            <Icon
+              name={stop.tone === 'ok' ? 'check' : stop.tone === 'bad' ? 'warn' : 'clock'}
+              size={14}
+            />
             {stop.text}
             {live ? (
-              <NavLink href={`/runs/${run.id}`} className="ml-1 text-gold-ink underline-offset-2 hover:underline">
+              <NavLink
+                href={`/runs/${run.id}`}
+                className="ml-1 text-gold-ink underline-offset-2 hover:underline"
+              >
                 Watch it live
               </NavLink>
             ) : null}
@@ -191,8 +208,11 @@ export default async function ResultsPage({
               </>
             ) : (
               <>
-                {did} The validator {live ? 'has not proved any issue yet' : 'could not prove any issue'}
-                {kept.length > 0 ? `, so ${plural(kept.length, 'suspected issue is', 'suspected issues are')} kept back below.` : '.'}
+                {did} The validator{' '}
+                {live ? 'has not proved any issue yet' : 'could not prove any issue'}
+                {kept.length > 0
+                  ? `, so ${plural(kept.length, 'suspected issue is', 'suspected issues are')} kept back below.`
+                  : '.'}
                 {live ? ' This page updates on its own.' : null}
               </>
             )}
@@ -218,7 +238,13 @@ export default async function ResultsPage({
         ) : (
           <>
             <ReleaseAll ids={awaiting.map((f) => f.id)} />
-            <IssueList items={proven} initial={initial} openId={first?.id} viewerName={session.user.name} shortcuts />
+            <IssueList
+              items={proven}
+              initial={initial}
+              openId={first?.id}
+              viewerName={session.user.name}
+              shortcuts
+            />
           </>
         )}
         <KeptBack items={kept} viewerName={session.user.name} />

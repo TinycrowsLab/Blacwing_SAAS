@@ -1,9 +1,14 @@
 // Settings (experience spec §2, §8): the workspace name (editable by an administrator), your account and theme, and
 // the settings your administrator sets on the server, shown read-only with where they come from.
 import { Chip, Icon, InlineMessage } from '../../../components/console/design';
-import { HashFocus, HIGHLIGHT_CLASS } from '../../../components/console/results/hash-focus';
+import { HashFocus } from '../../../components/console/results/hash-focus';
+import { HIGHLIGHT_CLASS } from '../../../components/console/results/highlight';
 import { readApi } from '../../../components/console/results/load';
-import { RetryButton, ThemeSetting, WorkspaceNameForm } from '../../../components/console/results/settings-form';
+import {
+  RetryButton,
+  ThemeSetting,
+  WorkspaceNameForm,
+} from '../../../components/console/results/settings-form';
 import { getViewer } from '../../../lib/auth';
 import { usd } from '../../../lib/plan-text';
 import { workspaceSchema } from '../../../lib/schemas';
@@ -28,7 +33,11 @@ function Section({
   readonly children: ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id ?? title}-h`} className="flex scroll-mt-6 flex-col gap-3 rounded-[14px] border border-border bg-card p-4 sm:p-5">
+    <section
+      id={id}
+      aria-labelledby={`${id ?? title}-h`}
+      className="flex scroll-mt-6 flex-col gap-3 rounded-[14px] border border-border bg-card p-4 sm:p-5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={`${id ?? title}-h`} className="m-0 text-[15px] font-semibold text-foreground">
           {title}
@@ -40,7 +49,15 @@ function Section({
   );
 }
 
-function Fact({ label, children, id }: { readonly label: string; readonly children: ReactNode; readonly id?: string }) {
+function Fact({
+  label,
+  children,
+  id,
+}: {
+  readonly label: string;
+  readonly children: ReactNode;
+  readonly id?: string;
+}) {
   return (
     <div
       id={id}
@@ -66,9 +83,12 @@ export default async function SettingsPage(): Promise<ReactNode> {
     <div className="flex w-full max-w-[860px] flex-col gap-5">
       <HashFocus />
       <div className="flex flex-col gap-1.5">
-        <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Settings</h1>
+        <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
+          Settings
+        </h1>
         <p className="m-0 text-[14px] leading-[22px] text-muted-foreground">
-          Your workspace and your account. Limits and connections are set by your administrator on the server.
+          Your workspace and your account. Limits and connections are set by your administrator on
+          the server.
         </p>
       </div>
 
@@ -107,8 +127,9 @@ export default async function SettingsPage(): Promise<ReactNode> {
           <dl className="m-0 flex flex-col gap-3">
             <Fact label="Audit limits">
               Each audit stops at {s.limits.minutes.min} to {s.limits.minutes.max} minutes,{' '}
-              {s.limits.requests.min.toLocaleString()} to {s.limits.requests.max.toLocaleString()} requests and{' '}
-              {usd(s.limits.costUsd.min)} to {usd(s.limits.costUsd.max)} of model spend, whichever comes first.
+              {s.limits.requests.min.toLocaleString()} to {s.limits.requests.max.toLocaleString()}{' '}
+              requests and {usd(s.limits.costUsd.min)} to {usd(s.limits.costUsd.max)} of model
+              spend, whichever comes first.
             </Fact>
             <Fact label="Ready-made limits">
               <ul className="m-0 flex list-none flex-col gap-1 p-0">
@@ -116,15 +137,16 @@ export default async function SettingsPage(): Promise<ReactNode> {
                   <li key={p.key}>
                     <span className="font-medium">{p.label}</span>{' '}
                     <span className="text-muted-foreground">
-                      {p.minutes} min · {p.requests.toLocaleString()} requests · up to {usd(p.costUsd)}
+                      {p.minutes} min · {p.requests.toLocaleString()} requests · up to{' '}
+                      {usd(p.costUsd)}
                     </span>
                   </li>
                 ))}
               </ul>
             </Fact>
             <Fact label="Time to decide a request">
-              {minutes} {minutes === 1 ? 'minute' : 'minutes'}. If nobody answers, the request is denied and the other
-              agents keep working.
+              {minutes} {minutes === 1 ? 'minute' : 'minutes'}. If nobody answers, the request is
+              denied and the other agents keep working.
             </Fact>
             <Fact label="Approving your own audits">
               {s.selfApprove
@@ -137,7 +159,11 @@ export default async function SettingsPage(): Promise<ReactNode> {
                   <Chip tone="ok" icon="check" pill>
                     Connected
                   </Chip>
-                  Released issues are posted to <span className="font-mono text-[12.5px]">{s.webhook.host ?? 'your endpoint'}</span>.
+                  Released issues are posted to{' '}
+                  <span className="font-mono text-[12.5px]">
+                    {s.webhook.host ?? 'your endpoint'}
+                  </span>
+                  .
                 </span>
               ) : (
                 <span className="flex flex-col gap-1">
@@ -146,8 +172,8 @@ export default async function SettingsPage(): Promise<ReactNode> {
                     Not connected
                   </span>
                   <span className="text-muted-foreground">
-                    When your administrator adds a webhook address on the server, each issue you release is posted to it,
-                    and its delivery shows on the finding.
+                    When your administrator adds a webhook address on the server, each issue you
+                    release is posted to it, and its delivery shows on the finding.
                   </span>
                 </span>
               )}

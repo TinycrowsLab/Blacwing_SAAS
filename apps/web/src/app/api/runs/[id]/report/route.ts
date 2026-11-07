@@ -23,7 +23,11 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_NOT_FOUND = 404;
 const HTTP_SERVER_ERROR = 500;
 
-const renderedSchema = z.object({ contentType: z.string().min(1), filename: z.string(), body: z.string() });
+const renderedSchema = z.object({
+  contentType: z.string().min(1),
+  filename: z.string(),
+  body: z.string(),
+});
 const TYPES = {
   html: 'text/html; charset=utf-8',
   md: 'text/markdown; charset=utf-8',
@@ -47,7 +51,9 @@ export async function GET(
   try {
     const [json, sarif] = await Promise.all([
       callApi(session, path('json')).then((r) => renderedSchema.parse(r)),
-      format === 'sarif' ? callApi(session, path('sarif')).then((r) => renderedSchema.parse(r)) : Promise.resolve(null),
+      format === 'sarif'
+        ? callApi(session, path('sarif')).then((r) => renderedSchema.parse(r))
+        : Promise.resolve(null),
     ]);
     const raw = z.record(z.string(), z.unknown()).parse(JSON.parse(json.body));
     const source = reportSourceSchema.parse(raw);

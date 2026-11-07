@@ -57,7 +57,8 @@ export function ReportDownload({
       const response = await fetch(`${href}?format=${format}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(String(response.status));
       const blob = await response.blob();
-      const name = FILENAME.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? `report.${format}`;
+      const name =
+        FILENAME.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? `report.${format}`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

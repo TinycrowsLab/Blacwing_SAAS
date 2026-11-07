@@ -149,7 +149,8 @@ function inlineHtml(text: string): string {
     .map((part) => {
       if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
         return `<strong>${inlineHtml(part.slice(2, -2))}</strong>`;
-      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return `<code>${escapeHtml(part.slice(1, -1))}</code>`;
+      if (part.startsWith('`') && part.endsWith('`') && part.length > 2)
+        return `<code>${escapeHtml(part.slice(1, -1))}</code>`;
       return escapeHtml(part);
     })
     .join('');
@@ -167,7 +168,9 @@ export function markdownToHtml(text: string): string {
       if (b.kind === 'table') {
         const [head, ...rows] = b.lines.filter((l) => !isTableRule(l)).map((l) => cells(l));
         const th = (head ?? []).map((c) => `<th>${inlineHtml(c)}</th>`).join('');
-        const tr = rows.map((r) => `<tr>${r.map((c) => `<td>${inlineHtml(c)}</td>`).join('')}</tr>`).join('');
+        const tr = rows
+          .map((r) => `<tr>${r.map((c) => `<td>${inlineHtml(c)}</td>`).join('')}</tr>`)
+          .join('');
         return `<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
       }
       const items = b.lines

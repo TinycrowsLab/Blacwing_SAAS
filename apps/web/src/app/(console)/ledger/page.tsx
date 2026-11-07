@@ -6,10 +6,16 @@ import { z } from 'zod';
 
 import { Chip, EmptyState, Icon } from '../../../components/console/design';
 import { Path } from '../../../components/console/results/decisions';
-import { HashFocus, HIGHLIGHT_CLASS } from '../../../components/console/results/hash-focus';
+import { HashFocus } from '../../../components/console/results/hash-focus';
+import { HIGHLIGHT_CLASS } from '../../../components/console/results/highlight';
 import { readApi } from '../../../components/console/results/load';
 import { LocalTime } from '../../../components/console/results/local-time';
-import { actionLabel, ledgerSchema, PLAN_REPLACED_REASON, type LedgerItem } from '../../../components/console/results/model';
+import {
+  actionLabel,
+  ledgerSchema,
+  PLAN_REPLACED_REASON,
+  type LedgerItem,
+} from '../../../components/console/results/model';
 import { NavLink } from '../../../components/console/results/nav-link';
 import { RefreshButton } from '../../../components/console/results/settings-form';
 import { getViewer } from '../../../lib/auth';
@@ -73,7 +79,8 @@ function Detail({
         ) : (
           <>
             {' '}
-            from &ldquo;{previousName}&rdquo; to <span className="text-foreground">&ldquo;{name}&rdquo;</span>
+            from &ldquo;{previousName}&rdquo; to{' '}
+            <span className="text-foreground">&ldquo;{name}&rdquo;</span>
           </>
         )
       ) : null}
@@ -118,7 +125,9 @@ export default async function LedgerPage({
       <HashFocus />
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Ledger</h1>
+          <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
+            Ledger
+          </h1>
           {items.length === 0 ? null : chain.verified ? (
             <Chip tone="ok" icon="check" pill>
               Chain verified
@@ -130,8 +139,9 @@ export default async function LedgerPage({
           )}
         </div>
         <p className="m-0 max-w-[68ch] text-[14px] leading-[22px] text-muted-foreground">
-          Every decision made in this workspace, newest first. Each entry&rsquo;s fingerprint covers the one before it, so
-          changing or removing any entry breaks the chain, and the check below fails.
+          Every decision made in this workspace, newest first. Each entry&rsquo;s fingerprint covers
+          the one before it, so changing or removing any entry breaks the chain, and the check below
+          fails.
         </p>
       </div>
 
@@ -165,13 +175,19 @@ export default async function LedgerPage({
                 {head === null ? null : (
                   <>
                     Newest fingerprint{' '}
-                    <span className="font-mono text-[12px] text-foreground" title={`sha256 ${head}`}>
+                    <span
+                      className="font-mono text-[12px] text-foreground"
+                      title={`sha256 ${head}`}
+                    >
                       {head.slice(0, 8)}…{head.slice(-4)}
                     </span>
                   </>
                 )}
                 {/* Re-checked on every load and on "Check again"; the time says which check this is. */}
-                <LocalTime iso={checkedAt} prefix={head === null ? 'Checked at ' : ' · checked at '} />
+                <LocalTime
+                  iso={checkedAt}
+                  prefix={head === null ? 'Checked at ' : ' · checked at '}
+                />
               </span>
             </div>
             <RefreshButton
@@ -194,13 +210,17 @@ export default async function LedgerPage({
                   </span>
                   <span className="min-w-0 break-words text-[13.5px] leading-[21px] text-foreground">
                     <span className="font-medium">{e.actor.name}</span> ·{' '}
-                    {(renamedFrom.has(e.eventId) ? 'Renamed the workspace' : actionLabel(e.action, e.payload)).toLowerCase()}
+                    {(renamedFrom.has(e.eventId)
+                      ? 'Renamed the workspace'
+                      : actionLabel(e.action, e.payload)
+                    ).toLowerCase()}
                     <Detail
                       item={e}
                       title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined}
                       previousName={renamedFrom.get(e.eventId)}
                     />
-                    {(e.action === 'gate1.approve' || e.action === 'gate2.approve') && e.payload.selfApproved === true ? (
+                    {(e.action === 'gate1.approve' || e.action === 'gate2.approve') &&
+                    e.payload.selfApproved === true ? (
                       <span className="ml-2 inline-flex align-middle">
                         <Chip tone="muted">Self-approved</Chip>
                       </span>
@@ -217,7 +237,10 @@ export default async function LedgerPage({
                       </>
                     )}
                   </span>
-                  <span className="text-right font-mono text-[11.5px] leading-[21px] text-muted-foreground" title={e.hash}>
+                  <span
+                    className="text-right font-mono text-[11.5px] leading-[21px] text-muted-foreground"
+                    title={e.hash}
+                  >
                     #{e.seq} · {e.hash.slice(0, 6)}
                   </span>
                 </li>
@@ -226,20 +249,25 @@ export default async function LedgerPage({
           </ol>
           {onlySetup ? (
             <p className="m-0 text-[13px] leading-5 text-muted-foreground">
-              Approving a plan, deciding on a request, releasing a finding or stopping an audit each adds an entry here.
+              Approving a plan, deciding on a request, releasing a finding or stopping an audit each
+              adds an entry here.
             </p>
           ) : null}
           {shown.length < items.length ? (
             <p className="m-0 text-[12.5px] text-muted-foreground">
-              Showing the newest {shown.length.toLocaleString()} of {chain.count.toLocaleString()} entries.{' '}
-              <NavLink href="/ledger?all=1" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+              Showing the newest {shown.length.toLocaleString()} of {chain.count.toLocaleString()}{' '}
+              entries.{' '}
+              <NavLink
+                href="/ledger?all=1"
+                className="font-medium text-gold-ink underline-offset-2 hover:underline"
+              >
                 Show all
               </NavLink>
             </p>
           ) : items.length < chain.count ? (
             <p className="m-0 text-[12.5px] text-muted-foreground">
-              Showing the newest {items.length.toLocaleString()} of {chain.count.toLocaleString()} entries. The check
-              covers all of them.
+              Showing the newest {items.length.toLocaleString()} of {chain.count.toLocaleString()}{' '}
+              entries. The check covers all of them.
             </p>
           ) : null}
         </>

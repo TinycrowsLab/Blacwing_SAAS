@@ -9,7 +9,13 @@ import { NavLink } from './nav-link';
 import type { DecisionRow, Ledger } from './model';
 
 /** A request line in mono that wraps only after a "/", "?" or "&", never in the middle of a word. */
-export function Path({ text, className = '' }: { readonly text: string; readonly className?: string }) {
+export function Path({
+  text,
+  className = '',
+}: {
+  readonly text: string;
+  readonly className?: string;
+}) {
   const parts = text.split(/(?<=[/?&])/);
   return (
     <span className={`font-mono [overflow-wrap:anywhere] ${className}`}>
@@ -36,7 +42,9 @@ export function YourDecisions({
         Your decisions
       </h2>
       {rows.length === 0 ? (
-        <p className="m-0 py-2 text-[13px] text-muted-foreground">No decisions were needed on this audit yet.</p>
+        <p className="m-0 py-2 text-[13px] text-muted-foreground">
+          No decisions were needed on this audit yet.
+        </p>
       ) : (
         <ol className="m-0 list-none p-0">
           {rows.map((r) => (
@@ -44,7 +52,9 @@ export function YourDecisions({
               key={r.key}
               className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-border py-2.5 text-[13.5px] leading-[21px] sm:grid-cols-[96px_minmax(0,1fr)_auto]"
             >
-              <span className="col-span-2 text-[12px] text-muted-foreground sm:col-span-1 sm:text-[12.5px]">{r.group}</span>
+              <span className="col-span-2 text-[12px] text-muted-foreground sm:col-span-1 sm:text-[12.5px]">
+                {r.group}
+              </span>
               <span className="flex min-w-0 flex-col break-words">
                 {/* What was decided, on what. */}
                 <span className="text-foreground">
@@ -57,7 +67,9 @@ export function YourDecisions({
                   ) : (
                     <> &ldquo;{r.subject.text}&rdquo;</>
                   )}
-                  {r.detail === null || r.detail === '' ? null : <span className="text-muted-foreground"> {r.detail}</span>}
+                  {r.detail === null || r.detail === '' ? null : (
+                    <span className="text-muted-foreground"> {r.detail}</span>
+                  )}
                 </span>
                 {/* Why, and by whom: each labelled, so the reason never reads as the subject. */}
                 {r.reason === null && r.by === null ? null : (
@@ -72,7 +84,11 @@ export function YourDecisions({
                   </span>
                 )}
               </span>
-              {r.at === null ? <span /> : <LocalTime iso={r.at} className="text-[12px] text-muted-foreground" />}
+              {r.at === null ? (
+                <span />
+              ) : (
+                <LocalTime iso={r.at} className="text-[12px] text-muted-foreground" />
+              )}
             </li>
           ))}
         </ol>
@@ -80,16 +96,26 @@ export function YourDecisions({
       <p className="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-5 text-muted-foreground">
         <Icon name="ledger" size={13} className="mt-[3px] shrink-0" />
         {chain === null ? (
-          <span>Your decisions are also sealed in the ledger. We couldn&rsquo;t check its chain just now.</span>
+          <span>
+            Your decisions are also sealed in the ledger. We couldn&rsquo;t check its chain just
+            now.
+          </span>
         ) : chain.verified ? (
           <span>
             Your decisions are also sealed in the ledger.{' '}
-            <NavLink href="/ledger#verify" className="font-medium text-gold-ink underline-offset-2 hover:underline">
-              Chain verified, {chain.count.toLocaleString()} {chain.count === 1 ? 'event' : 'events'}
+            <NavLink
+              href="/ledger#verify"
+              className="font-medium text-gold-ink underline-offset-2 hover:underline"
+            >
+              Chain verified, {chain.count.toLocaleString()}{' '}
+              {chain.count === 1 ? 'event' : 'events'}
             </NavLink>
           </span>
         ) : (
-          <NavLink href="/ledger#verify" className="font-medium text-bad underline-offset-2 hover:underline">
+          <NavLink
+            href="/ledger#verify"
+            className="font-medium text-bad underline-offset-2 hover:underline"
+          >
             Chain check failed at #{chain.brokenAtSeq}. Open the ledger
           </NavLink>
         )}

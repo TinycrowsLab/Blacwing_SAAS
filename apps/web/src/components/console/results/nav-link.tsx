@@ -17,7 +17,15 @@ export function NavLink({ onClick, ...props }: ComponentProps<typeof Link>) {
       onClick={(e) => {
         onClick?.(e);
         // A new tab, a download or a cancelled click is not a navigation of this page.
-        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        if (
+          e.defaultPrevented ||
+          e.button !== 0 ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.shiftKey ||
+          e.altKey
+        )
+          return;
         const from = window.location.pathname + window.location.search;
         nudge(() => window.location.pathname + window.location.search !== from);
       }}

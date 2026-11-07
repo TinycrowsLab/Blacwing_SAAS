@@ -29,7 +29,11 @@ export const reportSourceSchema = z
         name: z.string(),
         baseUrl: z.string(),
         ownership: z
-          .object({ status: z.string(), verifiedBy: z.string().nullable(), verifiedAt: z.string().nullable() })
+          .object({
+            status: z.string(),
+            verifiedBy: z.string().nullable(),
+            verifiedAt: z.string().nullable(),
+          })
           .partial()
           .default({}),
       })
@@ -81,14 +85,18 @@ export function when(iso: string | null | undefined): string | null {
 }
 
 const careful = (intrusiveness: string): string =>
-  intrusiveness === 'active_safe' ? 'Probe gently (active, safe requests only)' : 'Only look, never touch (passive)';
+  intrusiveness === 'active_safe'
+    ? 'Probe gently (active, safe requests only)'
+    : 'Only look, never touch (passive)';
 
 /** "1 high, 4 medium and 1 low". */
 export function severityWords(findings: readonly Pick<FindingDetail, 'severity'>[]): string {
   const parts = SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length] as const)
     .filter(([, n]) => n > 0)
     .map(([s, n]) => `${n} ${s}`);
-  return parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
+  return parts.length < 2
+    ? (parts[0] ?? '')
+    : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
 }
 
 /** The report's opening sentence: how many released issues it holds, by severity. */
@@ -117,7 +125,13 @@ function facts(src: ReportSource): [string, string][] {
   const owner = asset.ownership;
   const verified =
     owner.status === 'verified'
-      ? ['Ownership verified', owner.verifiedBy === null || owner.verifiedBy === undefined ? null : `by ${owner.verifiedBy}`, when(owner.verifiedAt) === null ? null : `on ${when(owner.verifiedAt)}`]
+      ? [
+          'Ownership verified',
+          owner.verifiedBy === null || owner.verifiedBy === undefined
+            ? null
+            : `by ${owner.verifiedBy}`,
+          when(owner.verifiedAt) === null ? null : `on ${when(owner.verifiedAt)}`,
+        ]
           .filter(Boolean)
           .join(' ')
       : 'Ownership not verified';
@@ -127,7 +141,9 @@ function facts(src: ReportSource): [string, string][] {
       : [
           request.approver.name ?? 'An administrator',
           when(request.decidedAt) === null ? null : `on ${when(request.decidedAt)}`,
-          request.decisionReason === null || request.decisionReason === '' ? null : `· reason: “${request.decisionReason}”`,
+          request.decisionReason === null || request.decisionReason === ''
+            ? null
+            : `· reason: “${request.decisionReason}”`,
         ]
           .filter(Boolean)
           .join(' ');
@@ -137,13 +153,28 @@ function facts(src: ReportSource): [string, string][] {
       : duration(Date.parse(run.finishedAt) - Date.parse(run.startedAt));
   const rows: [string, string | null][] = [
     ['Target', `${asset.name} (${asset.baseUrl}). ${verified}.`],
-    ['What was tested', request.objective.trim() === '' ? 'The whole site' : request.objective.trim()],
+    [
+      'What was tested',
+      request.objective.trim() === '' ? 'The whole site' : request.objective.trim(),
+    ],
     ['How careful', careful(request.intrusiveness)],
     ['Left out', request.excludedPaths.length === 0 ? 'Nothing' : request.excludedPaths.join(', ')],
-    ['Signed-in testing', request.testAccounts.length === 0 ? 'None' : `As ${request.testAccounts.map((a) => a.role).join(', ')}`],
+    [
+      'Signed-in testing',
+      request.testAccounts.length === 0
+        ? 'None'
+        : `As ${request.testAccounts.map((a) => a.role).join(', ')}`,
+    ],
     ['Approved by', approved],
-    ['When', [when(run.startedAt), took === null ? null : `ran for ${took}`].filter(Boolean).join(', ') || null],
-    ['Requests sent', `${run.requestsUsed.toLocaleString('en-GB')} of ${run.budget.requests.toLocaleString('en-GB')} allowed`],
+    [
+      'When',
+      [when(run.startedAt), took === null ? null : `ran for ${took}`].filter(Boolean).join(', ') ||
+        null,
+    ],
+    [
+      'Requests sent',
+      `${run.requestsUsed.toLocaleString('en-GB')} of ${run.budget.requests.toLocaleString('en-GB')} allowed`,
+    ],
     ['Model spend', `${usd(run.costUsd)} of ${usd(run.budget.costUsd)}`],
   ];
   return rows.filter((r): r is [string, string] => r[1] !== null);
@@ -169,7 +200,11 @@ function sideWords(side: FindingDetail['evidence']['probe']): string {
 }
 
 function meta(f: FindingDetail): string {
-  return [f.cwe, f.owasp === null ? null : `OWASP ${f.owasp}`, f.agent === null ? null : `Found by the ${agentName(f.agent)}`]
+  return [
+    f.cwe,
+    f.owasp === null ? null : `OWASP ${f.owasp}`,
+    f.agent === null ? null : `Found by the ${agentName(f.agent)}`,
+  ]
     .filter(Boolean)
     .join(' · ');
 }
@@ -177,7 +212,14 @@ function meta(f: FindingDetail): string {
 const title = (src: ReportSource): string => `Security audit of ${src.asset.name}`;
 
 export function renderMarkdown(src: ReportSource, findings: readonly FindingDetail[]): string {
-  const out: string[] = [`# ${title(src)}`, '', `Blackwing report · ${src.asset.baseUrl}`, '', reportLede(findings), ''];
+  const out: string[] = [
+    `# ${title(src)}`,
+    '',
+    `Blackwing report · ${src.asset.baseUrl}`,
+    '',
+    reportLede(findings),
+    '',
+  ];
   out.push('## About this audit', '', ...facts(src).map(([k, v]) => `- **${k}:** ${v}`), '');
   findings.forEach((f, i) => {
     const proof = proofSentence(f);
@@ -186,8 +228,17 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     out.push(`## ${i + 1}. ${f.title}`, '', `**${cap(f.severity)}** · ${meta(f)}  `);
     const released = releaseLine(f);
     if (released !== null) out.push(released);
-    out.push('', '### How it was proved (Blackwing’s validator, no model)', '', proof.text.replace(/^Proven: /, 'Proven: '));
-    if (check !== null) out.push('', `Blackwing checked that ${check}: the probe should show it, the control should not.`);
+    out.push(
+      '',
+      '### How it was proved (Blackwing’s validator, no model)',
+      '',
+      proof.text.replace(/^Proven: /, 'Proven: '),
+    );
+    if (check !== null)
+      out.push(
+        '',
+        `Blackwing checked that ${check}: the probe should show it, the control should not.`,
+      );
     out.push(
       '',
       `- **Probe** (the request that shows the issue): \`${sideWords(f.evidence.probe)}\``,
@@ -195,11 +246,26 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
       '',
     );
     const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
-    if (excerpt !== '') out.push('What the site answered to the probe (excerpt):', '', '```', excerpt, '```', '');
-    if (f.reproCurl !== '') out.push('Reproduce it (run it only against a copy you own):', '', '```sh', f.reproCurl, '```', '');
+    if (excerpt !== '')
+      out.push('What the site answered to the probe (excerpt):', '', '```', excerpt, '```', '');
+    if (f.reproCurl !== '')
+      out.push(
+        'Reproduce it (run it only against a copy you own):',
+        '',
+        '```sh',
+        f.reproCurl,
+        '```',
+        '',
+      );
     if (f.description !== null && f.description.trim() !== '')
-      out.push('### What it means (Claude’s explanation, not verified)', '', f.description.trim(), '');
-    if (remediation !== '') out.push('### How to fix it (Claude’s suggestion, not verified)', '', remediation, '');
+      out.push(
+        '### What it means (Claude’s explanation, not verified)',
+        '',
+        f.description.trim(),
+        '',
+      );
+    if (remediation !== '')
+      out.push('### How to fix it (Claude’s suggestion, not verified)', '', remediation, '');
   });
   out.push('## Limits of this report', '', ...LIMITS.map((l) => `- ${l}`), '');
   return out.join('\n');
@@ -251,8 +317,14 @@ footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);color:v
 @media print{main{padding:0}article{border-color:#ccc}}
 </style>`;
 
-export function renderHtml(src: ReportSource, findings: readonly FindingDetail[], generatedAt: string): string {
-  const counts = SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length] as const).filter(([, n]) => n > 0);
+export function renderHtml(
+  src: ReportSource,
+  findings: readonly FindingDetail[],
+  generatedAt: string,
+): string {
+  const counts = SEVERITIES.map(
+    (s) => [s, findings.filter((f) => f.severity === s).length] as const,
+  ).filter(([, n]) => n > 0);
   const issues = findings
     .map((f, i) => {
       const proof = proofSentence(f);
@@ -301,12 +373,21 @@ ${findings.length === 0 ? '' : `<h2>Issues, most severe first</h2>\n${issues}`}
 }
 
 /** The machine-readable report: the API's JSON without the agent's run summary, and the findings most severe first. */
-export function renderJson(raw: Readonly<Record<string, unknown>>, findings: readonly FindingDetail[]): string {
-  const run = typeof raw.run === 'object' && raw.run !== null ? { ...(raw.run as Record<string, unknown>) } : {};
+export function renderJson(
+  raw: Readonly<Record<string, unknown>>,
+  findings: readonly FindingDetail[],
+): string {
+  const run =
+    typeof raw.run === 'object' && raw.run !== null
+      ? { ...(raw.run as Record<string, unknown>) }
+      : {};
   delete run.summary;
   const order = new Map(findings.map((f, i) => [f.id, i]));
   const list = Array.isArray(raw.findings) ? [...(raw.findings as unknown[])] : [];
-  const idOf = (x: unknown): string => (typeof x === 'object' && x !== null && typeof (x as { id?: unknown }).id === 'string' ? (x as { id: string }).id : '');
+  const idOf = (x: unknown): string =>
+    typeof x === 'object' && x !== null && typeof (x as { id?: unknown }).id === 'string'
+      ? (x as { id: string }).id
+      : '';
   list.sort((a, b) => (order.get(idOf(a)) ?? 0) - (order.get(idOf(b)) ?? 0));
   return JSON.stringify({ ...raw, run, findings: list }, null, 2);
 }

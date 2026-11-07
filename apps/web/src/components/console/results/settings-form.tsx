@@ -19,7 +19,7 @@ const tidy = (name: string): string => name.trim().replace(/\s+/g, ' ');
  * 2 to 60 characters, counted as people count them (code points, as the API does): "😀" is one character, so it is
  * too short here instead of passing a length check that counts it as two and then failing on the server.
  */
-export const nameError = (name: string): string | null => {
+const nameError = (name: string): string | null => {
   const n = Array.from(name).length;
   if (n < WORKSPACE_NAME_MIN) return `A name needs at least ${WORKSPACE_NAME_MIN} characters.`;
   if (n > WORKSPACE_NAME_MAX) return `Keep it to ${WORKSPACE_NAME_MAX} characters or fewer.`;
@@ -215,9 +215,9 @@ export function RefreshButton({
       className={className}
       onClick={() => {
         void run(() => {
-        router.refresh();
-        return Promise.resolve();
-      });
+          router.refresh();
+          return Promise.resolve();
+        });
       }}
     >
       {busy ? busyLabel : label}

@@ -20,7 +20,11 @@ const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
 /** A URL value this long may be the start of a label ("kept" for Kept back). */
 const PREFIX_MIN = 4;
 const SHORT_ID = 8;
-const fold = (v: string): string => v.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+const fold = (v: string): string =>
+  v
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, ' ');
 
 export interface FindingFilters {
   readonly status?: string | undefined;
@@ -48,12 +52,16 @@ export function parseFilters(
     status: FINDING_STATUSES.find(
       (s) =>
         status !== null &&
-        (fold(s.key) === status || fold(s.label) === status || (status.length >= PREFIX_MIN && fold(s.label).startsWith(status))),
+        (fold(s.key) === status ||
+          fold(s.label) === status ||
+          (status.length >= PREFIX_MIN && fold(s.label).startsWith(status))),
     )?.key,
     severity: SEVERITIES.find((s) => s === severity),
     target: targets.find((t) => target !== null && fold(t) === target),
     // An audit id, or its first 8 characters (the short id people copy).
-    audit: audits.find((a) => audit !== null && audit.length >= SHORT_ID && fold(a).startsWith(audit)),
+    audit: audits.find(
+      (a) => audit !== null && audit.length >= SHORT_ID && fold(a).startsWith(audit),
+    ),
   };
 }
 
@@ -81,7 +89,9 @@ function FilterRow({
   return (
     // The chips wrap at every width: no option ever hides past the edge of a phone screen.
     <div className="flex min-w-0 flex-wrap items-center gap-1.5" role="group" aria-label={label}>
-      <span className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]">{label}</span>
+      <span className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]">
+        {label}
+      </span>
       {[{ key: undefined, label: 'All', count: -1 }, ...options].map((o) => (
         <button
           key={o.key ?? 'all'}
@@ -135,7 +145,10 @@ function FilterMenu({
   const id = `filter-${label.toLowerCase()}`;
   return (
     <div className="flex w-full min-w-0 items-center gap-1.5 sm:w-auto">
-      <label htmlFor={id} className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]">
+      <label
+        htmlFor={id}
+        className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]"
+      >
         {label}
       </label>
       <select
@@ -169,7 +182,12 @@ export interface AuditOption {
 function useClock(): ((iso: string) => string) | null {
   const [format, setFormat] = useState<((iso: string) => string) | null>(null);
   useEffect(() => {
-    const f = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    const f = new Intl.DateTimeFormat(undefined, {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
     setFormat(() => (iso: string) => f.format(new Date(iso)));
   }, []);
   return format;
@@ -185,7 +203,9 @@ export function FindingsTable({
 }) {
   const params = useSearchParams();
   const clock = useClock();
-  const targets = [...new Set(items.map((f) => f.assetName).filter((n): n is string => n !== null))].sort();
+  const targets = [
+    ...new Set(items.map((f) => f.assetName).filter((n): n is string => n !== null)),
+  ].sort();
   // Each audit with findings, newest first: its start time, or else when it found its first issue.
   const known = new Map(runs.map((r) => [r.id, r]));
   const firstAt = new Map<string, string>();
@@ -240,7 +260,11 @@ export function FindingsTable({
           onPick={(v) => {
             pick('status', v);
           }}
-          options={FINDING_STATUSES.map((s) => ({ key: s.key, label: s.label, count: countBy('status', (f) => f.status === s.key) }))}
+          options={FINDING_STATUSES.map((s) => ({
+            key: s.key,
+            label: s.label,
+            count: countBy('status', (f) => f.status === s.key),
+          }))}
         />
         <FilterRow
           label="Severity"
@@ -248,7 +272,11 @@ export function FindingsTable({
           onPick={(v) => {
             pick('severity', v);
           }}
-          options={SEVERITIES.map((s) => ({ key: s, label: cap(s), count: countBy('severity', (f) => f.severity === s) }))}
+          options={SEVERITIES.map((s) => ({
+            key: s,
+            label: cap(s),
+            count: countBy('severity', (f) => f.severity === s),
+          }))}
         />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <FilterMenu
@@ -258,7 +286,11 @@ export function FindingsTable({
             onPick={(v) => {
               pick('target', v);
             }}
-            options={targets.map((t) => ({ key: t, label: t, count: countBy('target', (f) => f.assetName === t) }))}
+            options={targets.map((t) => ({
+              key: t,
+              label: t,
+              count: countBy('target', (f) => f.assetName === t),
+            }))}
           />
           <FilterMenu
             label="Audit"
@@ -267,7 +299,11 @@ export function FindingsTable({
             onPick={(v) => {
               pick('audit', v);
             }}
-            options={audits.map((a) => ({ key: a, label: auditLabel(a), count: countBy('audit', (f) => f.runId === a) }))}
+            options={audits.map((a) => ({
+              key: a,
+              label: auditLabel(a),
+              count: countBy('audit', (f) => f.runId === a),
+            }))}
           />
           {Object.values(filters).some((v) => v !== undefined) ? (
             <button
@@ -285,21 +321,21 @@ export function FindingsTable({
 
       {shown.length === 0 ? (
         <div className="mx-auto w-full max-w-[560px]">
-        <EmptyState
-          title="No findings match these filters."
-          body="Try another status, severity, target or audit."
-          action={
-            <button
-              type="button"
-              className={buttonClass('secondary')}
-              onClick={() => {
-                write({});
-              }}
-            >
-              Clear filters
-            </button>
-          }
-        />
+          <EmptyState
+            title="No findings match these filters."
+            body="Try another status, severity, target or audit."
+            action={
+              <button
+                type="button"
+                className={buttonClass('secondary')}
+                onClick={() => {
+                  write({});
+                }}
+              >
+                Clear filters
+              </button>
+            }
+          />
         </div>
       ) : (
         <ul className="m-0 flex list-none flex-col overflow-hidden rounded-[14px] border border-border bg-card p-0">
@@ -313,10 +349,16 @@ export function FindingsTable({
                   <SeverityChip severity={f.severity} />
                 </span>
                 <span className="flex min-w-0 flex-1 basis-60 flex-col">
-                  <span className="text-[14.5px] font-medium leading-[21px] text-foreground">{f.title}</span>
+                  <span className="text-[14.5px] font-medium leading-[21px] text-foreground">
+                    {f.title}
+                  </span>
                   <span className="text-[12.5px] text-muted-foreground">
-                    {[f.assetName, f.agent === null ? null : `found by the ${agentName(f.agent)}`].filter(Boolean).join(' · ')}
-                    {f.createdAt === undefined ? null : <LocalTime iso={f.createdAt} style="datetime" prefix=" · " />}
+                    {[f.assetName, f.agent === null ? null : `found by the ${agentName(f.agent)}`]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    {f.createdAt === undefined ? null : (
+                      <LocalTime iso={f.createdAt} style="datetime" prefix=" · " />
+                    )}
                   </span>
                 </span>
                 <span className="ml-auto shrink-0">

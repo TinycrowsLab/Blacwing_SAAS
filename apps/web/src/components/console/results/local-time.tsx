@@ -26,7 +26,11 @@ export function LocalTime({
   const [text, setText] = useState<string | null>(null);
   useEffect(() => {
     const date = new Date(iso);
-    setText(Number.isNaN(date.getTime()) ? null : new Intl.DateTimeFormat(undefined, STYLES[style]).format(date));
+    setText(
+      Number.isNaN(date.getTime())
+        ? null
+        : new Intl.DateTimeFormat(undefined, STYLES[style]).format(date),
+    );
   }, [iso, style]);
   if (text === null && prefix !== undefined) return null;
   return (

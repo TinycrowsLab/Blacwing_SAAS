@@ -17,7 +17,9 @@ export function LiveRefresh() {
   useEffect(() => {
     const tick = (): void => {
       // Not while someone types (a reason): the refresh waits for the next tick instead of racing the keyboard.
-      const typing = document.activeElement instanceof HTMLTextAreaElement || document.activeElement instanceof HTMLInputElement;
+      const typing =
+        document.activeElement instanceof HTMLTextAreaElement ||
+        document.activeElement instanceof HTMLInputElement;
       if (document.visibilityState !== 'visible' || typing || busy.current) return;
       busy.current = true;
       void run(() => {

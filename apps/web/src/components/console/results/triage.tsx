@@ -25,12 +25,15 @@ import { useNudge } from './nudge';
 
 import type { FindingDetail } from './model';
 
-
 // Every PendingButton here passes stayPending and returns false: it then runs the action and resets once it settles.
 export const PROVEN_REASON = 'Proven by replay';
 const HTTP_CONFLICT = 409;
 const COPIED_MS = 1600;
-const DISMISS_SUGGESTIONS = ['Not exploitable here', 'Accepted risk, tracked', 'Duplicate of another issue'];
+const DISMISS_SUGGESTIONS = [
+  'Not exploitable here',
+  'Accepted risk, tracked',
+  'Duplicate of another issue',
+];
 
 /** The reason form's footnote: where the reason goes and how to send it without the mouse. */
 export const REASON_NOTE = 'Kept on the ledger with your name · Ctrl+Enter to send';
@@ -40,7 +43,10 @@ export const REASON_NOTE = 'Kept on the ledger with your name · Ctrl+Enter to s
  * refreshed page included. Updates made after the action's `await` go through `startTransition` so they land in the
  * same commit as the page (no row says "Released" while the banner still counts it).
  */
-export function useSettledAction(): { settling: boolean; run: (action: () => Promise<void>) => Promise<void> } {
+export function useSettledAction(): {
+  settling: boolean;
+  run: (action: () => Promise<void>) => Promise<void>;
+} {
   const [settling, start] = useTransition();
   const nudge = useNudge();
   const waiting = useRef<{ seen: boolean; done: () => void } | null>(null);
@@ -83,12 +89,23 @@ export function escapeCloses(close: () => void) {
 }
 
 /** Who decided and when, with the reason: "Dismissed by you · 6 Nov, 09:10 · "Accepted risk, tracked"". */
-export function Decided({ finding, viewerName }: { readonly finding: FindingDetail; readonly viewerName: string }) {
+export function Decided({
+  finding,
+  viewerName,
+}: {
+  readonly finding: FindingDetail;
+  readonly viewerName: string;
+}) {
   if (finding.status !== 'released' && finding.status !== 'dismissed') return null;
   const t = finding.triage;
   const released = finding.status === 'released';
   const by = t?.by ?? null;
-  const who = by === null ? (released ? 'automatically, as chosen on the plan' : '') : `by ${by === viewerName ? 'you' : by}`;
+  const who =
+    by === null
+      ? released
+        ? 'automatically, as chosen on the plan'
+        : ''
+      : `by ${by === viewerName ? 'you' : by}`;
   return (
     <div className="flex flex-col gap-0.5 text-[13px] leading-5">
       <p className="m-0 text-foreground">
@@ -137,7 +154,9 @@ export function CopyButton({ text, label }: { readonly text: string; readonly la
       className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}
     >
       <Icon name={state === 'done' ? 'check' : 'copy'} size={14} />
-      <span aria-live="polite">{state === 'done' ? 'Copied' : state === 'failed' ? 'Copy failed' : label}</span>
+      <span aria-live="polite">
+        {state === 'done' ? 'Copied' : state === 'failed' ? 'Copy failed' : label}
+      </span>
     </button>
   );
 }
@@ -236,9 +255,9 @@ export function TriageControls({
         />
         {release ? null : (
           <p className="m-0 flex items-start gap-1.5 text-[12.5px] leading-5 text-foreground">
-            <Icon name="info" size={14} className="mt-[3px] shrink-0 text-muted-foreground" />
-            A dismissal can&rsquo;t be undone: the issue stays off the report for good. If you are unsure, leave it
-            awaiting release.
+            <Icon name="info" size={14} className="mt-[3px] shrink-0 text-muted-foreground" />A
+            dismissal can&rsquo;t be undone: the issue stays off the report for good. If you are
+            unsure, leave it awaiting release.
           </p>
         )}
         {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
@@ -255,11 +274,7 @@ export function TriageControls({
           >
             {release ? 'Release to report' : 'Dismiss for good'}
           </PendingButton>
-          <button
-            type="button"
-            className={buttonClass('ghost')}
-            onClick={cancel}
-          >
+          <button type="button" className={buttonClass('ghost')} onClick={cancel}>
             Cancel
           </button>
         </div>
@@ -294,7 +309,10 @@ export function TriageControls({
           <button
             type="button"
             disabled={busy}
-            className={buttonClass('secondary', `h-11 px-4 ${canRelease ? '' : 'col-span-2 justify-self-start'}`)}
+            className={buttonClass(
+              'secondary',
+              `h-11 px-4 ${canRelease ? '' : 'col-span-2 justify-self-start'}`,
+            )}
             onClick={() => {
               setMode('dismiss');
               setReason('');
@@ -304,12 +322,15 @@ export function TriageControls({
           </button>
         ) : null}
         {trailing === undefined ? null : (
-          <span className="col-span-2 flex flex-wrap items-center gap-1 sm:ml-auto">{trailing}</span>
+          <span className="col-span-2 flex flex-wrap items-center gap-1 sm:ml-auto">
+            {trailing}
+          </span>
         )}
       </div>
       {proven ? (
         <p className="m-0 text-[12px] text-muted-foreground">
-          Will be released with the reason &ldquo;{reason}&rdquo; and kept on the ledger with your name.{' '}
+          Will be released with the reason &ldquo;{reason}&rdquo; and kept on the ledger with your
+          name.{' '}
           <button
             type="button"
             className="font-medium text-gold-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
@@ -331,10 +352,18 @@ export function useReleaseKey(enabled = true): { current: (() => void) | null } 
   const release = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!enabled) return;
-    const onKey = (e: KeyboardEvent): void => {
+    const onKey = (e: globalThis.KeyboardEvent): void => {
       const t = e.target as HTMLElement | null;
-      if (e.key.toLowerCase() !== 'r' || e.ctrlKey || e.metaKey || e.altKey || release.current === null) return;
-      if (t !== null && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (
+        e.key.toLowerCase() !== 'r' ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        release.current === null
+      )
+        return;
+      if (t !== null && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))
+        return;
       e.preventDefault();
       release.current();
     };
@@ -347,7 +376,13 @@ export function useReleaseKey(enabled = true): { current: (() => void) | null } 
 }
 
 /** Gate 3 on the finding detail page: the same controls, with R bound to Release. */
-export function FindingTriage({ finding, viewerName }: { readonly finding: FindingDetail; readonly viewerName: string }) {
+export function FindingTriage({
+  finding,
+  viewerName,
+}: {
+  readonly finding: FindingDetail;
+  readonly viewerName: string;
+}) {
   const release = useReleaseKey();
   return (
     <TriageControls

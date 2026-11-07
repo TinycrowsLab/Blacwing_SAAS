@@ -9,10 +9,26 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = { title: 'Help' };
 
 const STEPS: readonly { who: 'You' | 'Claude'; title: string; body: string }[] = [
-  { who: 'You', title: 'Tell us what to audit', body: 'Paste the address of a site you own and answer four short questions. Then prove the site is yours.' },
-  { who: 'You', title: 'Approve the plan', body: 'Blackwing reads the whole plan back in plain words. Nothing reaches the site until you approve it.' },
-  { who: 'Claude', title: "Claude's team works", body: 'The planner hands work to specialists, and you watch their conversation live. Anything that would change data waits for your yes.' },
-  { who: 'You', title: 'Release the findings', body: 'The validator proves each issue by replaying it with a control. You decide what goes into the report.' },
+  {
+    who: 'You',
+    title: 'Tell us what to audit',
+    body: 'Paste the address of a site you own and answer four short questions. Then prove the site is yours.',
+  },
+  {
+    who: 'You',
+    title: 'Approve the plan',
+    body: 'Blackwing reads the whole plan back in plain words. Nothing reaches the site until you approve it.',
+  },
+  {
+    who: 'Claude',
+    title: "Claude's team works",
+    body: 'The planner hands work to specialists, and you watch their conversation live. Anything that would change data waits for your yes.',
+  },
+  {
+    who: 'You',
+    title: 'Release the findings',
+    body: 'The validator proves each issue by replaying it with a control. You decide what goes into the report.',
+  },
 ];
 
 const GATES: readonly { name: string; term: string; body: string }[] = [
@@ -44,9 +60,18 @@ const GATES: readonly { name: string; term: string; body: string }[] = [
 ];
 
 const VOICES: readonly { voice: Voice; body: string }[] = [
-  { voice: 'claude', body: "Claude's own words: explanations, plans and fix suggestions. Useful, and never treated as proof." },
-  { voice: 'blackwing', body: 'Blackwing describing what the runner recorded: counts, limits, times and requests.' },
-  { voice: 'validator', body: 'The validator: code, not a model. It replays each issue three times with a control. Only it can prove an issue.' },
+  {
+    voice: 'claude',
+    body: "Claude's own words: explanations, plans and fix suggestions. Useful, and never treated as proof.",
+  },
+  {
+    voice: 'blackwing',
+    body: 'Blackwing describing what the runner recorded: counts, limits, times and requests.',
+  },
+  {
+    voice: 'validator',
+    body: 'The validator: code, not a model. It replays each issue three times with a control. Only it can prove an issue.',
+  },
   { voice: 'you', body: 'Your decisions, each with your name and reason on the ledger.' },
 ];
 
@@ -59,7 +84,10 @@ const GLOSSARY: readonly [string, string][] = [
   ['Proven', 'confirmed by deterministic replay'],
   ['Kept back', 'suspected queue'],
   ['Shows it / Clean', 'probe and control result: the expected response appeared, or did not'],
-  ['Blocked (a test case)', 'could not run: it needed a request that was denied, or the safety rules refused it'],
+  [
+    'Blocked (a test case)',
+    'could not run: it needed a request that was denied, or the safety rules refused it',
+  ],
   ['Ledger', 'hash-chained audit ledger'],
 ];
 
@@ -98,7 +126,15 @@ const TOC = [
   ['keys', 'Keyboard shortcuts'],
 ] as const;
 
-function Section({ id, title, children }: { readonly id: string; readonly title: string; readonly children: ReactNode }) {
+function Section({
+  id,
+  title,
+  children,
+}: {
+  readonly id: string;
+  readonly title: string;
+  readonly children: ReactNode;
+}) {
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="flex scroll-mt-6 flex-col gap-3">
       <h2 id={`${id}-h`} className="m-0 text-[18px] font-semibold text-foreground">
@@ -113,10 +149,12 @@ export default function HelpPage(): ReactNode {
   return (
     <div className="flex w-full max-w-[860px] flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Help</h1>
+        <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
+          Help
+        </h1>
         <p className="m-0 text-[15px] leading-6 text-muted-foreground">
-          Blackwing arranges a security audit of a web app you own. Claude&rsquo;s agents do the testing; you approve at
-          every step that matters, and every decision is recorded.
+          Blackwing arranges a security audit of a web app you own. Claude&rsquo;s agents do the
+          testing; you approve at every step that matters, and every decision is recorded.
         </p>
         <nav aria-label="On this page" className="mt-1 flex flex-wrap gap-1.5">
           {TOC.map(([id, label]) => (
@@ -134,7 +172,10 @@ export default function HelpPage(): ReactNode {
       <Section id="how" title="How it works">
         <ol className="m-0 grid list-none gap-2.5 p-0 sm:grid-cols-2">
           {STEPS.map((s, i) => (
-            <li key={s.title} className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-card p-4">
+            <li
+              key={s.title}
+              className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-card p-4"
+            >
               <span className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <span className="font-mono">{i + 1}</span>
                 <VoiceTag voice={s.who === 'You' ? 'you' : 'claude'}>{s.who}</VoiceTag>
@@ -149,7 +190,10 @@ export default function HelpPage(): ReactNode {
       <Section id="control" title="Where you stay in control">
         <dl className="m-0 flex flex-col overflow-hidden rounded-[14px] border border-border bg-card">
           {GATES.map((g) => (
-            <div key={g.name} className="flex flex-col gap-1 border-b border-border px-4 py-3.5 last:border-b-0">
+            <div
+              key={g.name}
+              className="flex flex-col gap-1 border-b border-border px-4 py-3.5 last:border-b-0"
+            >
               <dt className="flex flex-wrap items-baseline gap-2">
                 <span className="text-[14.5px] font-semibold text-foreground">{g.name}</span>
                 <span className="font-mono text-[11.5px] text-muted-foreground">{g.term}</span>
@@ -163,7 +207,10 @@ export default function HelpPage(): ReactNode {
       <Section id="team" title="Claude's team">
         <ul className="m-0 grid list-none gap-2.5 p-0 sm:grid-cols-2">
           {AGENT_IDS.map((id) => (
-            <li key={id} className="flex flex-col gap-1 rounded-[14px] border border-border bg-card p-4">
+            <li
+              key={id}
+              className="flex flex-col gap-1 rounded-[14px] border border-border bg-card p-4"
+            >
               <span className="flex flex-wrap items-baseline gap-2">
                 <span className="text-[14.5px] font-semibold text-foreground">{agentName(id)}</span>
                 <span className="font-mono text-[11.5px] text-muted-foreground">{id}</span>
@@ -177,7 +224,10 @@ export default function HelpPage(): ReactNode {
       <Section id="voices" title="Who is speaking">
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {VOICES.map((v) => (
-            <li key={v.voice} className="flex items-start gap-3 text-[13.5px] leading-[21px] text-muted-foreground">
+            <li
+              key={v.voice}
+              className="flex items-start gap-3 text-[13.5px] leading-[21px] text-muted-foreground"
+            >
               <span className="mt-0.5 w-[132px] shrink-0">
                 <VoiceTag voice={v.voice} />
               </span>
@@ -190,7 +240,10 @@ export default function HelpPage(): ReactNode {
       <Section id="words" title="Words we use">
         <dl className="m-0 flex flex-col overflow-hidden rounded-[14px] border border-border bg-card">
           {GLOSSARY.map(([plain, term]) => (
-            <div key={plain} className="grid gap-0.5 border-b border-border px-4 py-2.5 last:border-b-0 sm:grid-cols-[240px_minmax(0,1fr)] sm:gap-4">
+            <div
+              key={plain}
+              className="grid gap-0.5 border-b border-border px-4 py-2.5 last:border-b-0 sm:grid-cols-[240px_minmax(0,1fr)] sm:gap-4"
+            >
               <dt className="text-[13.5px] font-medium text-foreground">{plain}</dt>
               <dd className="m-0 font-mono text-[12px] leading-5 text-muted-foreground">{term}</dd>
             </div>
@@ -199,10 +252,15 @@ export default function HelpPage(): ReactNode {
       </Section>
 
       <Section id="keys" title="Keyboard shortcuts">
-        <p className="m-0 text-[13px] text-muted-foreground">Shortcuts never fire while you type in a field.</p>
+        <p className="m-0 text-[13px] text-muted-foreground">
+          Shortcuts never fire while you type in a field.
+        </p>
         <dl className="m-0 flex flex-col overflow-hidden rounded-[14px] border border-border bg-card">
           {SHORTCUTS.map(([key, what]) => (
-            <div key={what} className="flex items-center gap-4 border-b border-border px-4 py-2.5 last:border-b-0">
+            <div
+              key={what}
+              className="flex items-center gap-4 border-b border-border px-4 py-2.5 last:border-b-0"
+            >
               <dt className="w-[120px] shrink-0 text-foreground">{key}</dt>
               <dd className="m-0 text-[13.5px] text-foreground">{what}</dd>
             </div>
@@ -212,8 +270,8 @@ export default function HelpPage(): ReactNode {
 
       <section className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-gold-soft px-4 py-3.5">
         <p className="m-0 min-w-0 flex-1 basis-60 text-[14px] leading-[22px] text-foreground">
-          <b className="font-semibold">Ready?</b> Paste the address of a site you own. Claude proposes the plan; nothing
-          runs until you approve it.
+          <b className="font-semibold">Ready?</b> Paste the address of a site you own. Claude
+          proposes the plan; nothing runs until you approve it.
         </p>
         <LinkButton href="/audits/new" variant="primary" icon="plus">
           Start an audit

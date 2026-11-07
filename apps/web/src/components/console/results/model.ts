@@ -32,7 +32,9 @@ export type LedgerItem = Ledger['items'][number];
 /** A finding plus how its negative control behaved (`replay.control`), for "the control behaved as expected". */
 export const findingDetailSchema = findingSchema.extend({
   replay: z
-    .object({ control: z.object({ status: z.number(), matched: z.boolean() }).nullable().default(null) })
+    .object({
+      control: z.object({ status: z.number(), matched: z.boolean() }).nullable().default(null),
+    })
     .nullable()
     .default(null),
 });
@@ -56,7 +58,9 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? 
 
 /** Severity first, then the oldest first (the API has no confidence on summaries). Results and Findings share it. */
 export function bySeverity(a: FindingSummary, b: FindingSummary): number {
-  return rank(a.severity) - rank(b.severity) || (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
+  return (
+    rank(a.severity) - rank(b.severity) || (a.createdAt ?? '').localeCompare(b.createdAt ?? '')
+  );
 }
 
 /**
@@ -72,7 +76,8 @@ export function splitFindings(run: Pick<Run, 'events' | 'findings'>): {
   );
   const proven: FindingSummary[] = [];
   const kept: FindingSummary[] = [];
-  for (const f of run.findings) (confirmed.has(f.id) || f.status === 'confirmed' ? proven : kept).push(f);
+  for (const f of run.findings)
+    (confirmed.has(f.id) || f.status === 'confirmed' ? proven : kept).push(f);
   return { proven: proven.sort(bySeverity), kept: kept.sort(bySeverity) };
 }
 
@@ -105,7 +110,12 @@ export function testCases(events: readonly RunEvent[]): CaseCounts {
   }
   const ended = (status: string): number => [...latest.values()].filter((s) => s === status).length;
   const executed = ended('executed');
-  return { executed, skipped: ended('skipped'), blocked: ended('blocked'), total: Math.max(total, ids.size, executed) };
+  return {
+    executed,
+    skipped: ended('skipped'),
+    blocked: ended('blocked'),
+    total: Math.max(total, ids.size, executed),
+  };
 }
 
 /**
@@ -120,7 +130,10 @@ export function headline(proven: readonly FindingSummary[]): string {
   // resultsHeadline of only-low severities is the bare count sentence, so it measures the advice that follows.
   const bare = (list: readonly string[]): string => resultsHeadline(list.map(() => 'low'));
   const advice = resultsHeadline(open).slice(bare(open).length);
-  return `${bare(all)}${open.length === 0 ? '' : advice}`.replace('high-severity', 'high\u2011severity');
+  return `${bare(all)}${open.length === 0 ? '' : advice}`.replace(
+    'high-severity',
+    'high\u2011severity',
+  );
 }
 
 const MS_PER_S = 1000;
@@ -163,14 +176,20 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[]
 
 /** "a, b and c". */
 const listWords = (parts: readonly string[]): string =>
-  parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
+  parts.length < 2
+    ? (parts[0] ?? '')
+    : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
 
 /**
  * Why a completed run ended, always as a sentence about Claude: the runner's reason (time limit, request budget, spend
  * cap), then how far it got through its plan when it did not run every case. Without a reason and with cases left,
  * Claude ended early, and the line says so instead of leaving the person to wonder.
  */
-function completedWhy(reason: unknown, cases: CaseCounts | undefined, run: Pick<Run, 'events' | 'gate2'>): string {
+function completedWhy(
+  reason: unknown,
+  cases: CaseCounts | undefined,
+  run: Pick<Run, 'events' | 'gate2'>,
+): string {
   const planDone = finishReason('');
   // A limit the runner named (time, requests, spend, turns); anything else reads as the plan's own end.
   const limit = finishReason(reason) === planDone ? null : finishReason(reason);
@@ -179,7 +198,9 @@ function completedWhy(reason: unknown, cases: CaseCounts | undefined, run: Pick<
   const ran = `ran ${cases.executed} of ${cases.total} planned test cases`;
   const rest = notRun(cases, run);
   const tail = rest.length === 0 ? '' : `; ${listWords(rest)}`;
-  return limit === null ? `Claude ended the audit early: it ${ran}${tail}` : `Claude ${limit} after it ${ran}${tail}`;
+  return limit === null
+    ? `Claude ended the audit early: it ${ran}${tail}`
+    : `Claude ${limit} after it ${ran}${tail}`;
 }
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
@@ -194,17 +215,26 @@ export function stopLine(
   switch (run.state) {
     case 'completed': {
       const done = run.events.findLast((e) => e.kind === 'run.completed');
-      return { tone: 'ok', text: `Finished in ${took} · ${completedWhy(done?.data.reason, cases, run)}` };
+      return {
+        tone: 'ok',
+        text: `Finished in ${took} · ${completedWhy(done?.data.reason, cases, run)}`,
+      };
     }
     case 'killed':
       return { tone: 'muted', text: `Stopped after ${took} · you stopped testing` };
     case 'failed': {
       const failed = run.events.findLast((e) => e.kind === 'run.failed');
       const why = str(failed?.data.reason);
-      return { tone: 'bad', text: `Stopped after ${took} · the run ended with an error${why === null ? '' : ` (${why})`}` };
+      return {
+        tone: 'bad',
+        text: `Stopped after ${took} · the run ended with an error${why === null ? '' : ` (${why})`}`,
+      };
     }
     default:
-      return { tone: 'muted', text: `Still testing · ${took} so far. These are the results until now.` };
+      return {
+        tone: 'muted',
+        text: `Still testing · ${took} so far. These are the results until now.`,
+      };
   }
 }
 
@@ -256,7 +286,10 @@ const pathOf = (url: string): string => {
  */
 export function decisions(input: {
   readonly run: Pick<Run, 'id' | 'events' | 'findings' | 'gate2'>;
-  readonly request: Pick<AssessmentRequest, 'id' | 'status' | 'approver' | 'decisionReason' | 'decidedAt'> | null;
+  readonly request: Pick<
+    AssessmentRequest,
+    'id' | 'status' | 'approver' | 'decisionReason' | 'decidedAt'
+  > | null;
   readonly ledger: readonly LedgerItem[];
   readonly viewerName: string;
   readonly gate2TimeoutS: number | null;
@@ -294,22 +327,64 @@ export function decisions(input: {
     const subject = { text: `${g.method.toUpperCase()} ${pathOf(g.url)}`, mono: true };
     const at = g.decidedAt ?? g.deadlineAt;
     if (g.status === 'approved') {
-      rows.push({ key: g.id, group: 'Request', verb: 'Allowed', subject, detail: [asRole, 'for this run'].filter(Boolean).join(' '), reason: g.decisionReason, by: who(g.decidedBy), at });
+      rows.push({
+        key: g.id,
+        group: 'Request',
+        verb: 'Allowed',
+        subject,
+        detail: [asRole, 'for this run'].filter(Boolean).join(' '),
+        reason: g.decisionReason,
+        by: who(g.decidedBy),
+        at,
+      });
     } else if (g.status === 'expired') {
       const total =
         input.gate2TimeoutS ??
-        (g.createdAt === undefined ? null : (Date.parse(g.deadlineAt) - Date.parse(g.createdAt)) / MS_PER_S);
-      const wait = total === null ? 'no answer in time' : `no answer in ${Math.max(1, Math.round(total / S_PER_MIN))} min`;
-      rows.push({ key: g.id, group: 'Request', verb: 'Denied automatically', subject, detail: [asRole, wait].filter(Boolean).join(', '), reason: null, by: null, at });
+        (g.createdAt === undefined
+          ? null
+          : (Date.parse(g.deadlineAt) - Date.parse(g.createdAt)) / MS_PER_S);
+      const wait =
+        total === null
+          ? 'no answer in time'
+          : `no answer in ${Math.max(1, Math.round(total / S_PER_MIN))} min`;
+      rows.push({
+        key: g.id,
+        group: 'Request',
+        verb: 'Denied automatically',
+        subject,
+        detail: [asRole, wait].filter(Boolean).join(', '),
+        reason: null,
+        by: null,
+        at,
+      });
     } else if (g.decidedBy === null) {
-      rows.push({ key: g.id, group: 'Request', verb: 'Denied automatically', subject, detail: 'the audit was stopping', reason: null, by: null, at });
+      rows.push({
+        key: g.id,
+        group: 'Request',
+        verb: 'Denied automatically',
+        subject,
+        detail: 'the audit was stopping',
+        reason: null,
+        by: null,
+        at,
+      });
     } else {
-      rows.push({ key: g.id, group: 'Request', verb: 'Denied', subject, detail: asRole, reason: g.decisionReason, by: who(g.decidedBy), at });
+      rows.push({
+        key: g.id,
+        group: 'Request',
+        verb: 'Denied',
+        subject,
+        detail: asRole,
+        reason: g.decisionReason,
+        by: who(g.decidedBy),
+        at,
+      });
     }
   }
 
   for (const item of ledger) {
-    const forRun = item.payload.runId === run.id || (item.targetType === 'run' && item.targetId === run.id);
+    const forRun =
+      item.payload.runId === run.id || (item.targetType === 'run' && item.targetId === run.id);
     if (!forRun) continue;
     if (item.action === 'finding.release' || item.action === 'finding.dismiss') {
       const release = item.action === 'finding.release';
@@ -324,7 +399,16 @@ export function decisions(input: {
         at: item.at,
       });
     } else if (item.action === 'run.kill') {
-      rows.push({ key: item.eventId, group: 'Stop', verb: 'Stopped testing', subject: null, detail: null, reason: null, by: who(item.actor.name), at: item.at });
+      rows.push({
+        key: item.eventId,
+        group: 'Stop',
+        verb: 'Stopped testing',
+        subject: null,
+        detail: null,
+        reason: null,
+        by: who(item.actor.name),
+        at: item.at,
+      });
     }
   }
 
@@ -335,7 +419,10 @@ export function decisions(input: {
         key: `auto-${e.seq}`,
         group: 'Release',
         verb: 'Released automatically',
-        subject: { text: id === null ? str(e.data.title) ?? 'a finding' : title(id), mono: false },
+        subject: {
+          text: id === null ? (str(e.data.title) ?? 'a finding') : title(id),
+          mono: false,
+        },
         detail: 'as you chose on the plan',
         reason: null,
         by: null,
@@ -361,5 +448,10 @@ const ACTIONS: Readonly<Record<string, string>> = {
 export const PLAN_REPLACED_REASON = 'Replaced by an edited plan';
 
 /** A ledger action in words; an action without words shows as itself. A replaced draft reads as the edit it was. */
-export const actionLabel = (action: string, payload: Readonly<Record<string, unknown>> = {}): string =>
-  action === 'gate1.reject' && payload.reason === PLAN_REPLACED_REASON ? 'Edited a plan (replaced the draft)' : (ACTIONS[action] ?? action);
+export const actionLabel = (
+  action: string,
+  payload: Readonly<Record<string, unknown>> = {},
+): string =>
+  action === 'gate1.reject' && payload.reason === PLAN_REPLACED_REASON
+    ? 'Edited a plan (replaced the draft)'
+    : (ACTIONS[action] ?? action);
