@@ -162,13 +162,22 @@ export default async function ResultsPage({
           </p>
           <h1
             id="results-h"
-            className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground [text-wrap:balance] sm:text-[30px] sm:leading-[38px]"
+            className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]"
           >
-            {live
+            {/* Each sentence is one unit: when the line is full it breaks between them, never inside the first. */}
+            {(live
               ? proven.length === 0
                 ? 'Claude is still testing. Nothing is proven yet.'
                 : `Claude has proved ${plural(proven.length, 'issue', 'issues')} so far.`
-              : headline(proven)}
+              : headline(proven)
+            )
+              .split(/(?<=\.) /)
+              .map((sentence, i) => (
+                <Fragment key={i}>
+                  {i === 0 ? null : ' '}
+                  <span className="inline-block">{sentence}</span>
+                </Fragment>
+              ))}
           </h1>
           <p className="m-0 text-[15px] leading-6 text-muted-foreground [&_b]:font-semibold [&_b]:text-foreground">
             {proven.length > 0 ? (

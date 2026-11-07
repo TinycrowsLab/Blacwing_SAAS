@@ -4,14 +4,14 @@
 // Enter, runs of spaces folded to one, saved through the same action /welcome uses), and the theme. The
 // administrator's settings are read-only on the page.
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState } from 'react';
 
 import { nameWorkspaceAction } from '../../../app/welcome/actions';
 import { WORKSPACE_NAME_MAX, WORKSPACE_NAME_MIN } from '../../../lib/workspace-name';
 import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { useDarkTheme } from '../theme-toggle';
-import { useNudge } from './nudge';
+import { useSettledAction } from './triage';
 
 /** "  Tinycrows   Security " is saved as "Tinycrows Security". */
 const tidy = (name: string): string => name.trim().replace(/\s+/g, ' ');
@@ -205,10 +205,8 @@ export function RefreshButton({
   readonly className?: string;
 }) {
   const router = useRouter();
-  const [busy, start] = useTransition();
-  const nudge = useNudge();
-  const waiting = useRef(false);
-  waiting.current = busy;
+  // Settles when React has committed the refreshed page (not when a render that may still suspend has run).
+  const { settling: busy, run } = useSettledAction();
   return (
     <button
       type="button"
@@ -216,11 +214,10 @@ export function RefreshButton({
       aria-busy={busy || undefined}
       className={className}
       onClick={() => {
-        waiting.current = true;
-        start(() => {
-          router.refresh();
-        });
-        nudge(() => !waiting.current);
+        void run(() => {
+        router.refresh();
+        return Promise.resolve();
+      });
       }}
     >
       {busy ? busyLabel : label}

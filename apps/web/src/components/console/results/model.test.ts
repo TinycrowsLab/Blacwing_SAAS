@@ -106,7 +106,7 @@ describe('duration and stopLine', () => {
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [gate2('a', 'denied')] }, 0, { executed: 6, skipped: 0, blocked: 2, total: 8 })
         .text,
     ).toBe(
-      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because you didn\u2019t allow the request they needed',
+      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was denied',
     );
     expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe('Stopped after 18m 12s · you stopped testing');
     expect(stopLine({ ...base, state: 'failed', events: [ev(1, 'run.failed', { reason: 'model_error' })], gate2: [] }, 0).tone).toBe('bad');

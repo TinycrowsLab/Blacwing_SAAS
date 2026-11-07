@@ -149,7 +149,7 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[]
     b === 0
       ? null
       : denied
-        ? `${b} ${were(b)} skipped because you didn\u2019t allow the request ${b === 1 ? 'it' : 'they'} needed`
+        ? `${b} ${were(b)} skipped because the request ${b === 1 ? 'it' : 'they'} needed was denied`
         : refused
           ? `${b} ${were(b)} stopped by the safety rules`
           : `${b} could not run`;

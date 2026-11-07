@@ -9,6 +9,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   startTransition,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -52,13 +53,17 @@ export function useSettledAction(): { settling: boolean; run: (action: () => Pro
       w.done();
     }
   }, [settling]);
-  const run = (action: () => Promise<void>): Promise<void> =>
-    new Promise((resolve) => {
-      const w = { seen: false, done: resolve };
-      waiting.current = w;
-      start(action);
-      nudge(() => waiting.current !== w);
-    });
+  // Stable, so a caller may keep it in an effect's dependencies.
+  const run = useCallback(
+    (action: () => Promise<void>): Promise<void> =>
+      new Promise((resolve) => {
+        const w = { seen: false, done: resolve };
+        waiting.current = w;
+        start(action);
+        nudge(() => waiting.current !== w);
+      }),
+    [nudge],
+  );
   return { settling, run };
 }
 
