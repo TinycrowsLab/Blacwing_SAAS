@@ -1032,8 +1032,8 @@ function merge(seen: readonly InboxItem[], items: readonly InboxItem[]): readonl
 }
 
 /**
- * The inbox's order, recomputed when the server's list changes (never on a click, so nothing slides under the cursor
- * while the person decides): audits by their soonest open deadline; in each, open requests soonest first, then the
+ * The inbox's order, recomputed when a new request arrives (never on a decision or a deadline, so nothing slides under
+ * the cursor): audits by their soonest open deadline; in each, open requests soonest first, then the
  * settled ones as receipts. Exported for the unit test.
  */
 export function inboxOrder(
@@ -1163,8 +1163,8 @@ const auditLabel = (i: InboxItem): string =>
 /**
  * The inbox's Gate 2 section, grouped by audit. Only the soonest open request is unfolded (plus any the person opens),
  * like one question at a time, and Deny has the keyboard when the page opens; the footnote shows once. A request
- * decided here keeps its full receipt in place until the list refreshes; one closed elsewhere or by the deadline is a
- * one-line receipt below the open ones. D and A act on the open card in view (the one with the ring).
+ * decided here keeps its full receipt in place; one closed elsewhere or by the deadline is a one-line receipt. Settled
+ * ones sink below the open ones when a new request arrives. D and A act on the open card in view (the one with the ring).
  */
 export function Gate2Inbox({
   items,
@@ -1179,15 +1179,21 @@ export function Gate2Inbox({
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const listed = new Set(items.map((i) => i.gate2.id));
   const isOpen = (i: InboxItem): boolean => !closed.has(i.gate2.id) && listed.has(i.gate2.id);
-  const [groups, setGroups] = useState(() =>
-    inboxOrder(items, (i) => decidedHere(i.gate2.id) === null),
+  const ids = (groups: readonly (readonly InboxItem[])[]): readonly (readonly string[])[] =>
+    groups.map((g) => g.map((i) => i.gate2.id));
+  const [order, setOrder] = useState(() =>
+    ids(inboxOrder(items, (i) => decidedHere(i.gate2.id) === null)),
   );
   if (items !== prev) {
     const merged = merge(seen, items);
     setPrev(items);
     setSeen(merged);
-    setGroups(inboxOrder(merged, isOpen));
+    // Re-sorted only when a new request arrives: a decision or a deadline never moves a card under the cursor.
+    const known = new Set(seen.map((i) => i.gate2.id));
+    if (items.some((i) => !known.has(i.gate2.id))) setOrder(ids(inboxOrder(merged, isOpen)));
   }
+  const byId = new Map(seen.map((i) => [i.gate2.id, i]));
+  const groups = order.map((g) => g.flatMap((id) => byId.get(id) ?? []));
   // A request with a reason typed before a reload opens again, so the draft is where the person left it.
   useEffect(() => {
     const drafts = seen.filter((i) => readDraft(i.gate2.id) !== '').map((i) => i.gate2.id);
@@ -1200,7 +1206,9 @@ export function Gate2Inbox({
   const onClosed = (id: string): void => {
     setClosed((s) => (s.has(id) ? s : new Set(s).add(id)));
   };
-  const first = groups.flat().find((i) => isOpen(i) && decidedHere(i.gate2.id) === null)?.gate2.id;
+  // The one unfolded card is the open request with the soonest deadline (the server lists them soonest first), wherever
+  // it sits, so the most urgent request is never the one left folded.
+  const first = items.find((i) => isOpen(i) && decidedHere(i.gate2.id) === null)?.gate2.id;
   // Deny takes the keyboard once, on the card unfolded when the page opened, never on one that unfolds after a decision.
   const focusFirst = useRef(first);
   if (seen.length === 0) return null;
