@@ -59,11 +59,11 @@ describe('plan read-back', () => {
   });
 
   it('names a decision from the last path segment that is not an id', () => {
-    expect(decisionTitle('POST', 'https://s.example.com/rest/basket/7/checkout')).toBe('Allow a checkout request?');
-    expect(decisionTitle('PUT', 'https://s.example.com/api/orders/42')).toBe('Allow an orders request?');
+    expect(decisionTitle('POST', 'https://s.example.com/rest/basket/7/checkout')).toBe('Allow a request to checkout?');
+    expect(decisionTitle('PUT', 'https://s.example.com/api/orders/42')).toBe('Allow a request to orders?');
     expect(decisionTitle('POST', 'https://s.example.com/')).toBe('Allow a POST request?');
-    expect(decisionTitle('POST', 'https://s.example.com/api/Users')).toBe('Allow a users request?');
-    expect(decisionTitle('POST', 'https://s.example.com/file-upload')).toBe('Allow a file upload request?');
-    expect(decisionTitle('POST', 'https://s.example.com/upload')).toBe('Allow an upload request?');
+    expect(decisionTitle('POST', 'https://s.example.com/api/Users')).toBe('Allow a request to users?');
+    expect(decisionTitle('POST', 'https://s.example.com/file-upload')).toBe('Allow a request to file upload?');
+    expect(decisionTitle('POST', 'https://s.example.com/upload')).toBe('Allow a request to upload?');
   });
 });

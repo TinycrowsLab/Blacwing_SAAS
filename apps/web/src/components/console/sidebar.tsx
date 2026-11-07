@@ -411,8 +411,8 @@ function SidebarBody({
                 href={`/audits/${p.id}`}
                 current={path === `/audits/${p.id}`}
                 dot="gold"
-                title={`Approve the plan for ${p.assetName}`}
-                sub="Waiting for your approval"
+                title={p.assetName}
+                sub="Plan ready for your approval"
               />
             ))}
             {data.releases.map((f) => (

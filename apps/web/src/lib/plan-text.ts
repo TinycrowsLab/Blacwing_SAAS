@@ -110,7 +110,10 @@ export function resultsHeadline(severities: readonly string[]): string {
 
 const ID_SEGMENT = /^(\d+|[0-9a-f-]{16,})$/i;
 
-/** "Allow a checkout request?" from `POST /rest/basket/7/checkout` (the last path segment that is not an id). */
+/**
+ * "Allow a request to checkout?" from `POST /rest/basket/7/checkout` (the last path segment that is not an id). The
+ * segment is often a plural collection ("users", "orders"), so it is the object of "to", never an adjective.
+ */
 export function decisionTitle(method: string, url: string): string {
   let path = url;
   try {
@@ -124,7 +127,5 @@ export function decisionTitle(method: string, url: string): string {
     ?.replace(/[^a-z0-9]+/gi, ' ')
     .trim()
     .toLowerCase();
-  const noun = word === undefined || word === '' ? method.toUpperCase() : word;
-  // "an" before a vowel sound: "an order", "an upload", but "a users", "a unit".
-  return `Allow ${/^([aeio]|u(?!s|ni|r))/i.test(noun) ? 'an' : 'a'} ${noun} request?`;
+  return word === undefined || word === '' ? `Allow a ${method.toUpperCase()} request?` : `Allow a request to ${word}?`;
 }
