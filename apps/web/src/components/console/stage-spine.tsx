@@ -72,7 +72,11 @@ export function StageSpine({
               <span className={s.state === 'current' ? 'font-semibold text-foreground' : s.state === 'done' || s.state === 'active' ? 'text-foreground' : ''}>
                 {s.label}
               </span>
-              {detail === '' ? null : <small className="text-[11.5px] font-normal text-muted-foreground">{detail}</small>}
+              {/* Narrow desktops keep the row on one line: finished stages drop their counts there (the side panel and
+                  the tabs carry them), the approval keeps its "by whom, when". */}
+              {detail === '' ? null : (
+                <small className={`text-[11.5px] font-normal text-muted-foreground ${s.state === 'done' && i > 0 ? 'hidden min-[1360px]:inline' : ''}`}>{detail}</small>
+              )}
             </>
           );
           return (
@@ -85,7 +89,7 @@ export function StageSpine({
                 // One rule for every connector: ink only between two stages the run reached, else a grey line.
                 <span
                   aria-hidden="true"
-                  className={`mx-2.5 h-[1.5px] min-w-3 flex-1 ${reached(s) && reached(stages[i - 1]) ? 'bg-text' : 'bg-border-strong'}`}
+                  className={`mx-2 h-[1.5px] min-w-3 flex-1 ${reached(s) && reached(stages[i - 1]) ? 'bg-text' : 'bg-border-strong'}`}
                 />
               ) : null}
               {s.key === 'review' && resultsHref !== null ? (

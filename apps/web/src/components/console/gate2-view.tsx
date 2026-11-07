@@ -78,7 +78,11 @@ const asWho = (role: string | null): string =>
 export const grantScope = (gate2: { method: string; url: string }, role: string | null): string =>
   `Allowing covers every ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again.`;
 
-/** The latest closed request in the same audit for the same method, path and role (the runner asks again after a no). */
+/**
+ * The latest closed request in the same audit for the same method, path and role: decided before this one was raised
+ * (the runner asks again after a no) or while it waited (two agents asked at once). The grant is per key, so allowing
+ * this one also opens what was denied there.
+ */
 export function earlierDecision(
   gate2: Gate2 | Gate2Detail,
   history: readonly Gate2[],
@@ -90,7 +94,6 @@ export function earlierDecision(
   return (
     history
       .filter((g) => g.id !== gate2.id && g.status !== 'pending' && key(g) === mine)
-      .filter((g) => gate2.createdAt === undefined || at(g) <= Date.parse(gate2.createdAt) + 1000)
       .sort((a, b) => at(b) - at(a))[0] ?? null
   );
 }
@@ -239,13 +242,13 @@ function Earlier({
       <span>
         {earlier.status === 'approved' ? (
           <>
-            {who ?? 'Someone'} allowed this same method, path and role at {time}. Claude is asking
-            again.
+            {who ?? 'Someone'} already allowed this same method, path and role at {time}. It stays
+            allowed for this run, whatever you answer here.
           </>
         ) : (
           <>
-            {who === null ? 'Denied automatically' : `${who} denied`} this same method, path and role
-            at {time}
+            {who === null ? 'Denied automatically' : `${who} denied`} this same method, path and
+            role at {time}
             {sameAsker ? '' : asked}.{' '}
             <span className="text-foreground">
               Allowing now opens it to every agent
@@ -284,8 +287,7 @@ function DecisionReceipt({
   );
   const human =
     gate2.status === 'approved' || (gate2.status === 'denied' && gate2.decidedBy !== null);
-  const who =
-    gate2.decidedBy === null || gate2.decidedBy === viewerName ? 'you' : gate2.decidedBy;
+  const who = gate2.decidedBy === null || gate2.decidedBy === viewerName ? 'you' : gate2.decidedBy;
   // `denied` without a person: the audit stopped. `expired`, or still `pending` past the deadline: nobody answered.
   const stopped = gate2.status === 'denied';
   const title = human ? (
@@ -611,7 +613,10 @@ function PageReceipt({
         <RequestBox gate2={gate2} body={body} />
         <ClaudeReason reason={gate2.reason} />
       </section>
-      <nav aria-label="What next" className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+      <nav
+        aria-label="What next"
+        className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3"
+      >
         {next.decision === null ? null : (
           <Link href={next.decision.href} className={followClass(true)}>
             {next.decision.label}
@@ -627,7 +632,7 @@ function PageReceipt({
         >
           All decisions
         </Link>
-        {next.later === null || (live && next.decision === null) ? null : (
+        {next.later === null || live ? null : (
           <Link
             href={next.later.href}
             className={`inline-flex min-h-11 items-center justify-center text-[13px] md:ml-auto ${LINK}`}
@@ -1086,7 +1091,10 @@ function AuditHeader({
             </>
           )}
           {twin ? (
-            <span className="font-mono text-[11.5px]"> · #{item.gate2.runId.slice(0, SHORT_ID)}</span>
+            <span className="font-mono text-[11.5px]">
+              {' '}
+              · #{item.gate2.runId.slice(0, SHORT_ID)}
+            </span>
           ) : null}
         </p>
         <div className="flex items-center gap-3">
@@ -1122,7 +1130,10 @@ function AuditHeader({
               onClick={() => {
                 setConfirming(true);
               }}
-              className={buttonClass('ghost', 'h-8 px-2.5 text-[12.5px] max-sm:ml-auto max-sm:h-11')}
+              className={buttonClass(
+                'ghost',
+                'h-8 px-2.5 text-[12.5px] max-sm:ml-auto max-sm:h-11',
+              )}
             >
               Deny all {openIds.length}…
             </button>
@@ -1161,7 +1172,9 @@ export function Gate2Inbox({
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const listed = new Set(items.map((i) => i.gate2.id));
   const isOpen = (i: InboxItem): boolean => !closed.has(i.gate2.id) && listed.has(i.gate2.id);
-  const [groups, setGroups] = useState(() => inboxOrder(items, (i) => decidedHere(i.gate2.id) === null));
+  const [groups, setGroups] = useState(() =>
+    inboxOrder(items, (i) => decidedHere(i.gate2.id) === null),
+  );
   if (items !== prev) {
     const merged = merge(seen, items);
     setPrev(items);
@@ -1174,7 +1187,9 @@ export function Gate2Inbox({
     if (drafts.length > 0) setExpanded((s) => new Set([...s, ...drafts]));
     // Once, after mount: storage is the browser's.
   }, []);
-  const open = items.filter((i) => !closed.has(i.gate2.id) && decidedHere(i.gate2.id) === null).length;
+  const open = items.filter(
+    (i) => !closed.has(i.gate2.id) && decidedHere(i.gate2.id) === null,
+  ).length;
   const onClosed = (id: string): void => {
     setClosed((s) => (s.has(id) ? s : new Set(s).add(id)));
   };

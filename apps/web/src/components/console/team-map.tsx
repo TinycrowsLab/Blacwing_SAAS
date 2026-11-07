@@ -101,9 +101,9 @@ function Diamond({ label, term, who, done }: { readonly label: string; readonly 
 }
 
 /** A connector. `wide` ones keep room for a count ("3 proven") from the start, so a label appearing moves nothing. */
-function Arrow({ label, wide = false }: { readonly label?: string | undefined; readonly wide?: boolean }) {
+function Arrow({ label, wide = false, className = '' }: { readonly label?: string | undefined; readonly wide?: boolean; readonly className?: string }) {
   return (
-    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-12' : 'w-4'}`}>
+    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-12' : 'w-4'} ${className}`}>
       <small className="whitespace-nowrap text-[10.5px] text-muted-foreground">{label ?? '\u00a0'}</small>
       <span aria-hidden="true" className="relative h-[1.5px] w-full bg-border-strong">
         <span className="absolute -right-px -top-[3px] border-y-[3.5px] border-l-[5px] border-y-transparent border-l-border-strong" />
@@ -118,7 +118,7 @@ function Fan({ rows, reverse = false }: { readonly rows: number; readonly revers
   const ys = Array.from({ length: rows }, (_, i) => ((i + 0.5) / Math.max(rows, 1)) * 100);
   const d = ys.map((y) => (reverse ? `M0 ${y} C13 ${y} 13 50 26 50` : `M0 50 C13 50 13 ${y} 26 ${y}`)).join(' ');
   return (
-    <svg aria-hidden="true" viewBox="0 0 26 100" preserveAspectRatio="none" className="h-full w-5 shrink-0 self-stretch">
+    <svg aria-hidden="true" viewBox="0 0 26 100" preserveAspectRatio="none" className="h-full w-4 shrink-0 self-stretch">
       <path d={d} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" style={{ stroke: 'var(--border2)' }} />
     </svg>
   );
@@ -218,8 +218,12 @@ export function TeamMap({
     </div>
   ) : (
     <div className="flex items-center overflow-x-auto p-[4px] [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]">
-      <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
-      <Arrow />
+      {/* Narrow desktops: the approval (also on the spine) and the report count (also in the side panel) give way, so
+          the agents keep their full names without a sideways scroll. */}
+      <span className="contents max-[1359px]:hidden">
+        <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
+        <Arrow />
+      </span>
       {team.planner === null ? null : (
         <div className="w-[108px] shrink-0">
           <NodeButton node={team.planner} mono="orchestrator" stacked selected={filter === team.planner.id} onSelect={select} />
@@ -245,8 +249,8 @@ export function TeamMap({
       )}
       <Arrow wide label={proven} />
       <Diamond label="Your review" term="Gate 3: triage and release" who={gate3} done={team.autoReleased && team.proven > 0} />
-      <Arrow />
-      <div className="shrink-0 rounded-[10px] border border-border bg-surface px-2.5 py-1.5 text-[12px] leading-4">
+      <Arrow className="max-[1359px]:hidden" />
+      <div className="max-w-[74px] shrink-0 max-[1359px]:hidden rounded-[10px] border border-border bg-surface px-2.5 py-1.5 text-[12px] leading-4">
         <b className="font-semibold">Report</b>
         <div className="text-[11px] text-muted-foreground">{report}</div>
       </div>

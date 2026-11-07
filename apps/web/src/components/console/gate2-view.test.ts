@@ -73,21 +73,21 @@ describe('Gate 2 memory and plain words', () => {
     });
     expect(earlierDecision(now, [now, denied, other])?.id).toBe('g1');
     expect(earlierDecision(now, [now, other])).toBeNull();
-    // A decision made after this request was raised is not "earlier".
+    // Two agents asked at once: a no given while this one waited still counts (allowing this opens that one too).
     expect(
       earlierDecision(now, [
         row({ id: 'g3', status: 'denied', decidedAt: '2026-11-06T13:18:00.000Z' }),
-      ]),
-    ).toBeNull();
+      ])?.id,
+    ).toBe('g3');
   });
 
   it('says what an allow really covers: every agent, any body, no further question', () => {
     expect(grantScope({ method: 'POST', url: 'http://x.test/api/Users?x=1' }, null)).toBe(
       "Allowing covers every POST /api/Users sent without signing in, from any agent and with any body, until this audit ends. Claude won't ask about it again.",
     );
-    expect(grantScope({ method: 'POST', url: 'http://x.test/rest/basket' }, 'customer_a')).toContain(
-      'sent as customer_a',
-    );
+    expect(
+      grantScope({ method: 'POST', url: 'http://x.test/rest/basket' }, 'customer_a'),
+    ).toContain('sent as customer_a');
   });
 });
 

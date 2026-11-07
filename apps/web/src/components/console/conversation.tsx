@@ -42,6 +42,8 @@ const HOLD_GAP_PX = 12;
 const CARD_SEEN_PX = 56;
 /** A click this soon after "Show n more" lands on a row that slid under the pointer: ignore it. */
 const TOGGLE_GUARD_MS = 450;
+/** The host lines that end a run; each carries the "See results" next step. */
+const END_KINDS: ReadonlySet<string> = new Set(['run.completed', 'run.killed', 'run.failed']);
 
 const noSubscribe = (): (() => void) => () => undefined;
 /** False during the server render and hydration, true after: times are formatted in the viewer's own clock. */
@@ -311,7 +313,7 @@ function HostLine({
 }) {
   // The run's last line carries the one next step (spec §5.2): gold for a finished run, quiet for a stopped one.
   const finished = item.kind === 'run.completed';
-  const end = finished || item.kind === 'run.killed' || item.kind === 'run.failed';
+  const end = END_KINDS.has(item.kind);
   return (
     <div
       className={`flex items-start gap-2.5 text-[12.5px] leading-[19px] ${finished ? 'rounded-[12px] border border-gold-line bg-gold-soft p-3' : end ? 'rounded-[12px] border border-border bg-surface-2 p-3' : ''}`}
@@ -558,6 +560,9 @@ export const Conversation = memo(function Conversation({
         : `${hidden.length === 1 ? 'A decision waits' : `${hidden.length} decisions wait`} for you · Show`;
   // The decision pill is the more important target: never both, so "Jump to latest" never points past a decision.
   const jump = !(follow && !below) && items.length > 0 && decisionPill === null;
+  // The run's last line carries the gold next step; while it is scrolled out of view (say, after Stop held the view at
+  // a decision's receipt) the strip carries it instead, so a finished or stopped run always shows exactly one.
+  const ended = resultsHref !== null && items.some((i) => i.type === 'host' && END_KINDS.has(i.kind));
   const pills = !editing && (decisionPill !== null || jump);
   const pill =
     'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus';
@@ -637,6 +642,12 @@ export const Conversation = memo(function Conversation({
               {decisionPill}
             </button>
           )}
+          {jump && ended ? (
+            <Link href={resultsHref} className={buttonClass('primary', 'h-9 px-4')}>
+              See results
+              <Icon name="arrow" size={14} />
+            </Link>
+          ) : null}
           {jump ? (
             <button
               type="button"

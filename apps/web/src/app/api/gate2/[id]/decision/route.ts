@@ -51,7 +51,9 @@ export async function POST(
       {
         code: 'invalid_body',
         ...(tooLong
-          ? { message: `the reason is longer than ${MAX_REASON} characters. Shorten it and allow again.` }
+          ? {
+              message: `the reason is longer than ${MAX_REASON} characters. Shorten it and allow again.`,
+            }
           : {}),
       },
       { status: 400, headers: noStore },
