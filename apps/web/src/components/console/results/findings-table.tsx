@@ -120,7 +120,7 @@ function FilterRow({
 const SELECT_CLASS =
   'h-9 min-w-0 max-w-full flex-1 cursor-pointer appearance-none truncate rounded-[10px] border pl-3 pr-8 text-[13px] focus-visible:border-gold-ink focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus sm:w-[260px] sm:flex-none';
 /** The menu's chevron (a data URI cannot follow the theme, so it uses a mid grey that reads on both). */
-const CHEVRON = {
+export const CHEVRON = {
   backgroundImage:
     "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
   backgroundRepeat: 'no-repeat',

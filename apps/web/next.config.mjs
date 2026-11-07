@@ -44,8 +44,9 @@ const config = {
     );
   },
   // `pnpm typecheck` (tsc -b) and `pnpm lint` are the gates. Next's own build-time pass cannot run here: it adds
-  // .next/types to a project whose rootDir is src (the repo tsconfig policy, scripts/check-tsconfig.mjs).
-  typescript: { ignoreBuildErrors: true },
+  // .next/types to the project it is given, and tsconfig.json's rootDir is src (the repo tsconfig policy,
+  // scripts/check-tsconfig.mjs). So Next gets its own tsconfig.next.json to edit, and tsc -b never sees .next.
+  typescript: { ignoreBuildErrors: true, tsconfigPath: 'tsconfig.next.json' },
   eslint: { ignoreDuringBuilds: true },
   // The workspace uses NodeNext-style `./x.js` specifiers for `.ts` sources.
   webpack(/** @type {WebpackConfig} */ webpackConfig) {

@@ -23,8 +23,7 @@
   },
   "include": [
     "src",
-    "src/**/*.json",
-    ".next/types/**/*.ts"
+    "src/**/*.json"
   ],
   "references": [
     {

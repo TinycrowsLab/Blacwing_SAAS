@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { runAgainAction } from './actions';
+import { CHEVRON } from './findings-table';
 import { useNudge } from './nudge';
 
 const FORMATS = [
@@ -145,7 +146,8 @@ export function ReportDownload({
                   const next = offered.find((f) => f.key === e.target.value);
                   if (next !== undefined) setFormat(next.key);
                 }}
-                className="h-7 cursor-pointer rounded-md border border-border bg-card px-1.5 text-[11.5px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+                style={CHEVRON}
+                className="h-7 cursor-pointer appearance-none rounded-md border border-border bg-card pl-2 pr-7 text-[11.5px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
               >
                 {offered.map((f) => (
                   <option key={f.key} value={f.key}>
