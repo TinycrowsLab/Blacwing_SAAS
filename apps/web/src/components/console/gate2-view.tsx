@@ -8,9 +8,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { Chip, Icon, InlineMessage, Receipt } from './design';
+import { buttonClass, Chip, Icon, InlineMessage, Receipt } from './design';
 import { Countdown, PendingButton, useCountdown } from './design-client';
 import {
+  announceDecided,
   DECIDED_EVENT,
   decidedHere,
   fetchGate2,
@@ -64,6 +65,9 @@ export const gate2Question = (role: string | null): string =>
 export const plainWhy = (text: string): string =>
   text.replace(/\bactive-safe\b/g, '“Probe gently”').replace(/\bpassive\b/g, '“Look, don’t touch”');
 
+/** The path the grant is keyed on: no query (worker scope.ts gateKey). */
+const grantPath = (url: string): string => pathOf(url).split('?')[0] ?? url;
+
 const asWho = (role: string | null): string =>
   role === null ? 'sent without signing in' : `sent as ${role}`;
 
@@ -72,7 +76,7 @@ const asWho = (role: string | null): string =>
  * body, no further question. Said before the person commits, because the card shows one body and one reason.
  */
 export const grantScope = (gate2: { method: string; url: string }, role: string | null): string =>
-  `Allowing covers every ${gate2.method} ${pathOf(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again.`;
+  `Allowing covers every ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again.`;
 
 /** The latest closed request in the same audit for the same method, path and role (the runner asks again after a no). */
 export function earlierDecision(
@@ -333,7 +337,7 @@ function DecisionReceipt({
         title={title}
         detail={detail(
           gate2.status === 'approved'
-            ? `Claude may now send any ${gate2.method} ${pathOf(gate2.url)} ${asWho(role)}, from any agent, until the run ends.`
+            ? `Claude may now send any ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent, until the run ends.`
             : 'Not sent. Claude moves on to its next test.',
         )}
         hash={hash}
@@ -530,12 +534,20 @@ function DeadlinePanel({
 /** A request waiting in the inbox, folded to one line so only one question is open at a time. */
 function CompactRow({ gate2, onExpand }: { readonly gate2: Card; readonly onExpand: () => void }) {
   const created = gate2.createdAt === undefined ? {} : { createdAt: gate2.createdAt };
+  const clock = useCountdown(gate2.deadlineAt, gate2.createdAt);
+  // The folded row shows urgency too (not only the open card): the frame turns warn under 60 s and bad under 15 s.
+  const frame =
+    clock?.tone === 'bad'
+      ? 'border-bad shadow-[0_0_0_1px_var(--bad)]'
+      : clock?.tone === 'warn'
+        ? 'border-warn shadow-[0_0_0_1px_var(--warn)]'
+        : 'border-gold-line';
   return (
     <button
       type="button"
       aria-expanded={false}
       onClick={onExpand}
-      className="flex min-h-14 w-full items-center gap-3 rounded-[14px] border border-gold-line bg-card px-4 py-2.5 text-left hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+      className={`flex min-h-14 w-full items-center gap-3 rounded-[14px] border bg-card px-4 py-2.5 text-left hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${frame}`}
     >
       <Icon name="hand" size={15} className="shrink-0 text-gold-ink" />
       <span className="flex min-w-0 flex-1 flex-col">
@@ -556,13 +568,86 @@ function CompactRow({ gate2, onExpand }: { readonly gate2: Card; readonly onExpa
   );
 }
 
+const followClass = (lead: boolean): string =>
+  lead
+    ? buttonClass('primary', 'h-11 w-full justify-center rounded-[12px] md:w-auto')
+    : buttonClass('secondary', 'h-11 w-full justify-center rounded-[12px] md:w-auto');
+
+/**
+ * The full page once decided: the receipt, what was asked (so the screen still says what the answer was about) and the
+ * next step. Another request with a deadline leads; else, while the audit runs, the way back to it; a plan or a release
+ * is only a quiet link, so a live audit never loses the person to triage.
+ */
+function PageReceipt({
+  gate2,
+  receipt,
+  question,
+  body,
+  audit,
+  next,
+}: {
+  readonly gate2: Card;
+  readonly receipt: ReactNode;
+  readonly question: string;
+  readonly body: string | null;
+  readonly audit: AuditContext | null;
+  readonly next: { decision: NextStep | null; later: NextStep | null };
+}) {
+  const runLink = `/runs/${gate2.runId}`;
+  const live = audit?.live ?? true;
+  return (
+    <div className="flex max-w-[880px] flex-col gap-4 max-md:-mx-4 max-md:-mt-5 max-md:min-h-[calc(100dvh-52px)] max-md:bg-surface-2 max-md:px-4 max-md:pb-6 max-md:pt-5">
+      <h1 className="m-0 text-[22px] font-semibold leading-[30px] text-foreground md:hidden">
+        {audit?.assetName ?? 'Request during an audit'}
+      </h1>
+      {receipt}
+      <section className="rounded-2xl border border-border bg-card px-4 py-3.5">
+        <span className="block text-[11.5px] text-muted-foreground">
+          What you were asked · {agentName(gate2.agent)}
+        </span>
+        <h2 className="m-0 mt-0.5 text-[15px] font-semibold leading-[22px] text-foreground">
+          {question}
+        </h2>
+        <RequestBox gate2={gate2} body={body} />
+        <ClaudeReason reason={gate2.reason} />
+      </section>
+      <nav aria-label="What next" className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+        {next.decision === null ? null : (
+          <Link href={next.decision.href} className={followClass(true)}>
+            {next.decision.label}
+            <Icon name="right" size={15} className="ml-1" />
+          </Link>
+        )}
+        <Link href={runLink} className={followClass(next.decision === null)}>
+          {live ? 'Back to the live audit' : 'Open the audit'}
+        </Link>
+        <Link
+          href="/decisions"
+          className={`inline-flex min-h-11 items-center justify-center text-[13px] md:ml-2 ${LINK}`}
+        >
+          All decisions
+        </Link>
+        {next.later === null || (live && next.decision === null) ? null : (
+          <Link
+            href={next.later.href}
+            className={`inline-flex min-h-11 items-center justify-center text-[13px] md:ml-auto ${LINK}`}
+          >
+            {next.later.label}
+          </Link>
+        )}
+      </nav>
+    </div>
+  );
+}
+
 /**
  * `variant="inline"`: the card in the conversation and the inbox. `variant="page"`: the full decision page (a deadline
  * panel beside the card on desktop; prototype 06 on phones: big clock, sticky footer, 56 px Deny). `body` and `asRole`
  * come from the gate2.requested event; without `asRole` the role is read from the request's gate key, which carries
  * the same value. `audit` names the asking audit (the page); `history` is the audit's other requests, so a second ask
  * for the same method, path and role says what was decided before; `gone` says the inbox's last refresh no longer
- * lists it as pending; `compact` folds a waiting request to one line until `onExpand`.
+ * lists it as pending; `compact` folds a waiting request to one line until `onExpand`; `line` shows a request closed
+ * elsewhere as a one-line receipt; `autoFocus` puts the keyboard on Deny once (the page does by default).
  */
 export function Gate2Card({
   gate2,
@@ -574,7 +659,9 @@ export function Gate2Card({
   history = [],
   gone = false,
   compact = false,
+  line = false,
   footnote = true,
+  autoFocus,
   onExpand,
   onClosed,
 }: {
@@ -587,12 +674,18 @@ export function Gate2Card({
   readonly history?: readonly Gate2[];
   readonly gone?: boolean;
   readonly compact?: boolean;
+  readonly line?: boolean;
   readonly footnote?: boolean;
+  readonly autoFocus?: boolean;
   readonly onExpand?: () => void;
   /** Called once the card shows its receipt (decided here, elsewhere, or by the deadline). */
   readonly onClosed?: (id: string) => void;
 }) {
-  const [decided, setDecided] = useState<{ gate2: Gate2Detail; already: boolean } | null>(null);
+  // Decided in this tab already (another page, then Back or the sidebar link): the receipt at once, never the question.
+  const [decided, setDecided] = useState<{ gate2: Gate2Detail; already: boolean } | null>(() => {
+    const here = decidedHere(gate2.id);
+    return here === null ? null : { gate2: here, already: false };
+  });
   const [server, setServer] = useState<Gate2Detail | null>(null);
   const [checks, setChecks] = useState(0);
   const [due, setDue] = useState(false);
@@ -616,11 +709,13 @@ export function Gate2Card({
   const id = gate2.id;
   const earlier = earlierDecision(gate2, history);
   const wasOpen = useRef(!closed);
+  // Decided by a click on this card (not restored from the tab's memory): the receipt takes the keyboard.
+  const [clicked, setClicked] = useState(false);
 
   // The buttons that had the focus are gone once decided: keep the keyboard on the receipt instead of the page top.
   useEffect(() => {
-    if (decided !== null) receiptRef.current?.focus({ preventScroll: true });
-  }, [decided]);
+    if (clicked) receiptRef.current?.focus({ preventScroll: true });
+  }, [clicked]);
   useEffect(() => {
     if (!closed) return;
     onClosed?.(id);
@@ -706,6 +801,7 @@ export function Gate2Card({
 
   const done = (g: Gate2Detail, already: boolean): void => {
     setDecided({ gate2: g, already });
+    setClicked(true);
   };
 
   if (needsCheck) return <Checking gate2={current} />;
@@ -716,38 +812,23 @@ export function Gate2Card({
       <div ref={receiptRef} tabIndex={-1} className="rounded-[14px] focus:outline-none">
         <DecisionReceipt
           gate2={current}
+          role={role}
           viewerName={viewerName}
           alreadyDecided={decided?.already ?? false}
+          line={line && !clicked}
         />
       </div>
     );
     if (!page) return receipt;
-    const follow = `inline-flex min-h-11 items-center md:min-h-0 ${LINK}`;
     return (
-      <div className="flex max-w-[880px] flex-col gap-4">
-        <h1 className="m-0 text-[22px] font-semibold leading-[30px] text-foreground md:hidden">
-          {audit?.assetName ?? 'Request during an audit'}
-        </h1>
-        {receipt}
-        {/* Phones stack the follow-ups (Next first, as a full-width button); desktop keeps one line of links. */}
-        <div className="flex flex-col gap-1 text-[13px] md:flex-row md:flex-wrap md:gap-x-5">
-          {next === null ? null : (
-            <Link
-              href={next.href}
-              className={`max-md:mb-1 max-md:h-12 max-md:justify-center max-md:rounded-[14px] max-md:border max-md:border-input-strong max-md:bg-card max-md:text-[14px] max-md:text-foreground ${follow}`}
-            >
-              {next.label}
-              <Icon name="right" size={14} className="ml-1" />
-            </Link>
-          )}
-          <Link href={runLink} className={follow}>
-            Open the audit
-          </Link>
-          <Link href="/decisions" className={follow}>
-            All decisions
-          </Link>
-        </div>
-      </div>
+      <PageReceipt
+        gate2={gate2}
+        receipt={receipt}
+        question={question}
+        body={body}
+        audit={audit}
+        next={next}
+      />
     );
   }
 
@@ -757,6 +838,7 @@ export function Gate2Card({
   const ink = clock === null || clock.tone === 'normal' ? 'text-foreground!' : '';
   const created = gate2.createdAt === undefined ? {} : { createdAt: gate2.createdAt };
   const bar = <Countdown variant="bar" deadlineAt={gate2.deadlineAt} {...created} />;
+  const scope = grantScope(gate2, role);
   const card = (
     <section
       role="alertdialog"
@@ -785,7 +867,8 @@ export function Gate2Card({
         )}
       </header>
       {bar}
-      <div className="grid gap-4 px-4 pb-3.5 pt-3 md:grid-cols-[minmax(0,1fr)_220px] md:has-[[data-allowing]]:grid-cols-1">
+      {/* The action column keeps its width while Allow is open, so Deny never moves or changes weight. */}
+      <div className="grid gap-4 px-4 pb-3.5 pt-3 md:grid-cols-[minmax(0,1fr)_236px]">
         <div className="min-w-0">
           <h3 className="m-0 text-[15.5px] font-semibold leading-[23px] text-foreground">
             {question}
@@ -795,10 +878,12 @@ export function Gate2Card({
               Asked by {agentName(gate2.agent)}
             </p>
           )}
-          {earlier === null ? null : <Earlier earlier={earlier} viewerName={viewerName} />}
+          {earlier === null ? null : (
+            <Earlier earlier={earlier} current={gate2} viewerName={viewerName} />
+          )}
           <RequestBox gate2={gate2} body={body} />
           <Chips gate2={gate2} />
-          <WhyAsked gate2={gate2} role={role} />
+          <WhyAsked gate2={gate2} />
           <ClaudeReason reason={gate2.reason} />
         </div>
         <Gate2Actions
@@ -806,8 +891,9 @@ export function Gate2Card({
           deadlineAt={gate2.deadlineAt}
           createdAt={gate2.createdAt}
           layout="column"
-          autoFocus={page}
+          autoFocus={autoFocus ?? page}
           footnote={footnote}
+          scope={scope}
           onDecided={done}
         />
       </div>
@@ -848,9 +934,12 @@ export function Gate2Card({
             <h1 className="m-0 text-base font-semibold leading-[23px] text-foreground">
               {question}
             </h1>
-            {earlier === null ? null : <Earlier earlier={earlier} viewerName={viewerName} />}
+            {earlier === null ? null : (
+              <Earlier earlier={earlier} current={gate2} viewerName={viewerName} />
+            )}
             <RequestBox gate2={gate2} body={body} />
             <Chips gate2={gate2} />
+            <WhyAsked gate2={gate2} phone />
           </section>
           <ClaudeReason reason={gate2.reason} phone />
           <section className="rounded-2xl border border-border bg-card px-[15px] py-[13px]">
@@ -858,7 +947,6 @@ export function Gate2Card({
               {audit?.assetName ?? host}
               {audit === null ? null : <> · {whoseAudit(audit)}</>} · {agentName(gate2.agent)}
             </span>
-            <WhyAsked gate2={gate2} role={role} phone />
             <Link
               href={runLink}
               className="inline-flex min-h-11 items-center text-[13px] font-medium text-gold-ink"
@@ -873,7 +961,8 @@ export function Gate2Card({
             deadlineAt={gate2.deadlineAt}
             createdAt={gate2.createdAt}
             layout="sheet"
-            autoFocus={false}
+            autoFocus={autoFocus ?? page}
+            scope={scope}
             onDecided={done}
           />
         </div>
@@ -922,7 +1011,7 @@ export function InboxHeading({
 
 const INBOX_TITLE = 'Requests during an audit';
 
-/** Fresh data for the cards already shown, in their places; new requests join at the end. */
+/** Fresh data for the cards already shown; new requests join. Settled ones stay (as receipts) until the person leaves. */
 function merge(seen: readonly InboxItem[], items: readonly InboxItem[]): readonly InboxItem[] {
   const fresh = new Map(items.map((i) => [i.gate2.id, i]));
   const kept = seen.map((s) => fresh.get(s.gate2.id) ?? s);
@@ -930,33 +1019,57 @@ function merge(seen: readonly InboxItem[], items: readonly InboxItem[]): readonl
   return [...kept, ...items.filter((i) => !known.has(i.gate2.id))];
 }
 
-/** The cards of one audit together, audits in the order they first showed (soonest deadline first). */
-function byAudit(items: readonly InboxItem[]): readonly (readonly InboxItem[])[] {
+/**
+ * The inbox's order, recomputed when the server's list changes (never on a click, so nothing slides under the cursor
+ * while the person decides): audits by their soonest open deadline; in each, open requests soonest first, then the
+ * settled ones as receipts. Exported for the unit test.
+ */
+export function inboxOrder(
+  seen: readonly InboxItem[],
+  isOpen: (item: InboxItem) => boolean,
+): readonly (readonly InboxItem[])[] {
+  const deadline = (i: InboxItem): number => Date.parse(i.gate2.deadlineAt);
   const groups = new Map<string, InboxItem[]>();
-  for (const item of items) {
+  for (const item of seen) {
     const g = groups.get(item.gate2.runId);
     if (g === undefined) groups.set(item.gate2.runId, [item]);
     else g.push(item);
   }
-  return [...groups.values()];
+  const rank = (i: InboxItem): number => (isOpen(i) ? deadline(i) : Number.POSITIVE_INFINITY);
+  const sorted = [...groups.values()].map((g) =>
+    [...g].sort((a, b) => rank(a) - rank(b) || deadline(a) - deadline(b)),
+  );
+  const soonest = (g: readonly InboxItem[]): number =>
+    g[0] === undefined ? Number.POSITIVE_INFINITY : rank(g[0]);
+  return sorted.sort((a, b) => soonest(a) - soonest(b));
 }
 
-/** One audit's header: which site, whose audit, when it started; the live audit; "Deny all" when several wait. */
+/** The short id that tells two audits of the same site, started the same minute, apart. */
+const SHORT_ID = 6;
+
+/**
+ * One audit's header: which site, what it looks for, whose audit and when it started; the live audit; "Deny all" when
+ * several wait. Deny all asks once more in place, so a stray tap on a phone never denies a batch.
+ */
 function AuditHeader({
   item,
   openIds,
+  twin,
 }: {
   readonly item: InboxItem;
   readonly openIds: readonly string[];
+  /** Another audit in the list reads the same: show the run's short id. */
+  readonly twin: boolean;
 }) {
   const [failed, setFailed] = useState(0);
+  const [confirming, setConfirming] = useState(false);
   const { audit } = item;
   const denyAll = async (): Promise<void> => {
     setFailed(0);
     const results = await Promise.all(openIds.map((id) => postDecision(id, 'deny', '')));
-    for (const r of results)
-      if (r.ok) window.dispatchEvent(new CustomEvent(DECIDED_EVENT, { detail: r.gate2 }));
+    for (const r of results) if (r.ok) announceDecided(r.gate2);
     setFailed(results.filter((r) => !r.ok).length);
+    setConfirming(false);
     window.dispatchEvent(new Event('bw:refresh'));
   };
   return (
@@ -968,10 +1081,13 @@ function AuditHeader({
           </span>
           {audit === null ? null : (
             <>
-              {' '}
-              · {whoseAudit(audit)}, started <When iso={audit.startedAt} />
+              {audit.objective === null ? null : <> · {audit.objective}</>} · {whoseAudit(audit)},
+              started <When iso={audit.startedAt} />
             </>
           )}
+          {twin ? (
+            <span className="font-mono text-[11.5px]"> · #{item.gate2.runId.slice(0, SHORT_ID)}</span>
+          ) : null}
         </p>
         <div className="flex items-center gap-3">
           <Link
@@ -980,15 +1096,36 @@ function AuditHeader({
           >
             Open the live audit
           </Link>
-          {openIds.length < 2 ? null : (
-            <PendingButton
-              variant="secondary"
-              pendingLabel="Denying…"
-              onAction={denyAll}
-              className="h-8 px-3 text-[12.5px] max-sm:ml-auto max-sm:h-11"
+          {openIds.length < 2 ? null : confirming ? (
+            <span className="flex items-center gap-1.5 max-sm:ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false);
+                }}
+                className={buttonClass('ghost', 'h-8 px-2.5 text-[12.5px] max-sm:h-11')}
+              >
+                Keep them
+              </button>
+              <PendingButton
+                variant="deny"
+                pendingLabel="Denying…"
+                onAction={denyAll}
+                className="h-8 px-3 text-[12.5px] max-sm:h-11"
+              >
+                Deny {openIds.length} requests
+              </PendingButton>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirming(true);
+              }}
+              className={buttonClass('ghost', 'h-8 px-2.5 text-[12.5px] max-sm:ml-auto max-sm:h-11')}
             >
-              Deny all {openIds.length}
-            </PendingButton>
+              Deny all {openIds.length}…
+            </button>
           )}
         </div>
       </div>
@@ -1002,12 +1139,14 @@ function AuditHeader({
   );
 }
 
+const auditLabel = (i: InboxItem): string =>
+  `${i.audit?.assetName ?? hostOf(i.gate2.url)}|${i.audit?.objective ?? ''}|${i.audit?.mine === true ? 'me' : (i.audit?.requester ?? '')}|${i.audit?.startedAt.slice(0, 16) ?? ''}`;
+
 /**
- * The inbox's Gate 2 section. The server sends what is pending (soonest deadline first), grouped here by audit. Only
- * the soonest open request is unfolded (plus any the person opens), like one question at a time; the footnote shows
- * once. Every card keeps its place until the person leaves the page: decided here, elsewhere or by the deadline, it
- * turns into its receipt where it was, so the next request never slides under the cursor. D and A act on the open card
- * in view (the one with the ring).
+ * The inbox's Gate 2 section, grouped by audit. Only the soonest open request is unfolded (plus any the person opens),
+ * like one question at a time, and Deny has the keyboard when the page opens; the footnote shows once. A request
+ * decided here keeps its full receipt in place until the list refreshes; one closed elsewhere or by the deadline is a
+ * one-line receipt below the open ones. D and A act on the open card in view (the one with the ring).
  */
 export function Gate2Inbox({
   items,
@@ -1020,9 +1159,14 @@ export function Gate2Inbox({
   const [prev, setPrev] = useState(items);
   const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const listed = new Set(items.map((i) => i.gate2.id));
+  const isOpen = (i: InboxItem): boolean => !closed.has(i.gate2.id) && listed.has(i.gate2.id);
+  const [groups, setGroups] = useState(() => inboxOrder(items, (i) => decidedHere(i.gate2.id) === null));
   if (items !== prev) {
+    const merged = merge(seen, items);
     setPrev(items);
-    setSeen(merge(seen, items));
+    setSeen(merged);
+    setGroups(inboxOrder(merged, isOpen));
   }
   // A request with a reason typed before a reload opens again, so the draft is where the person left it.
   useEffect(() => {
@@ -1030,15 +1174,15 @@ export function Gate2Inbox({
     if (drafts.length > 0) setExpanded((s) => new Set([...s, ...drafts]));
     // Once, after mount: storage is the browser's.
   }, []);
-  const listed = new Set(items.map((i) => i.gate2.id));
-  const isOpen = (i: InboxItem): boolean => !closed.has(i.gate2.id) && listed.has(i.gate2.id);
-  const open = items.filter((i) => !closed.has(i.gate2.id)).length;
+  const open = items.filter((i) => !closed.has(i.gate2.id) && decidedHere(i.gate2.id) === null).length;
   const onClosed = (id: string): void => {
     setClosed((s) => (s.has(id) ? s : new Set(s).add(id)));
   };
+  const first = groups.flat().find((i) => isOpen(i) && decidedHere(i.gate2.id) === null)?.gate2.id;
+  // Deny takes the keyboard once, on the card unfolded when the page opened, never on one that unfolds after a decision.
+  const focusFirst = useRef(first);
   if (seen.length === 0) return null;
-  const groups = byAudit(seen);
-  const first = groups.flat().find((i) => isOpen(i))?.gate2.id;
+  const labels = groups.map((g) => (g[0] === undefined ? '' : auditLabel(g[0])));
   return (
     <section className="flex flex-col gap-3" aria-label={INBOX_TITLE}>
       <InboxHeading
@@ -1047,7 +1191,7 @@ export function Gate2Inbox({
         lede="Claude wants to send something that could change data. No answer means denied."
         count={open}
       />
-      {groups.map((group) => {
+      {groups.map((group, n) => {
         const head = group[0];
         if (head === undefined) return null;
         return (
@@ -1055,6 +1199,7 @@ export function Gate2Inbox({
             <AuditHeader
               item={head}
               openIds={group.filter((i) => isOpen(i)).map((i) => i.gate2.id)}
+              twin={labels.filter((l) => l === labels[n]).length > 1}
             />
             {group.map((item) => {
               const id = item.gate2.id;
@@ -1068,7 +1213,9 @@ export function Gate2Inbox({
                   history={item.history}
                   gone={!listed.has(id)}
                   compact={id !== first && !expanded.has(id)}
+                  line
                   footnote={false}
+                  autoFocus={id === focusFirst.current}
                   onExpand={() => {
                     setExpanded((s) => new Set(s).add(id));
                   }}
@@ -1087,9 +1234,9 @@ export function Gate2Inbox({
 }
 
 const INBOX_POLL_MS = 5000;
-// shortcut: plain fallback refresh for what the sidebar slice does not carry (kept-back findings, bodies); a server
-// push replaces both polls once the API streams workspace events.
-const INBOX_FULL_MS = 30_000;
+// shortcut: plain fallback refresh for what the sidebar slice does not carry (kept-back findings); a server push
+// replaces both polls once the API streams workspace events. Long, because each refresh reads every asking audit.
+const INBOX_FULL_MS = 120_000;
 
 /** What waits, by id, as the sidebar slice carries it (the server page passes the same slice it rendered from). */
 export interface Waiting {
@@ -1139,12 +1286,19 @@ export function InboxRefresh({ waiting }: { readonly waiting: Waiting }) {
           busy = false;
         });
     };
+    // Once on mount too, and on Back/Forward: a page restored from the router cache may predate a decision made on
+    // another page, so it checks at once instead of at the next 5 s tick.
+    tick();
     const timer = window.setInterval(tick, INBOX_POLL_MS);
     window.addEventListener('bw:refresh', tick);
+    window.addEventListener('popstate', tick);
+    window.addEventListener('pageshow', tick);
     document.addEventListener('visibilitychange', tick);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener('bw:refresh', tick);
+      window.removeEventListener('popstate', tick);
+      window.removeEventListener('pageshow', tick);
       document.removeEventListener('visibilitychange', tick);
     };
   }, [router]);

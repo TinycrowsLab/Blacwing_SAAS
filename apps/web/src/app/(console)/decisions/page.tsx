@@ -25,7 +25,6 @@ export const metadata: Metadata = { title: 'Decisions' };
 
 const findingsSchema = z.object({ items: z.array(findingSummarySchema) });
 
-const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 const CARE: Readonly<Record<string, string>> = {
   passive: 'Look, don’t touch',
   active_safe: 'Probe gently',
@@ -174,15 +173,15 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 key={p.id}
                 href={`/audits/${p.id}`}
                 title={`Approve the plan for ${p.assetName ?? 'your site'}`}
+                // Who and when first: a long objective is what gets clipped, never what tells two plans apart.
                 sub={
                   <>
-                    {capital(objectivePhrase(p.objective))} ·{' '}
-                    {CARE[p.intrusiveness] ?? p.intrusiveness} ·{' '}
-                    {Math.round(p.budget.seconds / MINUTE_S)} min · asked by{' '}
+                    Asked by{' '}
                     {p.requester.id === dashboard.actor.id
                       ? 'you'
                       : (p.requester.name ?? 'a teammate')}
-                    , <When iso={p.createdAt} />
+                    , <When iso={p.createdAt} /> · {CARE[p.intrusiveness] ?? p.intrusiveness} ·{' '}
+                    {Math.round(p.budget.seconds / MINUTE_S)} min · {objectivePhrase(p.objective)}
                   </>
                 }
               />
@@ -195,8 +194,9 @@ export default async function DecisionsPage(): Promise<ReactNode> {
         <Section
           title="Findings to review"
           term="Gate 3"
-          lede="Proven issues stay private until you release them. Kept-back ones were not proven: release or dismiss them."
-          count={releases.length + keptBack}
+          lede="Proven issues stay private until you release them. Kept-back ones were not proven: look at them when you have time."
+          // The count is what waits on you (proven, to release), as in the sidebar; kept-back ones are optional.
+          count={releases.length}
         >
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {releases.slice(0, RELEASES_SHOWN).map((f) => (
@@ -221,7 +221,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 href="/findings?status=suspected"
                 lead={<Icon name="eye" size={16} className="shrink-0 text-muted-foreground" />}
                 title={`${keptBack} kept back, not proven`}
-                sub="Claude raised them but the validator could not prove them · review each one"
+                sub="Optional · Claude raised them but the validator could not prove them"
               />
             )}
           </ul>

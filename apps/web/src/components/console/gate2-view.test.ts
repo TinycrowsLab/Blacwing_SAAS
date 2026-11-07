@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { earlierDecision, gate2Question, plainLead, plainWhy, roleFromPathKey } from './gate2-view';
+import {
+  earlierDecision,
+  gate2Question,
+  grantScope,
+  inboxOrder,
+  type InboxItem,
+  plainWhy,
+  roleFromPathKey,
+} from './gate2-view';
 
 import type { Gate2 } from '../../lib/schemas';
 
@@ -73,12 +81,35 @@ describe('Gate 2 memory and plain words', () => {
     ).toBeNull();
   });
 
-  it('leads with one plain line', () => {
-    expect(plainLead({ method: 'POST' }, null)).toBe(
-      'This could change data on the site, and your plan only lets Claude probe gently. It would go as a visitor, without any test account.',
+  it('says what an allow really covers: every agent, any body, no further question', () => {
+    expect(grantScope({ method: 'POST', url: 'http://x.test/api/Users?x=1' }, null)).toBe(
+      "Allowing covers every POST /api/Users sent without signing in, from any agent and with any body, until this audit ends. Claude won't ask about it again.",
     );
-    expect(plainLead({ method: 'post' }, 'customer_a')).toContain(
-      'signed in as your test account “customer_a”',
+    expect(grantScope({ method: 'POST', url: 'http://x.test/rest/basket' }, 'customer_a')).toContain(
+      'sent as customer_a',
     );
+  });
+});
+
+describe('Gate 2 inbox order', () => {
+  const item = (id: string, runId: string, deadline: string): InboxItem => ({
+    gate2: row({ id, runId, deadlineAt: `2026-11-06T13:${deadline}:00.000Z` }),
+    body: null,
+    audit: null,
+    history: [],
+  });
+
+  it('puts the audit with the soonest open deadline first, open requests before settled ones', () => {
+    const a1 = item('a1', 'A', '20');
+    const a2 = item('a2', 'A', '25');
+    const b1 = item('b1', 'B', '22');
+    const settled = item('b0', 'B', '10');
+    const open = (i: InboxItem): boolean => i.gate2.id !== 'a1' && i.gate2.id !== 'b0';
+    const ids = inboxOrder([a1, a2, settled, b1], open).map((g) => g.map((i) => i.gate2.id));
+    // a1 is settled, so audit A's soonest open request is a2 (13:25) and B (13:22) comes first.
+    expect(ids).toEqual([
+      ['b1', 'b0'],
+      ['a2', 'a1'],
+    ]);
   });
 });

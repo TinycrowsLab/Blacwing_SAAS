@@ -201,6 +201,7 @@ export function Gate2Actions({
   layout,
   autoFocus,
   footnote = true,
+  scope,
   onDecided,
 }: {
   readonly gate2Id: string;
@@ -213,6 +214,8 @@ export function Gate2Actions({
    */
   readonly autoFocus: boolean;
   readonly footnote?: boolean;
+  /** What an allow covers (method, path, role, every agent, any body), shown before the reason is asked for. */
+  readonly scope?: string;
   readonly onDecided: (gate2: Gate2Detail, alreadyDecided: boolean) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -359,6 +362,12 @@ export function Gate2Actions({
       )}
       {allowing ? (
         <>
+          {scope === undefined ? null : (
+            <p className="m-0 flex items-start gap-1.5 rounded-[10px] border border-gold-line bg-gold-soft px-2.5 py-2 text-[12px] leading-[17px] text-foreground">
+              <Icon name="info" size={13} className="mt-0.5 shrink-0 text-gold-ink" />
+              <span>{scope}</span>
+            </p>
+          )}
           <ReasonField
             label="Reason (needed to allow)"
             value={reason}

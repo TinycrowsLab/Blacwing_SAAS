@@ -62,19 +62,19 @@ function NodeButton({
       }}
       className={`flex w-full min-w-0 flex-col rounded-[10px] border px-2 py-1 text-left text-[12px] leading-4 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${wide ? 'min-h-11 justify-center' : ''} ${tone} ${selected ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
     >
-      {/* Line 1: the plain name (it gives way, never the state mark). */}
-      <span className="flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
-        <span className="min-w-0 truncate">{node.name}</span>
+      {/* Line 1: the plain name, with the whole width (the state mark sits on line 2, so it never pushes the name). */}
+      <span className="min-w-0 truncate font-semibold text-foreground">{node.name}</span>
+      {/* Line 2: the mono id and the state mark. The id is short enough never to be cut at the widths the row allows.
+          Line 3: the latest action, which gives way first; the narrow planner and validator give it two lines. Fixed
+          lines (the tooltip has everything), so the map never changes size mid-run. */}
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="min-w-0 truncate font-mono text-[10.5px] leading-[14px] text-muted-foreground">{mono}</span>
         {node.state === 'done' ? <span aria-hidden="true" className="ml-auto size-[7px] shrink-0 rounded-full bg-ok" /> : null}
         {node.state === 'stopped' ? <span aria-hidden="true" className="ml-auto h-[2px] w-2 shrink-0 rounded-full bg-muted-foreground" /> : null}
         {node.state === 'working' ? (
           <Ring className={`ml-auto text-slate ${node.spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`} />
         ) : null}
       </span>
-      {/* Fixed lines (the tooltip has everything), so the map never changes size mid-run: the name, then the mono id on
-          its own line (never cut at the widths the row allows), then the latest action, which gives way first. The
-          narrow planner and validator give the action two lines. */}
-      <span className="truncate font-mono text-[10.5px] leading-[14px] text-muted-foreground">{mono}</span>
       <span
         className={`text-[11px] leading-[14px] ${stacked ? 'line-clamp-2 h-7 break-words' : 'truncate'} ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
       >
@@ -221,7 +221,7 @@ export function TeamMap({
       <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
       <Arrow />
       {team.planner === null ? null : (
-        <div className="w-[100px] shrink-0">
+        <div className="w-[108px] shrink-0">
           <NodeButton node={team.planner} mono="orchestrator" stacked selected={filter === team.planner.id} onSelect={select} />
         </div>
       )}
@@ -239,7 +239,7 @@ export function TeamMap({
         </>
       )}
       {team.validator === null ? null : (
-        <div className="w-[128px] shrink-0">
+        <div className="w-[132px] shrink-0">
           <NodeButton node={team.validator} mono="replay, no model" stacked selected={filter === 'validator'} onSelect={select} />
         </div>
       )}
