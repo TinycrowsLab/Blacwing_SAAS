@@ -73,6 +73,9 @@ describe('Gate 2 memory and plain words', () => {
     });
     expect(earlierDecision(now, [now, denied, other])?.id).toBe('g1');
     expect(earlierDecision(now, [now, other])).toBeNull();
+    // A person's no outranks a later automatic one: it is the decision an allow would undo.
+    const expired = row({ id: 'g4', status: 'expired', deadlineAt: '2026-11-06T13:14:00.000Z' });
+    expect(earlierDecision(now, [expired, denied])?.id).toBe('g1');
     // Two agents asked at once: a no given while this one waited still counts (allowing this opens that one too).
     expect(
       earlierDecision(now, [

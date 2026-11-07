@@ -91,10 +91,12 @@ export function earlierDecision(
     g.pathKey === '' ? `${g.method} ${g.url}` : g.pathKey;
   const mine = key(gate2);
   const at = (g: Gate2): number => Date.parse(g.decidedAt ?? g.deadlineAt);
+  const weight = (g: Gate2): number => (g.status === 'approved' ? 0 : g.decidedBy === null ? 2 : 1);
   return (
     history
       .filter((g) => g.id !== gate2.id && g.status !== 'pending' && key(g) === mine)
-      .sort((a, b) => at(b) - at(a))[0] ?? null
+      // An allow first (it is already open), then a person's no (the one an allow would undo), then the latest.
+      .sort((a, b) => weight(a) - weight(b) || at(b) - at(a))[0] ?? null
   );
 }
 
@@ -247,8 +249,13 @@ function Earlier({
           </>
         ) : (
           <>
-            {who === null ? 'Denied automatically' : `${who} denied`} this same method, path and
-            role at {time}
+            {who === null ? (
+              <>This same method, path and role was denied automatically at {time}</>
+            ) : (
+              <>
+                {who} denied this same method, path and role at {time}
+              </>
+            )}
             {sameAsker ? '' : asked}.{' '}
             <span className="text-foreground">
               Allowing now opens it to every agent
