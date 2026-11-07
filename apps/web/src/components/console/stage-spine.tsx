@@ -75,7 +75,12 @@ export function StageSpine({
               {/* Narrow desktops keep the row on one line: finished stages drop their counts there (the side panel and
                   the tabs carry them), the approval keeps its "by whom, when". */}
               {detail === '' ? null : (
-                <small className={`text-[11.5px] font-normal text-muted-foreground ${s.state === 'done' && i > 0 ? 'hidden min-[1360px]:inline' : ''}`}>{detail}</small>
+                <small
+                  title={detail}
+                  className={`text-[11.5px] font-normal text-muted-foreground ${s.state === 'done' && i > 0 ? 'hidden min-[1360px]:inline' : s.state === 'skipped' ? 'hidden min-[1600px]:inline' : ''}`}
+                >
+                  {detail}
+                </small>
               )}
             </>
           );

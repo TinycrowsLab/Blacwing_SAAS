@@ -320,7 +320,7 @@ function SidebarBody({
   const earlierSub = (r: SidebarData['earlier'][number]): string => {
     const at = r.finishedAt ?? r.createdAt;
     // The reader's locale only after mount (`now` is 0 on the server and at hydration): no hydration mismatch.
-    const when = now === 0 ? at.slice(0, 10) : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(at));
+    const when = now === 0 ? at.slice(0, 10) : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(at));
     const word = r.state === 'completed' ? 'Finished' : r.state === 'killed' ? 'Stopped' : r.state === 'failed' ? 'Stopped with an error' : r.state;
     return `${word} · ${when}`;
   };
