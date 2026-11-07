@@ -2,11 +2,11 @@
 // The report card (experience spec §7): a receipt of what the audit did (the runner's numbers), what the report holds
 // (released issues only), the download, the webhook line (truthful: the configured host, or "connect a webhook" linking
 // to Settings, never a tool we do not know about) and the ledger seal. Then the retest card, once the audit has ended.
-import Link from 'next/link';
 
 import { usd } from '../../../lib/plan-text';
 import { Icon } from '../design';
 import { SEVERITIES } from './model';
+import { NavLink } from './nav-link';
 import { ReportDownload, RunAgain } from './report-download';
 
 import type { ReactNode } from 'react';
@@ -19,6 +19,22 @@ const SEVERITY_TONE: Readonly<Record<string, string>> = {
   low: 'bg-low-soft text-low',
   info: 'bg-sinfo-soft text-sinfo',
 };
+const LEVEL: Readonly<Record<string, number>> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+
+/** The same signal-bar glyph as the issue's SeverityChip (design.tsx), drawn here because the chip carries a count. */
+function Bars({ level }: { readonly level: number }) {
+  return (
+    <span aria-hidden="true" className="inline-flex h-2.5 items-end gap-px">
+      {[1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="w-[2.5px] rounded-[1px] bg-current"
+          style={{ height: `${3 + i * 1.75}px`, opacity: i <= level ? 1 : 0.25 }}
+        />
+      ))}
+    </span>
+  );
+}
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
 
 function Row({ label, children }: { readonly label: string; readonly children: ReactNode }) {
@@ -33,11 +49,22 @@ function Row({ label, children }: { readonly label: string; readonly children: R
   );
 }
 
+/** What else the report line says once some issues are in: who is waiting, who was dismissed. */
+function inReportNote(awaiting: number, dismissed: number): string {
+  const parts = [
+    awaiting > 0 ? `${awaiting} still ${awaiting === 1 ? 'awaits' : 'await'} your release` : null,
+    dismissed > 0 ? `${dismissed} dismissed` : null,
+  ].filter((x): x is string => x !== null);
+  return parts.length === 0 ? 'Only released issues go into it.' : `${parts.join(', ')}. Only released issues go into it.`;
+}
+
 export function ReportCard(props: {
   readonly runId: string;
   readonly requestId: string;
+  /** The target's name, as everywhere else; its host is said second. */
+  readonly name: string;
   readonly host: string;
-  /** Severities of the proven issues that can still reach the report (dismissed ones are left out). */
+  /** Severities of every proven issue (the same count as the headline). */
   readonly severities: readonly string[];
   /** Proven issues dismissed: proven, never reported. */
   readonly dismissed: number;
@@ -64,23 +91,26 @@ export function ReportCard(props: {
       >
         <div className="flex flex-col gap-1 px-5 pb-3 pt-4">
           <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-gold-ink">The report</span>
-          <h2 id="report-h" className="m-0 break-all text-[17px] font-semibold text-foreground">
-            {props.host}
+          <h2 id="report-h" className="m-0 break-words text-[17px] font-semibold text-foreground">
+            {props.name}
           </h2>
+          {props.host === props.name ? null : (
+            <span className="break-all font-mono text-[12px] text-muted-foreground">{props.host}</span>
+          )}
         </div>
         <div className="flex flex-col gap-2.5 px-5">
-          <Row label="Proven issues">
-            {n}
-            {props.dismissed > 0 ? <small> + {props.dismissed} dismissed</small> : null}
-          </Row>
+          <Row label="Proven issues">{n}</Row>
           {counts.length === 0 ? null : (
-            <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label="By severity">
+            <ul className="m-0 grid list-none grid-cols-2 gap-1.5 p-0" aria-label="By severity">
               {counts.map(([s, c]) => (
                 <li
                   key={s}
-                  className={`inline-flex h-[24px] items-center gap-1 rounded-md px-2 text-[12px] font-medium ${SEVERITY_TONE[s] ?? ''}`}
+                  className={`inline-flex h-[24px] items-center gap-1.5 rounded-md px-2 text-[12px] font-medium ${SEVERITY_TONE[s] ?? ''}`}
                 >
-                  <b className="font-semibold tabular-nums">{c}</b> {cap(s)}
+                  <Bars level={LEVEL[s] ?? 0} />
+                  <span>
+                    <b className="font-semibold tabular-nums">{c}</b> {cap(s)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -92,22 +122,27 @@ export function ReportCard(props: {
             {props.requests.used.toLocaleString()} <small>of {props.requests.cap.toLocaleString()}</small>
           </Row>
           <Row label="Decisions asked">
-            {props.gate2.asked} <small>{props.gate2.label}</small>
+            {props.gate2.asked}
+            {props.gate2.asked === 0 ? null : <small> · {props.gate2.label}</small>}
           </Row>
           <Row label="Model spend">
             {usd(Math.round(props.cost.used * 100) / 100)} <small>of {usd(props.cost.cap)}</small>
           </Row>
         </div>
         <p className="mx-5 mb-0 mt-3 border-t border-dashed border-border-strong pt-3 text-[13px] leading-5 text-muted-foreground">
-          {n > 0 ? (
+          {props.released > 0 ? (
             <>
               <b className="font-semibold text-foreground">
-                {props.released} of {n} released.
+                {props.released === n ? `All ${n} in the report.` : `${props.released} of ${n} in the report.`}
               </b>{' '}
-              The report includes released issues only
-              {props.awaiting > 0 ? '; release the others to include them.' : '.'}
+              {inReportNote(props.awaiting, props.dismissed)}
             </>
-          ) : props.dismissed > 0 ? (
+          ) : n > props.dismissed ? (
+            <>
+              <b className="font-semibold text-foreground">None released yet.</b> The report includes released issues
+              only; release them to include them.
+            </>
+          ) : n > 0 ? (
             'Every proven issue was dismissed, so the report lists what was tested and no issues.'
           ) : props.live ? (
             'Nothing is proven yet. The report fills in as Claude proves issues.'
@@ -117,7 +152,11 @@ export function ReportCard(props: {
         </p>
         <div className="flex flex-col gap-2.5 px-5 pb-4 pt-3">
           {/* Gold once every proven issue is decided: kept-back ones are optional reviews, not a gate on the report. */}
-          <ReportDownload href={`/api/runs/${props.runId}/report`} primary={!props.live && props.awaiting === 0} />
+          <ReportDownload
+            href={`/api/runs/${props.runId}/report`}
+            primary={!props.live && props.awaiting === 0}
+            note={n > 0 ? `${props.released} of ${n} released` : 'no issues proven'}
+          />
           <p className="m-0 flex items-start gap-1.5 text-[12.5px] leading-5 text-muted-foreground">
             <Icon name="arrow" size={13} className="mt-[3px] shrink-0" />
             {props.webhook?.configured === true ? (
@@ -127,15 +166,15 @@ export function ReportCard(props: {
               </span>
             ) : props.webhook === null ? (
               // The status could not be read: point to where it is shown rather than guess.
-              <Link href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+              <NavLink href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
                 See where released issues are sent
-              </Link>
+              </NavLink>
             ) : (
               <span>
                 Send released issues to your tools:{' '}
-                <Link href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+                <NavLink href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
                   connect a webhook
-                </Link>
+                </NavLink>
               </span>
             )}
           </p>
@@ -146,9 +185,9 @@ export function ReportCard(props: {
             <span className="min-w-0 flex-1 truncate font-mono">
               ledger · sha256 {props.ledgerHead.slice(0, 4)}…{props.ledgerHead.slice(-4)}
             </span>
-            <Link href="/ledger#verify" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+            <NavLink href="/ledger#verify" className="font-medium text-gold-ink underline-offset-2 hover:underline">
               Verify
-            </Link>
+            </NavLink>
           </div>
         )}
       </section>

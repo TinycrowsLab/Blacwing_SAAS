@@ -165,6 +165,7 @@ export function TriageControls({
   onDone,
   bindRelease,
   trailing,
+  primary = true,
 }: {
   readonly finding: FindingDetail;
   readonly viewerName: string;
@@ -173,6 +174,8 @@ export function TriageControls({
   readonly bindRelease?: (release: (() => void) | null) => void;
   /** Secondary actions (copy, details) at the end of the button row. */
   readonly trailing?: ReactNode;
+  /** Gold only for the one issue in focus (one primary per screen); the other open issues get the outlined button. */
+  readonly primary?: boolean;
 }) {
   const proven = finding.status === 'confirmed';
   const [mode, setMode] = useState<'idle' | 'release' | 'dismiss'>('idle');
@@ -288,7 +291,7 @@ export function TriageControls({
       <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
         {canRelease ? (
           <PendingButton
-            variant="primary"
+            variant={primary ? 'primary' : 'secondary'}
             icon="check"
             {...(bindRelease === undefined ? {} : { shortcut: 'R' })}
             pendingLabel="Releasing…"

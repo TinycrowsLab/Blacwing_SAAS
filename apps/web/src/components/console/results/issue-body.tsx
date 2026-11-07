@@ -85,7 +85,7 @@ function ProofSide({
   verdict,
 }: {
   readonly title: string;
-  readonly note?: string;
+  readonly note: string;
   readonly side: Side;
   readonly verdict: { text: string; tone: 'ok' | 'neutral'; title?: string } | null;
 }) {
@@ -94,7 +94,6 @@ function ProofSide({
     <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-code">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3.5 py-2.5 text-[13px]">
         <span className="font-semibold text-foreground">{title}</span>
-        {note === undefined ? null : <span className="text-[12px] text-muted-foreground">{note}</span>}
         {verdict === null ? null : (
           <span
             title={verdict.title}
@@ -104,9 +103,11 @@ function ProofSide({
           </span>
         )}
       </div>
-      <pre className="m-0 whitespace-pre-wrap px-3.5 py-3 font-mono text-[12px] leading-5 text-foreground">
+      <pre className="m-0 whitespace-pre-wrap px-3.5 pt-3 font-mono text-[12px] leading-5 text-foreground">
         {line === null ? 'Not recorded' : <Path text={line} />}
       </pre>
+      {/* What this side is for, so a control on another path still makes sense. */}
+      <p className="m-0 px-3.5 pb-3 pt-1 text-[12px] leading-[18px] text-muted-foreground">{note}</p>
     </div>
   );
 }
@@ -147,6 +148,7 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
         <div className="grid gap-2.5 md:grid-cols-2">
           <ProofSide
             title="Probe"
+            note={proof.proven ? 'The request that shows the issue.' : 'The request Claude suspected.'}
             side={probe}
             verdict={
               probeStatus === undefined
@@ -160,7 +162,7 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
           />
           <ProofSide
             title="Control"
-            note="the baseline"
+            note="A similar request that should not show it."
             side={control}
             verdict={
               controlStatus === undefined
@@ -178,11 +180,8 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
             Blackwing checked that {check}: the probe should show it, the control should not.
           </p>
         )}
-        <p className={`m-0 flex items-start gap-2 text-[13px] leading-5 ${proof.proven ? 'text-ok' : 'text-muted-foreground'}`}>
-          <span
-            aria-hidden="true"
-            className={`mt-[4px] size-2.5 shrink-0 rounded-full border-2 border-current ${proof.proven ? '' : 'border-dashed'}`}
-          />
+        <p className={`m-0 flex items-start gap-2 text-[13px] font-medium leading-5 ${proof.proven ? 'text-ok' : 'text-muted-foreground'}`}>
+          <Icon name={proof.proven ? 'check' : 'minus'} size={14} className="mt-[3px] shrink-0" />
           {proof.text}
         </p>
       </section>

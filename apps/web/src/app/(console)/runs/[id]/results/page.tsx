@@ -1,13 +1,14 @@
 // Results (experience spec §7; prototype 05): what Claude proved, in three voices, Gate 3 per issue, what was kept back,
 // every decision you made, and the report. Every number is the runner's; the headline and lede are templates.
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
 import { YourDecisions } from '../../../../../components/console/results/decisions';
 import { IssueList, KeptBack, ReleaseAll } from '../../../../../components/console/results/issue-list';
 import { LiveRefresh } from '../../../../../components/console/results/live-refresh';
+import { NavLink } from '../../../../../components/console/results/nav-link';
 import { readApi } from '../../../../../components/console/results/load';
 import {
   decisions,
@@ -29,13 +30,34 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Results' };
 
 const HTTP_NOT_FOUND = 404;
 const releaseModeSchema = z.object({ releaseProven: z.enum(['hold', 'auto']) });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const plural = (n: number, one: string, many: string): string => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+
+/** The run, or null when there is no such run (the page and its title share one API call per request). */
+const loadRun = cache(async (id: string): Promise<Run | null> => {
+  if (!UUID.test(id)) return null;
+  try {
+    return runSchema.parse(await readApi(`/runs/${encodeURIComponent(id)}`));
+  } catch (caught) {
+    if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) return null;
+    throw caught;
+  }
+});
+
+// The title is resolved before the page streams, so an unknown run is a real 404, not a 200 with a not-found body.
+export async function generateMetadata({
+  params,
+}: {
+  readonly params: Promise<{ readonly id: string }>;
+}): Promise<Metadata> {
+  const run = await loadRun((await params).id);
+  if (run === null) notFound();
+  return { title: `Results · ${run.pins.asset?.name ?? 'Audit'}` };
+}
 
 function hostOf(run: Run): string {
   const base = run.pins.asset?.baseUrl;
@@ -54,15 +76,8 @@ export default async function ResultsPage({
 }): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
-  const { id } = await params;
-  if (!UUID.test(id)) notFound();
-  let run: Run;
-  try {
-    run = runSchema.parse(await readApi(`/runs/${encodeURIComponent(id)}`));
-  } catch (caught) {
-    if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) notFound();
-    throw caught;
-  }
+  const run = await loadRun((await params).id);
+  if (run === null) notFound();
 
   const { proven, kept } = splitFindings(run);
   // The issue that opens is the first one still awaiting your release (else the most severe), so the decision is in view.
@@ -84,11 +99,13 @@ export default async function ResultsPage({
   ]);
 
   const host = hostOf(run);
+  const name = run.pins.asset?.name ?? host;
   const live = LIVE_RUN_STATES.includes(run.state);
   const cases = testCases(run.events);
   const stop = stopLine(run, Date.now(), cases);
-  // The report card counts what can still reach the report: a dismissed issue is proven but never reported.
-  const severities = proven.filter((f) => f.status !== 'dismissed').map((f) => f.severity);
+  // The report card counts every proven issue, as the headline does, and says how many were dismissed.
+  const severities = proven.map((f) => f.severity);
+  const dismissed = proven.filter((f) => f.status === 'dismissed').length;
   const awaiting = proven.filter((f) => f.status === 'confirmed');
   const released = proven.filter((f) => f.status === 'released').length;
   const allDecided = !live && proven.length > 0 && awaiting.length === 0;
@@ -119,15 +136,15 @@ export default async function ResultsPage({
           <nav aria-label="Breadcrumb">
             <ol className="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[12.5px] text-muted-foreground">
               <li>
-                <Link href="/" className="hover:text-foreground">
+                <NavLink href="/" className="hover:text-foreground">
                   Home
-                </Link>
+                </NavLink>
               </li>
               <li aria-hidden="true">/</li>
               <li className="min-w-0 truncate">
-                <Link href={`/runs/${run.id}`} className="hover:text-foreground">
-                  {host}
-                </Link>
+                <NavLink href={`/runs/${run.id}`} className="hover:text-foreground" title={host}>
+                  {name}
+                </NavLink>
               </li>
               <li aria-hidden="true">/</li>
               <li aria-current="page">Results</li>
@@ -139,12 +156,15 @@ export default async function ResultsPage({
             <Icon name={stop.tone === 'ok' ? 'check' : stop.tone === 'bad' ? 'warn' : 'clock'} size={14} />
             {stop.text}
             {live ? (
-              <Link href={`/runs/${run.id}`} className="ml-1 text-gold-ink underline-offset-2 hover:underline">
+              <NavLink href={`/runs/${run.id}`} className="ml-1 text-gold-ink underline-offset-2 hover:underline">
                 Watch it live
-              </Link>
+              </NavLink>
             ) : null}
           </p>
-          <h1 id="results-h" className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]">
+          <h1
+            id="results-h"
+            className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground [text-wrap:balance] sm:text-[30px] sm:leading-[38px]"
+          >
             {live
               ? proven.length === 0
                 ? 'Claude is still testing. Nothing is proven yet.'
@@ -201,9 +221,10 @@ export default async function ResultsPage({
         <ReportCard
           runId={run.id}
           requestId={run.requestId}
+          name={name}
           host={host}
           severities={severities}
-          dismissed={proven.length - severities.length}
+          dismissed={dismissed}
           released={released}
           awaiting={awaiting.length}
           live={live}

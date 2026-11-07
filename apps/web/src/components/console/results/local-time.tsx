@@ -5,10 +5,11 @@
 // (a separator such as " · ") renders with the time, so nothing dangles before it is formatted.
 import { useEffect, useState } from 'react';
 
+// The viewer's own clock (12 or 24 hours, as their locale says), the same as the run page and the conversation.
 const STYLES = {
-  time: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+  time: { hour: 'numeric', minute: '2-digit' },
   date: { day: 'numeric', month: 'short', year: 'numeric' },
-  datetime: { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+  datetime: { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 export function LocalTime({

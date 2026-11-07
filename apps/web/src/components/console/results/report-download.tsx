@@ -4,7 +4,6 @@
 // on the page ("Your findings are safe") instead of a broken download, and a success says "Report downloaded". Under
 // 768 px the download button sticks to the bottom of the screen and says there what happened. A finding offers the two
 // formats its route renders.
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { InlineMessage } from '../design';
@@ -75,7 +74,6 @@ export function ReportDownload({
     }
   }
 
-  const label = FORMATS.find((f) => f.key === format)?.label ?? format;
   const message = (where: string) => (
     <div aria-live="polite" className={where}>
       {state === 'done' ? <InlineMessage tone="ok">Report downloaded.</InlineMessage> : null}
@@ -133,8 +131,27 @@ export function ReportDownload({
           <div className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1.5 border-t border-border bg-bg/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:hidden">
             {message('flex flex-col')}
             <div className="flex flex-col">{button('h-12 w-full')}</div>
-            <span className="block text-center text-[11.5px] text-muted-foreground">
-              {label} · {note}
+            {/* The format can be changed here too: the card's own picker is far down the page on a phone. */}
+            <span className="flex items-center justify-center gap-1.5 text-[11.5px] text-muted-foreground">
+              {note} ·
+              <label className="sr-only" htmlFor="report-format-sticky">
+                Report format
+              </label>
+              <select
+                id="report-format-sticky"
+                value={format}
+                onChange={(e) => {
+                  const next = offered.find((f) => f.key === e.target.value);
+                  if (next !== undefined) setFormat(next.key);
+                }}
+                className="h-7 cursor-pointer rounded-md border border-border bg-card px-1.5 text-[11.5px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                {offered.map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
             </span>
           </div>
           {message('hidden md:block')}
@@ -151,7 +168,6 @@ export function ReportDownload({
 
 /** "Run this audit again": a new pending audit with the same answers, opened at its plan. */
 export function RunAgain({ requestId }: { readonly requestId: string }) {
-  const router = useRouter();
   const nudge = useNudge();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -164,15 +180,18 @@ export function RunAgain({ requestId }: { readonly requestId: string }) {
         className="h-10 self-start"
         onAction={async () => {
           setError(null);
+          const from = window.location.pathname;
+          // The action redirects to the new plan; until React shows it, keep nudging, then tell the sidebar.
+          nudge(() => {
+            const moved = window.location.pathname !== from;
+            if (moved) window.dispatchEvent(new Event('bw:refresh'));
+            return moved;
+          });
           const result = await runAgainAction(requestId);
           if (!result.ok) {
             setError(`We couldn't copy this audit: ${result.message}`);
             return false;
           }
-          window.dispatchEvent(new Event('bw:refresh'));
-          const from = window.location.pathname;
-          router.push(`/audits/${result.data.id}`);
-          nudge(() => window.location.pathname !== from);
           return true;
         }}
       >

@@ -3,10 +3,9 @@
 // The findings list with its filters (experience spec §2, §8). The server sends every finding once; filtering happens
 // here, so a filter click is instant (local state, no server round trip). The URL follows with history.replaceState,
 // and the list re-reads it whenever the router's URL changes (useSearchParams), so Back, a reload or a shared link all
-// show the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key). With more than
-// one audit, an Audit filter tells a retest's findings from the first run's (each audit is named by when it found its
-// first issue).
-import Link from 'next/link';
+// show the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key). Status and
+// severity are chips (few, fixed options); target and audit are menus, because they grow with every audit run (each
+// audit is named by its target and when it started).
 import { useSearchParams } from 'next/navigation';
 import { type ReactNode, useEffect, useState } from 'react';
 
@@ -14,6 +13,7 @@ import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
 import { IssueStatus } from './issue-list';
 import { LocalTime } from './local-time';
+import { NavLink } from './nav-link';
 import { FINDING_STATUSES, SEVERITIES, type FindingSummary } from './model';
 
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
@@ -79,12 +79,8 @@ function FilterRow({
   readonly onPick: (key: string | undefined) => void;
 }) {
   return (
-    // Under 640 px each group is one line that scrolls sideways, so the list starts on the first screen.
-    <div
-      className="-mx-4 flex min-w-0 items-center gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-      role="group"
-      aria-label={label}
-    >
+    // The chips wrap at every width: no option ever hides past the edge of a phone screen.
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5" role="group" aria-label={label}>
       <span className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]">{label}</span>
       {[{ key: undefined, label: 'All', count: -1 }, ...options].map((o) => (
         <button
@@ -99,21 +95,103 @@ function FilterRow({
           className={pillClass(active === o.key, o.count === 0)}
         >
           {o.label}
-          {o.count < 0 ? null : <span className="ml-1.5 tabular-nums text-muted-foreground">{o.count}</span>}
+          {/* The count is its own small badge, so "Released 6" never reads as one word or number. */}
+          {o.count < 0 ? null : (
+            <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-card/80 px-1.5 text-[11px] tabular-nums text-muted-foreground">
+              {o.count}
+            </span>
+          )}
         </button>
       ))}
     </div>
   );
 }
 
-export function FindingsTable({ items }: { readonly items: readonly FindingSummary[] }) {
+const SELECT_CLASS =
+  'h-9 min-w-0 max-w-full flex-1 cursor-pointer appearance-none truncate rounded-[10px] border pl-3 pr-8 text-[13px] focus-visible:border-gold-ink focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus sm:w-[260px] sm:flex-none';
+/** The menu's chevron (a data URI cannot follow the theme, so it uses a mid grey that reads on both). */
+const CHEVRON = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 10px center',
+  backgroundSize: '16px',
+} as const;
+
+/** A filter that grows with use (targets, audits): a native menu, so it stays one line however many there are. */
+function FilterMenu({
+  label,
+  all,
+  options,
+  active,
+  onPick,
+}: {
+  readonly label: string;
+  readonly all: string;
+  readonly options: readonly { key: string; label: string; count: number }[];
+  readonly active: string | undefined;
+  readonly onPick: (key: string | undefined) => void;
+}) {
+  const id = `filter-${label.toLowerCase()}`;
+  return (
+    <div className="flex w-full min-w-0 items-center gap-1.5 sm:w-auto">
+      <label htmlFor={id} className="w-[60px] shrink-0 text-[12px] text-muted-foreground sm:w-[68px]">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={active ?? ''}
+        onChange={(e) => {
+          onPick(e.target.value === '' ? undefined : e.target.value);
+        }}
+        className={`${SELECT_CLASS} ${active === undefined ? 'border-input-strong bg-card text-foreground' : 'border-gold-line bg-gold-soft text-gold-ink'}`}
+        style={CHEVRON}
+      >
+        <option value="">{all}</option>
+        {options.map((o) => (
+          <option key={o.key} value={o.key} disabled={o.count === 0 && active !== o.key}>
+            {o.label} ({o.count})
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/** An audit the findings came from: its target and when it started (from the run list when the page had it). */
+export interface AuditOption {
+  readonly id: string;
+  readonly target: string | null;
+  readonly startedAt: string | null;
+}
+
+/** Formats a time only in the browser (the server's zone must never show, and must not differ at hydration). */
+function useClock(): ((iso: string) => string) | null {
+  const [format, setFormat] = useState<((iso: string) => string) | null>(null);
+  useEffect(() => {
+    const f = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    setFormat(() => (iso: string) => f.format(new Date(iso)));
+  }, []);
+  return format;
+}
+
+export function FindingsTable({
+  items,
+  runs = [],
+}: {
+  readonly items: readonly FindingSummary[];
+  /** Start times of the audits, when the page could read them; otherwise an audit is dated by its first finding. */
+  readonly runs?: readonly AuditOption[];
+}) {
   const params = useSearchParams();
+  const clock = useClock();
   const targets = [...new Set(items.map((f) => f.assetName).filter((n): n is string => n !== null))].sort();
-  // Each audit, named by when it found its first issue; newest first.
+  // Each audit with findings, newest first: its start time, or else when it found its first issue.
+  const known = new Map(runs.map((r) => [r.id, r]));
   const firstAt = new Map<string, string>();
   for (const f of items)
     if (f.runId !== undefined) {
-      const at = f.createdAt ?? '';
+      const at = known.get(f.runId)?.startedAt ?? f.createdAt ?? '';
       const seen = firstAt.get(f.runId);
       if (seen === undefined || at < seen) firstAt.set(f.runId, at);
     }
@@ -144,6 +222,14 @@ export function FindingsTable({ items }: { readonly items: readonly FindingSumma
   const countBy = (skip: Key, test: (f: FindingSummary) => boolean): number =>
     items.filter((f) => match(f, skip) && test(f)).length;
   const shown = items.filter((f) => match(f));
+  const auditLabel = (id: string): string => {
+    const run = known.get(id);
+    const target = run?.target ?? items.find((f) => f.runId === id)?.assetName ?? 'Audit';
+    const at = firstAt.get(id) ?? '';
+    // Until the browser formats the time (a moment after load), the short id tells audits apart.
+    if (at === '' || clock === null) return `${target} · ${id.slice(0, SHORT_ID)}`;
+    return `${target} · ${(run?.startedAt ?? null) === null ? 'found' : 'started'} ${clock(at)}`;
+  };
 
   return (
     <>
@@ -164,33 +250,37 @@ export function FindingsTable({ items }: { readonly items: readonly FindingSumma
           }}
           options={SEVERITIES.map((s) => ({ key: s, label: cap(s), count: countBy('severity', (f) => f.severity === s) }))}
         />
-        {targets.length > 1 ? (
-          <FilterRow
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <FilterMenu
             label="Target"
+            all="All targets"
             active={filters.target}
             onPick={(v) => {
               pick('target', v);
             }}
             options={targets.map((t) => ({ key: t, label: t, count: countBy('target', (f) => f.assetName === t) }))}
           />
-        ) : null}
-        {audits.length > 1 ? (
-          <FilterRow
+          <FilterMenu
             label="Audit"
+            all="All audits"
             active={filters.audit}
             onPick={(v) => {
               pick('audit', v);
             }}
-            options={audits.map((a) => {
-              const at = firstAt.get(a) ?? '';
-              return {
-                key: a,
-                label: at === '' ? a.slice(0, SHORT_ID) : <LocalTime iso={at} style="datetime" />,
-                count: countBy('audit', (f) => f.runId === a),
-              };
-            })}
+            options={audits.map((a) => ({ key: a, label: auditLabel(a), count: countBy('audit', (f) => f.runId === a) }))}
           />
-        ) : null}
+          {Object.values(filters).some((v) => v !== undefined) ? (
+            <button
+              type="button"
+              className="h-9 rounded-md px-1 text-[12.5px] font-medium text-gold-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              onClick={() => {
+                write({});
+              }}
+            >
+              Clear filters
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {shown.length === 0 ? (
@@ -215,7 +305,7 @@ export function FindingsTable({ items }: { readonly items: readonly FindingSumma
         <ul className="m-0 flex list-none flex-col overflow-hidden rounded-[14px] border border-border bg-card p-0">
           {shown.map((f) => (
             <li key={f.id} className="border-b border-border last:border-b-0">
-              <Link
+              <NavLink
                 href={`/findings/${f.id}`}
                 className="flex min-h-[60px] flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus"
               >
@@ -232,7 +322,7 @@ export function FindingsTable({ items }: { readonly items: readonly FindingSumma
                 <span className="ml-auto shrink-0">
                   <IssueStatus status={f.status} />
                 </span>
-              </Link>
+              </NavLink>
             </li>
           ))}
         </ul>

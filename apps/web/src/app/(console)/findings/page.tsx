@@ -16,11 +16,22 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Findings' };
 
 const listSchema = z.object({ items: z.array(findingSummarySchema) });
+/** Only what names an audit in the filter: its target and start time. */
+const runsSchema = z.object({
+  runs: z.array(z.object({ id: z.string(), assetName: z.string().optional(), startedAt: z.string().nullable().default(null) })).default([]),
+});
 
 export default async function FindingsPage(): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
-  const items = listSchema.parse(await readApi('/findings')).items.sort(bySeverity);
+  // The run list only names the audits; without it the Audit filter dates each audit by its first finding.
+  const [list, runs] = await Promise.all([
+    readApi('/findings').then((b) => listSchema.parse(b)),
+    readApi('/dashboard')
+      .then((b) => runsSchema.parse(b).runs.map((r) => ({ id: r.id, target: r.assetName ?? null, startedAt: r.startedAt })))
+      .catch(() => []),
+  ]);
+  const items = list.items.sort(bySeverity);
 
   return (
     <div className="flex w-full max-w-[1100px] flex-col gap-5">
@@ -45,7 +56,7 @@ export default async function FindingsPage(): Promise<ReactNode> {
           }
         />
       ) : (
-        <FindingsTable items={items} />
+        <FindingsTable items={items} runs={runs} />
       )}
     </div>
   );

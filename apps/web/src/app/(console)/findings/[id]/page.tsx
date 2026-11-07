@@ -2,7 +2,6 @@
 // Finding detail (experience spec §7, bug 16): the title is the breadcrumb, and the issue reads in three voices: Claude's
 // explanation (not verified), Blackwing's proof (probe, control, every replay) and Claude's fix suggestion when the run
 // recorded one. Gate 3, the reproduction command and the report download sit beside it.
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cache, type ReactNode } from 'react';
 
@@ -11,6 +10,7 @@ import { IssueBody } from '../../../../components/console/results/issue-body';
 import { IssueStatus } from '../../../../components/console/results/issue-list';
 import { readApi } from '../../../../components/console/results/load';
 import { LocalTime } from '../../../../components/console/results/local-time';
+import { NavLink } from '../../../../components/console/results/nav-link';
 import { findingDetailSchema, type FindingDetail } from '../../../../components/console/results/model';
 import { FINDING_FORMATS, ReportDownload } from '../../../../components/console/results/report-download';
 import { CopyButton, FindingTriage } from '../../../../components/console/results/triage';
@@ -35,9 +35,22 @@ const load = cache(async (id: string): Promise<FindingDetail | null> => {
   }
 });
 
+// Resolved before the page streams where Next allows it, so an unknown finding answers 404 with the not-found title.
 export async function generateMetadata({ params }: { readonly params: Promise<{ readonly id: string }> }) {
-  const finding = await load((await params).id).catch(() => null);
-  return { title: finding?.title ?? 'Finding' };
+  const finding = await load((await params).id);
+  if (finding === null) notFound();
+  return { title: finding.title };
+}
+
+/** "127.0.0.1:3001" from the probe's URL, to say the target's address after its name. */
+function hostOf(f: FindingDetail): string | null {
+  const url = f.evidence.probe.request?.url;
+  if (url === undefined) return null;
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
 }
 
 /** The method of a curl command ("-X POST", or POST when it sends data), or null when it cannot be told. */
@@ -77,6 +90,7 @@ export default async function FindingPage({
   // The reproduction command repeats the probe: its method decides whether we may call it harmless.
   const method = finding.evidence.probe.request?.method.toUpperCase() ?? methodOf(finding.reproCurl);
   const writes = method === null || !READ_ONLY.has(method);
+  const host = hostOf(finding);
 
   return (
     <article className="flex w-full max-w-[1180px] flex-col gap-5" aria-labelledby="finding-h">
@@ -84,9 +98,9 @@ export default async function FindingPage({
         <nav aria-label="Breadcrumb">
           <ol className="m-0 flex min-w-0 list-none items-center gap-2 p-0 text-[12.5px] text-muted-foreground">
             <li className="shrink-0">
-              <Link href="/findings" className="hover:text-foreground">
+              <NavLink href="/findings" className="hover:text-foreground">
                 Findings
-              </Link>
+              </NavLink>
             </li>
             <li aria-hidden="true">/</li>
             <li aria-current="page" className="min-w-0 truncate">
@@ -101,7 +115,12 @@ export default async function FindingPage({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
           <SeverityChip severity={finding.severity} />
           <IssueStatus status={finding.status} />
-          {finding.assetName === null ? null : <span>on {finding.assetName}</span>}
+          {finding.assetName === null ? null : (
+            <span>
+              on <span className="text-foreground">{finding.assetName}</span>
+              {host === null || host === finding.assetName ? null : <span className="font-mono text-[12px]"> ({host})</span>}
+            </span>
+          )}
           {finding.createdAt === undefined ? null : (
             <span>
               <LocalTime iso={finding.createdAt} style="datetime" prefix="found " />
@@ -109,12 +128,12 @@ export default async function FindingPage({
           )}
         </div>
         {finding.runId === undefined ? null : (
-          <Link
+          <NavLink
             href={`/runs/${finding.runId}/results`}
             className="self-start text-[13px] font-medium text-gold-ink underline-offset-2 hover:underline"
           >
             See all results of this audit
-          </Link>
+          </NavLink>
         )}
       </div>
 
@@ -136,9 +155,9 @@ export default async function FindingPage({
               ) : (
                 replays.map((r) => (
                   <li key={r.n} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                    <span className="w-20 text-muted-foreground">Replay {r.n}</span>
+                    <span className="w-16 shrink-0 text-muted-foreground sm:w-20">Replay {r.n}</span>
                     <span className="whitespace-nowrap font-mono">HTTP {r.status}</span>
-                    <span className={`ml-auto inline-flex items-center gap-1.5 font-medium ${r.matched ? 'text-ok' : 'text-muted-foreground'}`}>
+                    <span className={`ml-auto inline-flex items-center gap-1.5 whitespace-nowrap font-medium ${r.matched ? 'text-ok' : 'text-muted-foreground'}`}>
                       <Icon name={r.matched ? 'check' : 'minus'} size={13} />
                       {r.matched ? 'Showed it' : 'Did not show it'}
                     </span>
@@ -147,9 +166,9 @@ export default async function FindingPage({
               )}
               {finding.replay?.control === null || finding.replay?.control === undefined ? null : (
                 <li className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                  <span className="w-20 text-muted-foreground">Control</span>
+                  <span className="w-16 shrink-0 text-muted-foreground sm:w-20">Control</span>
                   <span className="whitespace-nowrap font-mono">HTTP {finding.replay.control.status}</span>
-                  <span className={`ml-auto inline-flex items-center gap-1.5 font-medium ${finding.replay.control.matched ? 'text-muted-foreground' : 'text-ok'}`}>
+                  <span className={`ml-auto inline-flex items-center gap-1.5 whitespace-nowrap font-medium ${finding.replay.control.matched ? 'text-muted-foreground' : 'text-ok'}`}>
                     <Icon name={finding.replay.control.matched ? 'minus' : 'check'} size={13} />
                     {finding.replay.control.matched ? 'Showed it too' : 'Clean, as expected'}
                   </span>
@@ -159,9 +178,12 @@ export default async function FindingPage({
           </Card>
 
           <details className="group rounded-[14px] border border-border bg-card">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-[14px] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus">
-              What the site answered
-              <span className="text-[12px] font-normal text-muted-foreground">excerpts, from the target</span>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[14px] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus">
+              {/* On a phone the hint sits under the title instead of squeezing beside it. */}
+              <span className="flex min-w-0 flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                What the site answered
+                <span className="text-[12px] font-normal text-muted-foreground">Excerpts of the responses, from the target</span>
+              </span>
               <Icon name="chevron" size={16} className="ml-auto text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
             <div className="grid gap-3 border-t border-border p-4 md:grid-cols-2">
@@ -191,7 +213,8 @@ export default async function FindingPage({
                   The same probe the validator sent. It is a {method} request: it reads and changes nothing.
                 </p>
               )}
-              <pre className="m-0 max-h-60 overflow-auto whitespace-pre rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
+              {/* Wrapped, never scrolled sideways: the whole command is readable in the narrow column. */}
+              <pre className="m-0 max-h-60 overflow-y-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
                 {finding.reproCurl}
               </pre>
             </section>
@@ -212,9 +235,9 @@ export default async function FindingPage({
               <span className="font-mono">
                 ledger · {finding.audit.hash.slice(0, 4)}…{finding.audit.hash.slice(-4)}
               </span>
-              <Link href="/ledger#verify" className="ml-auto font-medium text-gold-ink hover:underline">
+              <NavLink href="/ledger#verify" className="ml-auto font-medium text-gold-ink hover:underline">
                 Verify
-              </Link>
+              </NavLink>
             </p>
           )}
         </aside>

@@ -1,10 +1,10 @@
 // "Your decisions" (experience spec §7): every human decision on this audit with its reason and time, and the ledger's
 // chain state. Rows come from `decisions()` (model.ts); nothing here is invented.
-import Link from 'next/link';
 import { Fragment } from 'react';
 
 import { Icon } from '../design';
 import { LocalTime } from './local-time';
+import { NavLink } from './nav-link';
 
 import type { DecisionRow, Ledger } from './model';
 
@@ -45,23 +45,34 @@ export function YourDecisions({
               className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-border py-2.5 text-[13.5px] leading-[21px] sm:grid-cols-[96px_minmax(0,1fr)_auto]"
             >
               <span className="col-span-2 text-[12px] text-muted-foreground sm:col-span-1 sm:text-[12.5px]">{r.group}</span>
-              <span className="min-w-0 break-words text-foreground">
-                {r.verb}
-                {r.subject === null ? null : r.subject.mono ? (
-                  <>
-                    {' '}
-                    <Path text={r.subject.text} className="text-[12px]" />
-                  </>
-                ) : (
-                  <> &ldquo;{r.subject.text}&rdquo;</>
+              <span className="flex min-w-0 flex-col break-words">
+                {/* What was decided, on what. */}
+                <span className="text-foreground">
+                  {r.verb}
+                  {r.subject === null ? null : r.subject.mono ? (
+                    <>
+                      {' '}
+                      <Path text={r.subject.text} className="text-[12px]" />
+                    </>
+                  ) : (
+                    <> &ldquo;{r.subject.text}&rdquo;</>
+                  )}
+                  {r.detail === null || r.detail === '' ? null : <span className="text-muted-foreground"> {r.detail}</span>}
+                </span>
+                {/* Why, and by whom: each labelled, so the reason never reads as the subject. */}
+                {r.reason === null && r.by === null ? null : (
+                  <span className="text-[12.5px] leading-5 text-muted-foreground">
+                    {r.reason === null || r.reason === '' ? null : (
+                      <>
+                        Reason: <span className="text-foreground">&ldquo;{r.reason}&rdquo;</span>
+                      </>
+                    )}
+                    {r.reason !== null && r.reason !== '' && r.by !== null ? ' · ' : null}
+                    {r.by === null ? null : `by ${r.by}`}
+                  </span>
                 )}
-                {r.detail === null || r.detail === '' ? null : <span className="text-muted-foreground"> {r.detail}</span>}
-                {r.reason === null || r.reason === '' ? null : (
-                  <span className="text-muted-foreground"> &ldquo;{r.reason}&rdquo;</span>
-                )}
-                {r.who === null ? null : <span className="text-muted-foreground"> · {r.who}</span>}
               </span>
-              {r.at === null ? <span /> : <LocalTime iso={r.at} className="font-mono text-[12px] text-muted-foreground" />}
+              {r.at === null ? <span /> : <LocalTime iso={r.at} className="text-[12px] text-muted-foreground" />}
             </li>
           ))}
         </ol>
@@ -69,19 +80,18 @@ export function YourDecisions({
       <p className="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-5 text-muted-foreground">
         <Icon name="ledger" size={13} className="mt-[3px] shrink-0" />
         {chain === null ? (
-          <span>
-            Decisions made by a person are recorded in the ledger; automatic ones come from the audit&rsquo;s own record.
-            We couldn&rsquo;t check the chain just now.
-          </span>
+          <span>Your decisions are also sealed in the ledger. We couldn&rsquo;t check its chain just now.</span>
         ) : chain.verified ? (
           <span>
-            Decisions made by a person are recorded in the ledger; automatic ones come from the audit&rsquo;s own record.
-            Chain verified, {chain.count.toLocaleString()} {chain.count === 1 ? 'event' : 'events'}.
+            Your decisions are also sealed in the ledger.{' '}
+            <NavLink href="/ledger#verify" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+              Chain verified, {chain.count.toLocaleString()} {chain.count === 1 ? 'event' : 'events'}
+            </NavLink>
           </span>
         ) : (
-          <Link href="/ledger#verify" className="font-medium text-bad underline-offset-2 hover:underline">
+          <NavLink href="/ledger#verify" className="font-medium text-bad underline-offset-2 hover:underline">
             Chain check failed at #{chain.brokenAtSeq}. Open the ledger
-          </Link>
+          </NavLink>
         )}
       </p>
     </section>

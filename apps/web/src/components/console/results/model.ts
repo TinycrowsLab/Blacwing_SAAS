@@ -109,13 +109,14 @@ export function testCases(events: readonly RunEvent[]): CaseCounts {
 }
 
 /**
- * The results H1 from the template (lib/plan-text): the count is every proven issue, the advice ("Fix the critical one
- * first") only counts the ones still open, so a dismissed issue is never the one to start with. The compound word keeps
+ * The results H1 from the template (lib/plan-text): the count is every proven issue (as on the report card), the advice
+ * ("Fix the critical one first") only counts the ones still awaiting your decision, so it disappears once all are decided. The compound word keeps
  * a non-breaking hyphen, so the headline never splits "high-severity".
  */
 export function headline(proven: readonly FindingSummary[]): string {
   const all = proven.map((f) => f.severity);
-  const open = proven.filter((f) => f.status !== 'dismissed').map((f) => f.severity);
+  // Advice only while something still awaits your decision: once all are decided the page says so instead.
+  const open = proven.filter((f) => f.status === 'confirmed').map((f) => f.severity);
   // resultsHeadline of only-low severities is the bare count sentence, so it measures the advice that follows.
   const bare = (list: readonly string[]): string => resultsHeadline(list.map(() => 'low'));
   const advice = resultsHeadline(open).slice(bare(open).length);
@@ -143,28 +144,42 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[]
   const denied = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
   const refused = run.events.some((e) => e.kind === 'policy.blocked');
   const b = cases.blocked;
+  const were = (n: number): string => (n === 1 ? 'was' : 'were');
   const blocked =
     b === 0
       ? null
       : denied
-        ? `${b} needed ${b === 1 ? 'a denied request' : 'denied requests'}`
+        ? `${b} ${were(b)} skipped because you didn\u2019t allow the request ${b === 1 ? 'it' : 'they'} needed`
         : refused
-          ? `${b} ${b === 1 ? 'was' : 'were'} stopped by the safety rules`
+          ? `${b} ${were(b)} stopped by the safety rules`
           : `${b} could not run`;
   const rest = cases.total - cases.executed - cases.skipped - cases.blocked;
   return [
     blocked,
-    cases.skipped > 0 ? `${cases.skipped} skipped as not relevant` : null,
-    rest > 0 ? `${rest} not reached` : null,
+    cases.skipped > 0 ? `${cases.skipped} ${were(cases.skipped)} judged not relevant` : null,
+    rest > 0 ? `${rest} ${were(rest)} not tried` : null,
   ].filter((x): x is string => x !== null);
 }
 
-/** Why a completed run ended: the runner's reason, then how far it got through its test cases when it did not finish all. */
+/** "a, b and c". */
+const listWords = (parts: readonly string[]): string =>
+  parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
+
+/**
+ * Why a completed run ended, always as a sentence about Claude: the runner's reason (time limit, request budget, spend
+ * cap), then how far it got through its plan when it did not run every case. Without a reason and with cases left,
+ * Claude ended early, and the line says so instead of leaving the person to wonder.
+ */
 function completedWhy(reason: unknown, cases: CaseCounts | undefined, run: Pick<Run, 'events' | 'gate2'>): string {
-  if (typeof reason === 'string' && reason !== '') return finishReason(reason);
-  if (cases === undefined || cases.total === 0 || cases.executed >= cases.total) return 'Claude finished its plan';
+  const planDone = finishReason('');
+  // A limit the runner named (time, requests, spend, turns); anything else reads as the plan's own end.
+  const limit = finishReason(reason) === planDone ? null : finishReason(reason);
+  if (cases === undefined || cases.total === 0 || cases.executed >= cases.total)
+    return `Claude ${limit ?? planDone}`;
+  const ran = `ran ${cases.executed} of ${cases.total} planned test cases`;
   const rest = notRun(cases, run);
-  return `Claude ran ${cases.executed} of ${cases.total} test cases${rest.length === 0 ? '' : ` (${rest.join(', ')})`}`;
+  const tail = rest.length === 0 ? '' : `; ${listWords(rest)}`;
+  return limit === null ? `Claude ended the audit early: it ${ran}${tail}` : `Claude ${limit} after it ${ran}${tail}`;
 }
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
@@ -193,7 +208,7 @@ export function stopLine(
   }
 }
 
-/** "2 both denied", "1 allowed", "3: 1 allowed, 2 denied" for the report card's "Decisions asked". */
+/** "both denied", "allowed", "1 allowed, 2 denied" for the report card's "Decisions asked" (after the count). */
 export function gate2Outcome(gate2: Run['gate2']): { asked: number; label: string } {
   const decided = gate2.filter((g) => g.status !== 'pending');
   const allowed = decided.filter((g) => g.status === 'approved').length;
@@ -203,8 +218,8 @@ export function gate2Outcome(gate2: Run['gate2']): { asked: number; label: strin
   if (allowed > 0) parts.push(`${allowed} allowed`);
   if (denied > 0) parts.push(`${denied} denied`);
   if (pending > 0) parts.push(`${pending} open`);
-  // Mixed outcomes go in brackets, so the count never runs into them ("2 (1 denied, 1 open)", not "2 1 denied").
-  let label = `(${parts.join(', ')})`;
+  // The card puts " · " between the count and this label ("2 · both denied", "3 · 1 allowed, 2 denied").
+  let label = parts.join(', ');
   if (parts.length === 1) {
     const word = (parts[0] ?? '').replace(/^\d+ /, '');
     label = gate2.length === 1 ? word : gate2.length === 2 ? `both ${word}` : `all ${word}`;
@@ -221,8 +236,8 @@ export interface DecisionRow {
   readonly subject: { readonly text: string; readonly mono: boolean } | null;
   readonly detail: string | null;
   readonly reason: string | null;
-  /** Who decided, when not the viewer (null for the viewer or for Blackwing itself). */
-  readonly who: string | null;
+  /** Who decided: "you", another person's name, or null when Blackwing decided on its own (an expiry, a plan rule). */
+  readonly by: string | null;
   readonly at: string | null;
 }
 
@@ -248,7 +263,7 @@ export function decisions(input: {
 }): DecisionRow[] {
   const { run, request, ledger, viewerName } = input;
   const who = (name: string | null | undefined): string | null =>
-    name === null || name === undefined || name === viewerName ? null : name;
+    name === null || name === undefined ? null : name === viewerName ? 'you' : name;
   const title = (id: string): string => run.findings.find((f) => f.id === id)?.title ?? 'a finding';
   const rows: DecisionRow[] = [];
 
@@ -260,7 +275,7 @@ export function decisions(input: {
       subject: null,
       detail: null,
       reason: request.decisionReason,
-      who: who(request.approver?.name),
+      by: who(request.approver?.name),
       at: request.decidedAt,
     });
   }
@@ -279,17 +294,17 @@ export function decisions(input: {
     const subject = { text: `${g.method.toUpperCase()} ${pathOf(g.url)}`, mono: true };
     const at = g.decidedAt ?? g.deadlineAt;
     if (g.status === 'approved') {
-      rows.push({ key: g.id, group: 'Request', verb: 'Allowed', subject, detail: [asRole, 'for this run'].filter(Boolean).join(' '), reason: g.decisionReason, who: who(g.decidedBy), at });
+      rows.push({ key: g.id, group: 'Request', verb: 'Allowed', subject, detail: [asRole, 'for this run'].filter(Boolean).join(' '), reason: g.decisionReason, by: who(g.decidedBy), at });
     } else if (g.status === 'expired') {
       const total =
         input.gate2TimeoutS ??
         (g.createdAt === undefined ? null : (Date.parse(g.deadlineAt) - Date.parse(g.createdAt)) / MS_PER_S);
       const wait = total === null ? 'no answer in time' : `no answer in ${Math.max(1, Math.round(total / S_PER_MIN))} min`;
-      rows.push({ key: g.id, group: 'Request', verb: 'Denied automatically', subject, detail: [asRole, wait].filter(Boolean).join(', '), reason: null, who: null, at });
+      rows.push({ key: g.id, group: 'Request', verb: 'Denied automatically', subject, detail: [asRole, wait].filter(Boolean).join(', '), reason: null, by: null, at });
     } else if (g.decidedBy === null) {
-      rows.push({ key: g.id, group: 'Request', verb: 'Denied automatically', subject, detail: 'the audit was stopping', reason: null, who: null, at });
+      rows.push({ key: g.id, group: 'Request', verb: 'Denied automatically', subject, detail: 'the audit was stopping', reason: null, by: null, at });
     } else {
-      rows.push({ key: g.id, group: 'Request', verb: 'Denied', subject, detail: asRole, reason: g.decisionReason, who: who(g.decidedBy), at });
+      rows.push({ key: g.id, group: 'Request', verb: 'Denied', subject, detail: asRole, reason: g.decisionReason, by: who(g.decidedBy), at });
     }
   }
 
@@ -305,11 +320,11 @@ export function decisions(input: {
         subject: { text: title(item.targetId), mono: false },
         detail: null,
         reason: str(item.payload.reason),
-        who: who(item.actor.name),
+        by: who(item.actor.name),
         at: item.at,
       });
     } else if (item.action === 'run.kill') {
-      rows.push({ key: item.eventId, group: 'Stop', verb: 'Stopped testing', subject: null, detail: null, reason: null, who: who(item.actor.name), at: item.at });
+      rows.push({ key: item.eventId, group: 'Stop', verb: 'Stopped testing', subject: null, detail: null, reason: null, by: who(item.actor.name), at: item.at });
     }
   }
 
@@ -323,7 +338,7 @@ export function decisions(input: {
         subject: { text: id === null ? str(e.data.title) ?? 'a finding' : title(id), mono: false },
         detail: 'as you chose on the plan',
         reason: null,
-        who: null,
+        by: null,
         at: e.at,
       });
     }

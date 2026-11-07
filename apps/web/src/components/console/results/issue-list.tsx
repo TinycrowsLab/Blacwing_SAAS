@@ -4,13 +4,13 @@
 // once through /api/findings/[id] and cached). Gate 3 sits on each open issue; "Release all proven" sends one request
 // per finding with the shared reason (one server action, so the ledger records one event each and the page refreshes
 // once). R releases the issue you opened last, or else the first open one that still awaits release.
-import Link from 'next/link';
 import { startTransition, useEffect, useRef, useState } from 'react';
 
 import { buttonClass, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
 import { IssueBody } from './issue-body';
 import { findingDetailSchema, type FindingDetail, type FindingSummary } from './model';
+import { NavLink } from './nav-link';
 import {
   announceChange,
   CopyButton,
@@ -28,11 +28,12 @@ import { reasonEnough } from '../../../lib/normalize';
  * One short status, the same everywhere (lists, issue headers, detail): who decided and when is said once, in the
  * open issue. Each state has its own mark, so none looks like missing styling.
  */
-export function IssueStatus({ status }: { readonly status: string }) {
+export function IssueStatus({ status, pill = false }: { readonly status: string; readonly pill?: boolean }) {
   const base = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium';
   if (status === 'confirmed')
     return (
-      <span className={`${base} text-gold-ink`}>
+      // On an open issue the decision it waits for anchors the header as a gold pill; in lists it stays a dot.
+      <span className={`${base} text-gold-ink ${pill ? 'h-[24px] rounded-full border border-gold-line bg-gold-soft px-2.5' : ''}`}>
         <span aria-hidden="true" className="size-2 rounded-full bg-current" />
         Awaiting your release
       </span>
@@ -40,7 +41,7 @@ export function IssueStatus({ status }: { readonly status: string }) {
   if (status === 'released')
     return (
       <span className={`${base} text-ok`}>
-        <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current" />
+        <Icon name="check" size={13} />
         Released
       </span>
     );
@@ -175,7 +176,7 @@ export function IssueList({
                   {s.title}
                 </span>
                 <span className="ml-auto flex items-center gap-2">
-                  <IssueStatus status={status} />
+                  <IssueStatus status={status} pill={isOpen} />
                   <Icon
                     name="chevron"
                     size={16}
@@ -215,6 +216,7 @@ export function IssueList({
                           if (updated === null) drop(s.id);
                           else put(updated);
                         }}
+                        primary={!dashed && s.id === keyTarget}
                         {...(shortcuts && s.id === keyTarget
                           ? {
                               bindRelease: (fn: (() => void) | null) => {
@@ -225,10 +227,10 @@ export function IssueList({
                         trailing={
                           <>
                             {d.finding.reproCurl === '' ? null : <CopyButton text={d.finding.reproCurl} label="Copy as curl" />}
-                            <Link href={`/findings/${s.id}`} className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}>
+                            <NavLink href={`/findings/${s.id}`} className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}>
                               <Icon name="file" size={14} />
                               Full evidence
-                            </Link>
+                            </NavLink>
                           </>
                         }
                       />

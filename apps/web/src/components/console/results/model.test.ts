@@ -88,19 +88,26 @@ describe('duration and stopLine', () => {
     const base = { createdAt: '2026-11-06T10:00:00.000Z', startedAt: '2026-11-06T10:00:00.000Z', finishedAt: '2026-11-06T10:18:12.000Z' };
     expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed', { reason: 'duration_budget' })], gate2: [] }, 0)).toEqual({
       tone: 'ok',
-      text: 'Finished in 18m 12s · stopped at the time limit',
+      text: 'Finished in 18m 12s · Claude stopped at the time limit',
     });
     expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0).text).toContain('finished its plan');
     // No reason from the runner: the words follow the cases, never "finished its plan" when a third was not run.
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, { executed: 6, skipped: 2, blocked: 0, total: 9 })
         .text,
-    ).toBe('Finished in 18m 12s · Claude ran 6 of 9 test cases (2 skipped as not relevant, 1 not reached)');
+    ).toBe('Finished in 18m 12s · Claude ended the audit early: it ran 6 of 9 planned test cases; 2 were judged not relevant and 1 was not tried');
+    // A named limit is the reason; the cases say how far it got.
+    expect(
+      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed', { reason: 'cost_cap' })], gate2: [] }, 0, { executed: 5, skipped: 0, blocked: 0, total: 8 })
+        .text,
+    ).toBe('Finished in 18m 12s · Claude reached the spend cap after it ran 5 of 8 planned test cases; 3 were not tried');
     // "Blocked" is said in plain words: with a denied request, that is why.
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [gate2('a', 'denied')] }, 0, { executed: 6, skipped: 0, blocked: 2, total: 8 })
         .text,
-    ).toBe('Finished in 18m 12s · Claude ran 6 of 8 test cases (2 needed denied requests)');
+    ).toBe(
+      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because you didn\u2019t allow the request they needed',
+    );
     expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe('Stopped after 18m 12s · you stopped testing');
     expect(stopLine({ ...base, state: 'failed', events: [ev(1, 'run.failed', { reason: 'model_error' })], gate2: [] }, 0).tone).toBe('bad');
   });
@@ -111,7 +118,7 @@ describe('gate2Outcome', () => {
     expect(gate2Outcome([])).toEqual({ asked: 0, label: 'none' });
     expect(gate2Outcome([gate2('a', 'denied'), gate2('b', 'expired')])).toEqual({ asked: 2, label: 'both denied' });
     expect(gate2Outcome([gate2('a', 'approved')])).toEqual({ asked: 1, label: 'allowed' });
-    expect(gate2Outcome([gate2('a', 'approved'), gate2('b', 'denied'), gate2('c', 'denied')]).label).toBe('(1 allowed, 2 denied)');
+    expect(gate2Outcome([gate2('a', 'approved'), gate2('b', 'denied'), gate2('c', 'denied')]).label).toBe('1 allowed, 2 denied');
   });
 });
 
@@ -150,9 +157,9 @@ describe('decisions', () => {
       viewerName: 'Jatin Singh',
       gate2TimeoutS: 300,
     });
-    expect(rows.map((r) => [r.group, r.verb, r.subject?.text ?? null, r.detail, r.reason, r.who])).toEqual([
-      ['Approval', 'Approved the plan', null, null, 'Our own lab.', null],
-      ['Request', 'Denied', 'POST /rest/basket/7/checkout?x=1', 'as customer_a', null, null],
+    expect(rows.map((r) => [r.group, r.verb, r.subject?.text ?? null, r.detail, r.reason, r.by])).toEqual([
+      ['Approval', 'Approved the plan', null, null, 'Our own lab.', 'you'],
+      ['Request', 'Denied', 'POST /rest/basket/7/checkout?x=1', 'as customer_a', null, 'you'],
       ['Request', 'Denied automatically', 'POST /rest/basket/7/checkout?x=1', 'no answer in 5 min', null, null],
       ['Release', 'Released automatically', 'T-f2', 'as you chose on the plan', null, null],
       ['Release', 'Released', 'T-f1', null, 'Low risk, fix tracked.', 'Riley Reviewer'],
@@ -207,6 +214,8 @@ describe('headline and plain reasons', () => {
       'Claude proved 2 issues. Start with the high\u2011severity one.',
     );
     expect(headline([finding('a', 'critical', 'dismissed'), finding('b', 'low', 'released')])).toBe('Claude proved 2 issues.');
+    // Everything decided: no stale "start with" advice.
+    expect(headline([finding('a', 'high', 'released'), finding('b', 'low', 'dismissed')])).toBe('Claude proved 2 issues.');
   });
   it('rewrites the engine word "oracle"', () => {
     expect(plainReason('probe replay 1 did not match the oracle')).toBe('replay 1 did not show the issue again');
