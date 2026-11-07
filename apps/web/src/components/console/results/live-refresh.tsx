@@ -5,7 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useTransition } from 'react';
 
-import { useNudge } from './triage';
+import { useNudge } from './nudge';
 
 const POLL_MS = 5000;
 

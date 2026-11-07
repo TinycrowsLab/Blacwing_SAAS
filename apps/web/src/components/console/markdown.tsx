@@ -133,3 +133,50 @@ export const stripMarkdown = (text: string): string =>
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
+
+/** Escapes text for HTML (element content and quoted attribute values). */
+export const escapeHtml = (value: string | number): string =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+function inlineHtml(text: string): string {
+  return text
+    .split(INLINE)
+    .map((part) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
+        return `<strong>${inlineHtml(part.slice(2, -2))}</strong>`;
+      if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return `<code>${escapeHtml(part.slice(1, -1))}</code>`;
+      return escapeHtml(part);
+    })
+    .join('');
+}
+
+/**
+ * The same subset as {@link Markdown}, as an HTML string for the downloadable report. Every piece of text is escaped;
+ * the only tags are the ones written here.
+ */
+export function markdownToHtml(text: string): string {
+  return blocks(text)
+    .map((b) => {
+      if (b.kind === 'h') return `<p><strong>${inlineHtml(b.lines[0] ?? '')}</strong></p>`;
+      if (b.kind === 'p') return `<p>${b.lines.map((l) => inlineHtml(l)).join(' ')}</p>`;
+      if (b.kind === 'table') {
+        const [head, ...rows] = b.lines.filter((l) => !isTableRule(l)).map((l) => cells(l));
+        const th = (head ?? []).map((c) => `<th>${inlineHtml(c)}</th>`).join('');
+        const tr = rows.map((r) => `<tr>${r.map((c) => `<td>${inlineHtml(c)}</td>`).join('')}</tr>`).join('');
+        return `<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
+      }
+      const items = b.lines
+        .map((l, j) => {
+          const indent = ((b.indents[j] ?? 0) / NEST_STEP) * 0.75;
+          return `<li${indent > 0 ? ` style="margin-left:${indent}rem"` : ''}>${inlineHtml(l)}</li>`;
+        })
+        .join('');
+      return `<${b.kind}>${items}</${b.kind}>`;
+    })
+    .join('\n');
+}

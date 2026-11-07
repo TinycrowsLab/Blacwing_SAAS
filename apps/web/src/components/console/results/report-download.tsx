@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { runAgainAction } from './actions';
-import { useNudge } from './triage';
+import { useNudge } from './nudge';
 
 const FORMATS = [
   { key: 'html', label: 'HTML' },

@@ -13,8 +13,8 @@ import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
 import { IssueStatus } from './issue-list';
 import { LocalTime } from './local-time';
-import { NavLink } from './nav-link';
 import { FINDING_STATUSES, SEVERITIES, type FindingSummary } from './model';
+import { NavLink } from './nav-link';
 
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
 /** A URL value this long may be the start of a label ("kept" for Kept back). */

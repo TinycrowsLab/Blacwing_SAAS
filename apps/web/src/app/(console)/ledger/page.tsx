@@ -1,14 +1,17 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- display truncation (hashes) */
 // Ledger (experience spec §2, §8): every decision in the workspace, newest first, hash-chained. The API re-verifies
 // the whole chain on each load; the pill says what it found.
-import Link from 'next/link';
+
 import { z } from 'zod';
 
 import { Chip, EmptyState, Icon } from '../../../components/console/design';
 import { Path } from '../../../components/console/results/decisions';
+import { HashFocus, HIGHLIGHT_CLASS } from '../../../components/console/results/hash-focus';
 import { readApi } from '../../../components/console/results/load';
 import { LocalTime } from '../../../components/console/results/local-time';
 import { actionLabel, ledgerSchema, PLAN_REPLACED_REASON, type LedgerItem } from '../../../components/console/results/model';
+import { NavLink } from '../../../components/console/results/nav-link';
+import { RefreshButton } from '../../../components/console/results/settings-form';
 import { getViewer } from '../../../lib/auth';
 
 import type { Metadata } from 'next';
@@ -40,7 +43,16 @@ function pathOf(url: string): string {
 }
 
 /** The one line of context an entry carries: the request it allowed, the name it set, the reason given. */
-function Detail({ item, title }: { readonly item: LedgerItem; readonly title: string | undefined }) {
+function Detail({
+  item,
+  title,
+  previousName,
+}: {
+  readonly item: LedgerItem;
+  readonly title: string | undefined;
+  /** The name before this one, when this entry renamed the workspace. */
+  readonly previousName: string | undefined;
+}) {
   const p = item.payload;
   const method = text(p.method);
   const url = text(p.url);
@@ -55,7 +67,16 @@ function Detail({ item, title }: { readonly item: LedgerItem; readonly title: st
           <Path text={`${method.toUpperCase()} ${pathOf(url)}`} className="text-[12px]" />
         </>
       ) : null}
-      {item.action === 'workspace.named' && name !== null ? <> &ldquo;{name}&rdquo;</> : null}
+      {item.action === 'workspace.named' && name !== null ? (
+        previousName === undefined ? (
+          <> &ldquo;{name}&rdquo;</>
+        ) : (
+          <>
+            {' '}
+            from &ldquo;{previousName}&rdquo; to <span className="text-foreground">&ldquo;{name}&rdquo;</span>
+          </>
+        )
+      ) : null}
       {title === undefined ? null : <span className="text-foreground"> &ldquo;{title}&rdquo;</span>}
       {reason === null ? null : <> &ldquo;{reason}&rdquo;</>}
     </span>
@@ -78,12 +99,23 @@ export default async function LedgerPage({
       .catch(() => []),
   ]);
   const titles = new Map(findings.map((f) => [f.id, f.title]));
+  // Each naming after the first is a rename: walk the entries oldest first and remember the name it replaced.
+  const renamedFrom = new Map<string, string>();
+  let lastName: string | null = null;
+  for (const e of [...items].reverse())
+    if (e.action === 'workspace.named') {
+      const name = text(e.payload.name);
+      if (lastName !== null && name !== null) renamedFrom.set(e.eventId, lastName);
+      lastName = name ?? lastName;
+    }
+  const checkedAt = new Date().toISOString();
   const head = items[0]?.hash ?? null;
   const shown = all ? items : items.slice(0, PAGE);
   // Naming the workspace is always entry #1, so "nothing else yet" is the real first-run state of the ledger.
   const onlySetup = items.every((e) => e.action === 'workspace.named');
   return (
     <div className="flex w-full max-w-[1100px] flex-col gap-5">
+      <HashFocus />
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Ledger</h1>
@@ -114,7 +146,7 @@ export default async function LedgerPage({
           <section
             id="verify"
             aria-label="Chain check"
-            className={`flex scroll-mt-6 flex-wrap items-start gap-3 rounded-[14px] border px-4 py-3.5 ${chain.verified ? 'border-border bg-card' : 'border-bad bg-bad-soft'}`}
+            className={`flex scroll-mt-6 flex-wrap items-start gap-3 rounded-[14px] border px-4 py-3.5 ${chain.verified ? 'border-border bg-card' : 'border-bad bg-bad-soft'} ${HIGHLIGHT_CLASS}`}
           >
             <span
               className={`flex size-8 shrink-0 items-center justify-center rounded-[10px] ${chain.verified ? 'bg-ok-soft text-ok' : 'bg-card text-bad'}`}
@@ -130,7 +162,6 @@ export default async function LedgerPage({
                   : `Chain check failed at entry #${chain.brokenAtSeq}. Entries from there on cannot be trusted.`}
               </span>
               <span className="text-muted-foreground">
-                Checked when you opened this page.{' '}
                 {head === null ? null : (
                   <>
                     Newest fingerprint{' '}
@@ -139,8 +170,15 @@ export default async function LedgerPage({
                     </span>
                   </>
                 )}
+                {/* Re-checked on every load and on "Check again"; the time says which check this is. */}
+                <LocalTime iso={checkedAt} prefix={head === null ? 'Checked at ' : ' · checked at '} />
               </span>
             </div>
+            <RefreshButton
+              label="Check again"
+              busyLabel="Checking…"
+              className="h-9 shrink-0 rounded-[10px] border border-border-strong bg-card px-3 text-[13px] font-medium text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-progress disabled:text-muted-foreground"
+            />
           </section>
 
           <ol className="m-0 flex list-none flex-col overflow-hidden rounded-[14px] border border-border bg-card p-0">
@@ -155,8 +193,13 @@ export default async function LedgerPage({
                     <LocalTime iso={e.at} style="datetime" />
                   </span>
                   <span className="min-w-0 break-words text-[13.5px] leading-[21px] text-foreground">
-                    <span className="font-medium">{e.actor.name}</span> · {actionLabel(e.action, e.payload).toLowerCase()}
-                    <Detail item={e} title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined} />
+                    <span className="font-medium">{e.actor.name}</span> ·{' '}
+                    {(renamedFrom.has(e.eventId) ? 'Renamed the workspace' : actionLabel(e.action, e.payload)).toLowerCase()}
+                    <Detail
+                      item={e}
+                      title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined}
+                      previousName={renamedFrom.get(e.eventId)}
+                    />
                     {(e.action === 'gate1.approve' || e.action === 'gate2.approve') && e.payload.selfApproved === true ? (
                       <span className="ml-2 inline-flex align-middle">
                         <Chip tone="muted">Self-approved</Chip>
@@ -165,12 +208,12 @@ export default async function LedgerPage({
                     {target === undefined ? null : (
                       <>
                         {' '}
-                        <Link
+                        <NavLink
                           href={target.href(e.targetId)}
                           className="whitespace-nowrap text-[12.5px] font-medium text-gold-ink underline-offset-2 hover:underline"
                         >
                           {target.label}
-                        </Link>
+                        </NavLink>
                       </>
                     )}
                   </span>
@@ -189,9 +232,9 @@ export default async function LedgerPage({
           {shown.length < items.length ? (
             <p className="m-0 text-[12.5px] text-muted-foreground">
               Showing the newest {shown.length.toLocaleString()} of {chain.count.toLocaleString()} entries.{' '}
-              <Link href="/ledger?all=1" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+              <NavLink href="/ledger?all=1" className="font-medium text-gold-ink underline-offset-2 hover:underline">
                 Show all
-              </Link>
+              </NavLink>
             </p>
           ) : items.length < chain.count ? (
             <p className="m-0 text-[12.5px] text-muted-foreground">

@@ -9,7 +9,6 @@ import {
   type KeyboardEvent,
   type ReactNode,
   startTransition,
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -21,8 +20,10 @@ import { reasonEnough } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
 import { LocalTime } from './local-time';
+import { useNudge } from './nudge';
 
 import type { FindingDetail } from './model';
+
 
 // Every PendingButton here passes stayPending and returns false: it then runs the action and resets once it settles.
 export const PROVEN_REASON = 'Proven by replay';
@@ -59,29 +60,6 @@ export function useSettledAction(): { settling: boolean; run: (action: () => Pro
       nudge(() => waiting.current !== w);
     });
   return { settling, run };
-}
-
-const NUDGE_MS = 150;
-const NUDGE_MAX = 40;
-
-/**
- * shortcut: in Edge (Next 15.5, React 19.3) a refreshed page's transition is sometimes left suspended without a ping,
- * so the new page only appears with the next unrelated update (the sidebar's 5 s poll): measured 2 to 5 s instead of
- * ~0.2 s. Any update makes React retry it, so this sends small no-op updates until `done()` says the page is in (at
- * most 6 s). Remove once the upstream bug is fixed (re-measure `router.refresh()` on /ledger).
- */
-export function useNudge(): (done: () => boolean) => void {
-  const [, setTick] = useState(0);
-  return useCallback((done: () => boolean) => {
-    let n = 0;
-    const tick = (): void => {
-      if (done() || n > NUDGE_MAX) return;
-      n += 1;
-      setTick((x) => x + 1);
-      window.setTimeout(tick, NUDGE_MS);
-    };
-    window.setTimeout(tick, NUDGE_MS);
-  }, []);
 }
 
 /** Every mutation tells the sidebar to refresh (spec §10.5); the page itself comes back with the action's response. */

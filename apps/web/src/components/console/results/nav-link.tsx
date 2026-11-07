@@ -5,7 +5,7 @@
 // update (measured 2 to 5 s in Edge, page data in at ~100 ms). Remove together with `useNudge` once fixed upstream.
 import Link from 'next/link';
 
-import { useNudge } from './triage';
+import { useNudge } from './nudge';
 
 import type { ComponentProps } from 'react';
 

@@ -1,14 +1,13 @@
 // Results (experience spec §7; prototype 05): what Claude proved, in three voices, Gate 3 per issue, what was kept back,
 // every decision you made, and the report. Every number is the runner's; the headline and lede are templates.
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
+import { cache ,type  ReactNode } from 'react';
 import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
 import { YourDecisions } from '../../../../../components/console/results/decisions';
 import { IssueList, KeptBack, ReleaseAll } from '../../../../../components/console/results/issue-list';
 import { LiveRefresh } from '../../../../../components/console/results/live-refresh';
-import { NavLink } from '../../../../../components/console/results/nav-link';
 import { readApi } from '../../../../../components/console/results/load';
 import {
   decisions,
@@ -21,13 +20,13 @@ import {
   testCases,
   type FindingDetail,
 } from '../../../../../components/console/results/model';
+import { NavLink } from '../../../../../components/console/results/nav-link';
 import { ReportCard } from '../../../../../components/console/results/report-card';
 import { ApiError } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 import { LIVE_RUN_STATES, requestSchema, runSchema, workspaceSchema, type Run } from '../../../../../lib/schemas';
 
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 

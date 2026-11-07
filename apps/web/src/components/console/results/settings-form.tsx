@@ -4,21 +4,28 @@
 // Enter, runs of spaces folded to one, saved through the same action /welcome uses), and the theme. The
 // administrator's settings are read-only on the page.
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 
 import { nameWorkspaceAction } from '../../../app/welcome/actions';
-import { WORKSPACE_NAME_MAX, workspaceNameError } from '../../../lib/workspace-name';
+import { WORKSPACE_NAME_MAX, WORKSPACE_NAME_MIN } from '../../../lib/workspace-name';
 import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { useDarkTheme } from '../theme-toggle';
+import { useNudge } from './nudge';
 
 /** "  Tinycrows   Security " is saved as "Tinycrows Security". */
 const tidy = (name: string): string => name.trim().replace(/\s+/g, ' ');
-/** The shared check, with the upper bound said exactly (60 itself is allowed). */
-const nameError = (name: string): string | null =>
-  name.length > WORKSPACE_NAME_MAX
-    ? `Keep it to ${WORKSPACE_NAME_MAX} characters or fewer.`
-    : workspaceNameError(name);
+/**
+ * 2 to 60 characters, counted as people count them (code points, as the API does): "😀" is one character, so it is
+ * too short here instead of passing a length check that counts it as two and then failing on the server.
+ */
+export const nameError = (name: string): string | null => {
+  const n = Array.from(name).length;
+  if (n < WORKSPACE_NAME_MIN) return `A name needs at least ${WORKSPACE_NAME_MIN} characters.`;
+  if (n > WORKSPACE_NAME_MAX) return `Keep it to ${WORKSPACE_NAME_MAX} characters or fewer.`;
+  return null;
+};
+const HTTP_BAD_REQUEST = 400;
 
 export function WorkspaceNameForm({
   current,
@@ -52,7 +59,12 @@ export function WorkspaceNameForm({
     if (!changed) return false;
     const result = await nameWorkspaceAction(tidy(name));
     if (!result.ok) {
-      setState({ kind: 'failed', message: result.message });
+      // The server's own wording for a rejected body is for developers; the person gets the rule instead.
+      const message =
+        result.status === HTTP_BAD_REQUEST
+          ? `That name can't be saved. Use ${WORKSPACE_NAME_MIN} to ${WORKSPACE_NAME_MAX} characters.`
+          : result.message;
+      setState({ kind: 'failed', message });
       return false;
     }
     setSaved(result.data.name);
@@ -93,7 +105,8 @@ export function WorkspaceNameForm({
             onBlur={() => {
               setTouched(true);
             }}
-            className={`${INPUT_CLASS} w-full`}
+            // An invalid field keeps a red ring while focused, so the error never reads as gold.
+            className={`${INPUT_CLASS} w-full aria-[invalid=true]:focus-visible:border-bad aria-[invalid=true]:focus-visible:ring-bad/25`}
           />
           {/* Directly under the field at every width, so the message sits next to what it describes. */}
           <div id="ws-name-help" aria-live="polite" className="flex flex-col gap-1">
@@ -109,7 +122,7 @@ export function WorkspaceNameForm({
             {state.kind === 'idle' && !showError ? (
               <span className="text-[12.5px] text-muted-foreground">
                 {canEdit
-                  ? '2 to 60 characters. The change is recorded in the ledger.'
+                  ? `${WORKSPACE_NAME_MIN} to ${WORKSPACE_NAME_MAX} characters. The change is recorded in the ledger.`
                   : 'Only an administrator can rename the workspace.'}
               </span>
             ) : null}
@@ -181,17 +194,38 @@ export function ThemeSetting() {
   );
 }
 
-export function RetryButton() {
+/** Re-reads the page from the server (Retry, Check again): says so while it works. */
+export function RefreshButton({
+  label = 'Retry',
+  busyLabel = 'Retrying…',
+  className = 'font-medium underline',
+}: {
+  readonly label?: string;
+  readonly busyLabel?: string;
+  readonly className?: string;
+}) {
   const router = useRouter();
+  const [busy, start] = useTransition();
+  const nudge = useNudge();
+  const waiting = useRef(false);
+  waiting.current = busy;
   return (
     <button
       type="button"
-      className="font-medium underline"
+      disabled={busy}
+      aria-busy={busy || undefined}
+      className={className}
       onClick={() => {
-        router.refresh();
+        waiting.current = true;
+        start(() => {
+          router.refresh();
+        });
+        nudge(() => !waiting.current);
       }}
     >
-      Retry
+      {busy ? busyLabel : label}
     </button>
   );
 }
+
+export const RetryButton = () => <RefreshButton />;

@@ -1,6 +1,7 @@
 // Settings (experience spec §2, §8): the workspace name (editable by an administrator), your account and theme, and
 // the settings your administrator sets on the server, shown read-only with where they come from.
 import { Chip, Icon, InlineMessage } from '../../../components/console/design';
+import { HashFocus, HIGHLIGHT_CLASS } from '../../../components/console/results/hash-focus';
 import { readApi } from '../../../components/console/results/load';
 import { RetryButton, ThemeSetting, WorkspaceNameForm } from '../../../components/console/results/settings-form';
 import { getViewer } from '../../../lib/auth';
@@ -41,7 +42,10 @@ function Section({
 
 function Fact({ label, children, id }: { readonly label: string; readonly children: ReactNode; readonly id?: string }) {
   return (
-    <div id={id} className="grid scroll-mt-6 gap-1 border-t border-border pt-3 first:border-t-0 first:pt-0 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-4">
+    <div
+      id={id}
+      className={`-mx-2 grid scroll-mt-6 gap-1 rounded-[10px] border-t border-border px-2 pb-1 pt-3 first:border-t-0 first:pt-1 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-4 ${HIGHLIGHT_CLASS}`}
+    >
       <dt className="text-[13px] text-muted-foreground">{label}</dt>
       <dd className="m-0 text-[13.5px] leading-[21px] text-foreground">{children}</dd>
     </div>
@@ -60,6 +64,7 @@ export default async function SettingsPage(): Promise<ReactNode> {
 
   return (
     <div className="flex w-full max-w-[860px] flex-col gap-5">
+      <HashFocus />
       <div className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Settings</h1>
         <p className="m-0 text-[14px] leading-[22px] text-muted-foreground">

@@ -1,0 +1,315 @@
+/* eslint-disable @typescript-eslint/no-magic-numbers -- report layout values */
+// The run report people download and send on (experience spec §7, §8). The API gives the run's released findings as
+// JSON; this file words them the way the console does: the target's name, plain words for every setting, the issues
+// most severe first, and the three voices kept apart (Blackwing's proof, Claude's explanation and Claude's fix, the
+// last two marked "not verified"). It holds released issues only, so the agent's run summary (written about every
+// suspected issue, dismissed and unreleased ones too) never goes in. Pure functions, no IO; all text is escaped.
+import { z } from 'zod';
+
+import { agentName } from '../../../lib/agents';
+import { escapeHtml as esc, markdownToHtml } from '../markdown';
+import { oracleWords, proofSentence, requestLine } from './issue-body';
+import { bySeverity, duration, findingDetailSchema, SEVERITIES, type FindingDetail } from './model';
+
+/** The API's `GET /runs/:id/report?format=json`: only what the report says is read; the rest passes through. */
+export const reportSourceSchema = z
+  .object({
+    run: z
+      .object({
+        id: z.string(),
+        startedAt: z.string().nullable().default(null),
+        finishedAt: z.string().nullable().default(null),
+        requestsUsed: z.number().default(0),
+        costUsd: z.number().default(0),
+        budget: z.object({ requests: z.number(), seconds: z.number(), costUsd: z.number() }),
+      })
+      .loose(),
+    asset: z
+      .object({
+        name: z.string(),
+        baseUrl: z.string(),
+        ownership: z
+          .object({ status: z.string(), verifiedBy: z.string().nullable(), verifiedAt: z.string().nullable() })
+          .partial()
+          .default({}),
+      })
+      .loose(),
+    request: z
+      .object({
+        objective: z.string().default(''),
+        intrusiveness: z.string().default('passive'),
+        excludedPaths: z.array(z.string()).default([]),
+        testAccounts: z.array(z.object({ role: z.string() })).default([]),
+        approver: z.object({ name: z.string().nullable() }).nullable().default(null),
+        decisionReason: z.string().nullable().default(null),
+        decidedAt: z.string().nullable().default(null),
+      })
+      .loose(),
+    findings: z.array(findingDetailSchema),
+  })
+  .loose();
+export type ReportSource = z.infer<typeof reportSourceSchema>;
+
+export const REPORT_FORMATS = ['html', 'md', 'json', 'sarif'] as const;
+export type ReportFormat = (typeof REPORT_FORMATS)[number];
+
+const LIMITS = [
+  'Severity is the label Claude proposed, not a computed CVSS score.',
+  'Explanations and fixes are written by Claude and are not verified. The proof (replays and control) is.',
+  'Detection only: each probe is the least needed to show the issue, and no data was taken.',
+  'Only issues a person released are listed. Issues still awaiting release, kept back or dismissed are left out.',
+];
+
+const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
+const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+const usd = (n: number): string => `$${n.toFixed(2)}`;
+
+/** A date people read anywhere: day, month, year and time in UTC, said as UTC (the server's zone is nobody's). */
+export function when(iso: string | null | undefined): string | null {
+  if (iso === null || iso === undefined) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const text = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(d);
+  return `${text} UTC`;
+}
+
+const careful = (intrusiveness: string): string =>
+  intrusiveness === 'active_safe' ? 'Probe gently (active, safe requests only)' : 'Only look, never touch (passive)';
+
+/** "1 high, 4 medium and 1 low". */
+export function severityWords(findings: readonly Pick<FindingDetail, 'severity'>[]): string {
+  const parts = SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([s, n]) => `${n} ${s}`);
+  return parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
+}
+
+/** The report's opening sentence: how many released issues it holds, by severity. */
+export function reportLede(findings: readonly Pick<FindingDetail, 'severity'>[]): string {
+  if (findings.length === 0)
+    return 'This report lists no issues: none were released from this audit. What was tested is described below.';
+  return `Claude proved ${plural(findings.length, 'issue', 'issues')} that you released to this report: ${severityWords(findings)}.`;
+}
+
+/** `blackwing-report-local-shop-2026-11-06.html`: safe in a header, sortable, and says what it is. */
+export function reportFilename(src: ReportSource, format: ReportFormat): string {
+  const slug =
+    src.asset.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || src.run.id.slice(0, 8);
+  const day = (src.run.startedAt ?? src.run.finishedAt ?? '').slice(0, 10);
+  const ext = format === 'sarif' ? 'sarif' : format;
+  return `blackwing-report-${slug}${/^\d{4}-\d{2}-\d{2}$/.test(day) ? `-${day}` : ''}.${ext}`;
+}
+
+/** The facts about the audit, in the words of the plan the person approved. */
+function facts(src: ReportSource): [string, string][] {
+  const { run, asset, request } = src;
+  const owner = asset.ownership;
+  const verified =
+    owner.status === 'verified'
+      ? ['Ownership verified', owner.verifiedBy === null || owner.verifiedBy === undefined ? null : `by ${owner.verifiedBy}`, when(owner.verifiedAt) === null ? null : `on ${when(owner.verifiedAt)}`]
+          .filter(Boolean)
+          .join(' ')
+      : 'Ownership not verified';
+  const approved =
+    request.approver === null
+      ? 'Not recorded'
+      : [
+          request.approver.name ?? 'An administrator',
+          when(request.decidedAt) === null ? null : `on ${when(request.decidedAt)}`,
+          request.decisionReason === null || request.decisionReason === '' ? null : `· reason: “${request.decisionReason}”`,
+        ]
+          .filter(Boolean)
+          .join(' ');
+  const took =
+    run.startedAt === null || run.finishedAt === null
+      ? null
+      : duration(Date.parse(run.finishedAt) - Date.parse(run.startedAt));
+  const rows: [string, string | null][] = [
+    ['Target', `${asset.name} (${asset.baseUrl}). ${verified}.`],
+    ['What was tested', request.objective.trim() === '' ? 'The whole site' : request.objective.trim()],
+    ['How careful', careful(request.intrusiveness)],
+    ['Left out', request.excludedPaths.length === 0 ? 'Nothing' : request.excludedPaths.join(', ')],
+    ['Signed-in testing', request.testAccounts.length === 0 ? 'None' : `As ${request.testAccounts.map((a) => a.role).join(', ')}`],
+    ['Approved by', approved],
+    ['When', [when(run.startedAt), took === null ? null : `ran for ${took}`].filter(Boolean).join(', ') || null],
+    ['Requests sent', `${run.requestsUsed.toLocaleString('en-GB')} of ${run.budget.requests.toLocaleString('en-GB')} allowed`],
+    ['Model spend', `${usd(run.costUsd)} of ${usd(run.budget.costUsd)}`],
+  ];
+  return rows.filter((r): r is [string, string] => r[1] !== null);
+}
+
+/** One line about the release: who, when and why. */
+function releaseLine(f: FindingDetail): string | null {
+  const t = f.triage;
+  if (t === null) return null;
+  return [
+    `Released${t.by === null ? ' automatically' : ` by ${t.by}`}`,
+    when(t.at) === null ? null : `on ${when(t.at)}`,
+    t.reason === null || t.reason === '' ? null : `· reason: “${t.reason}”`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+function sideWords(side: FindingDetail['evidence']['probe']): string {
+  const line = requestLine(side);
+  if (line === null) return 'Not recorded';
+  return side.response === undefined ? line : `${line} → HTTP ${side.response.status}`;
+}
+
+function meta(f: FindingDetail): string {
+  return [f.cwe, f.owasp === null ? null : `OWASP ${f.owasp}`, f.agent === null ? null : `Found by the ${agentName(f.agent)}`]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+const title = (src: ReportSource): string => `Security audit of ${src.asset.name}`;
+
+export function renderMarkdown(src: ReportSource, findings: readonly FindingDetail[]): string {
+  const out: string[] = [`# ${title(src)}`, '', `Blackwing report · ${src.asset.baseUrl}`, '', reportLede(findings), ''];
+  out.push('## About this audit', '', ...facts(src).map(([k, v]) => `- **${k}:** ${v}`), '');
+  findings.forEach((f, i) => {
+    const proof = proofSentence(f);
+    const check = oracleWords(f.oracle);
+    const remediation = f.evidence.remediation?.trim() ?? '';
+    out.push(`## ${i + 1}. ${f.title}`, '', `**${cap(f.severity)}** · ${meta(f)}  `);
+    const released = releaseLine(f);
+    if (released !== null) out.push(released);
+    out.push('', '### How it was proved (Blackwing’s validator, no model)', '', proof.text.replace(/^Proven: /, 'Proven: '));
+    if (check !== null) out.push('', `Blackwing checked that ${check}: the probe should show it, the control should not.`);
+    out.push(
+      '',
+      `- **Probe** (the request that shows the issue): \`${sideWords(f.evidence.probe)}\``,
+      `- **Control** (a similar request that should not show it): \`${sideWords(f.evidence.control)}\``,
+      '',
+    );
+    const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
+    if (excerpt !== '') out.push('What the site answered to the probe (excerpt):', '', '```', excerpt, '```', '');
+    if (f.reproCurl !== '') out.push('Reproduce it (run it only against a copy you own):', '', '```sh', f.reproCurl, '```', '');
+    if (f.description !== null && f.description.trim() !== '')
+      out.push('### What it means (Claude’s explanation, not verified)', '', f.description.trim(), '');
+    if (remediation !== '') out.push('### How to fix it (Claude’s suggestion, not verified)', '', remediation, '');
+  });
+  out.push('## Limits of this report', '', ...LIMITS.map((l) => `- ${l}`), '');
+  return out.join('\n');
+}
+
+// The downloaded file stands alone (no stylesheet of ours reaches it), so the design tokens are copied in by value:
+// these mirror --crit-bg, --high, --med, --low and their -soft pairs, and STYLE's variables mirror the light theme
+// in app/globals.css. Change them together.
+const SEV_STYLE: Readonly<Record<string, string>> = {
+  critical: 'background:#6e1520;color:#fff',
+  high: 'background:#fcedeb;color:#b42318',
+  medium: 'background:#fdf1e7;color:#a8450a',
+  low: 'background:#eef0f3;color:#4a5568',
+  info: 'background:#f0f1f3;color:#4b5160',
+};
+
+const STYLE = `<style>
+:root{color-scheme:light;--fg:#17150f;--muted:#625d52;--line:#ece9e2;--line2:#d9d4c9;--code:#fbfaf7;--gold:#e2b23a;--gold-ink:#8a6310;--gold-soft:#fbf4e2;--ok:#1b7a3e}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--fg);font:15px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:40px 24px 64px}
+.brand{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}
+.brand i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gold)}
+h1{font-size:28px;line-height:1.25;margin:10px 0 4px;letter-spacing:-.01em}
+.sub{margin:0;color:var(--muted);font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.lede{font-size:17px;margin:24px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;padding:0;list-style:none}
+.chip{display:inline-block;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600}
+h2{font-size:18px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+dl{display:grid;grid-template-columns:170px minmax(0,1fr);gap:8px 16px;margin:0;font-size:14px}
+dt{color:var(--muted)}dd{margin:0}
+article{border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0;break-inside:avoid-page}
+article h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:17px;margin:0 0 4px}
+.meta{margin:0;color:var(--muted);font-size:13px}
+h4{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:20px 0 6px;color:var(--fg)}
+h4 span{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)}
+.proof{color:var(--ok);font-weight:600;margin:0 0 6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--code);font-weight:600;width:110px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+td code{word-break:break-all}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;margin:6px 0}
+.claude{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;background:var(--code)}
+.claude p{margin:6px 0}
+ul.limits{padding-left:20px;color:var(--muted);font-size:14px}
+footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+@media (max-width:600px){dl{grid-template-columns:1fr}dt{font-weight:600;color:var(--fg)}article{padding:16px}}
+@media print{main{padding:0}article{border-color:#ccc}}
+</style>`;
+
+export function renderHtml(src: ReportSource, findings: readonly FindingDetail[], generatedAt: string): string {
+  const counts = SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length] as const).filter(([, n]) => n > 0);
+  const issues = findings
+    .map((f, i) => {
+      const proof = proofSentence(f);
+      const check = oracleWords(f.oracle);
+      const remediation = f.evidence.remediation?.trim() ?? '';
+      const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
+      const released = releaseLine(f);
+      return `<article>
+<h3><span class="chip" style="${SEV_STYLE[f.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(f.severity))}</span>${i + 1}. ${esc(f.title)}</h3>
+<p class="meta">${esc(meta(f))}</p>${released === null ? '' : `\n<p class="meta">${esc(released)}</p>`}
+<h4>How it was proved <span>· Blackwing’s validator, no model</span></h4>
+<p class="proof">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">Blackwing checked that ${esc(check)}: the probe should show it, the control should not.</p>`}
+<table>
+<tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
+<tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">A similar request that should not show it.</span></td></tr>
+</table>${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${f.reproCurl === '' ? '' : `\n<p class="meta">Reproduce it (run it only against a copy you own):</p>\n<pre>${esc(f.reproCurl)}</pre>`}${
+        f.description === null || f.description.trim() === ''
+          ? ''
+          : `\n<h4>What it means <span>· Claude’s explanation, not verified</span></h4>\n<div class="claude">${markdownToHtml(f.description.trim())}</div>`
+      }${remediation === '' ? '' : `\n<h4>How to fix it <span>· Claude’s suggestion, not verified</span></h4>\n<div>${markdownToHtml(remediation)}</div>`}
+</article>`;
+    })
+    .join('\n');
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title(src))} · Blackwing report</title>
+${STYLE}</head>
+<body><main>
+<div class="brand"><i></i>Blackwing · Security audit report</div>
+<h1>${esc(title(src))}</h1>
+<p class="sub">${esc(src.asset.baseUrl)}</p>
+<p class="lede">${esc(reportLede(findings))}</p>
+${counts.length === 0 ? '' : `<ul class="chips">${counts.map(([s, n]) => `<li class="chip" style="${SEV_STYLE[s] ?? ''}">${n} ${esc(cap(s))}</li>`).join('')}</ul>`}
+<h2>About this audit</h2>
+<dl>
+${facts(src)
+  .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
+  .join('\n')}
+</dl>
+${findings.length === 0 ? '' : `<h2>Issues, most severe first</h2>\n${issues}`}
+<h2>Limits of this report</h2>
+<ul class="limits">${LIMITS.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
+<footer>Generated by Blackwing on ${esc(when(generatedAt) ?? generatedAt)}. Every decision behind it is sealed in the workspace ledger.</footer>
+</main></body></html>
+`;
+}
+
+/** The machine-readable report: the API's JSON without the agent's run summary, and the findings most severe first. */
+export function renderJson(raw: Readonly<Record<string, unknown>>, findings: readonly FindingDetail[]): string {
+  const run = typeof raw.run === 'object' && raw.run !== null ? { ...(raw.run as Record<string, unknown>) } : {};
+  delete run.summary;
+  const order = new Map(findings.map((f, i) => [f.id, i]));
+  const list = Array.isArray(raw.findings) ? [...(raw.findings as unknown[])] : [];
+  const idOf = (x: unknown): string => (typeof x === 'object' && x !== null && typeof (x as { id?: unknown }).id === 'string' ? (x as { id: string }).id : '');
+  list.sort((a, b) => (order.get(idOf(a)) ?? 0) - (order.get(idOf(b)) ?? 0));
+  return JSON.stringify({ ...raw, run, findings: list }, null, 2);
+}
+
+/** Released findings, most severe first (the order of the results page). */
+export const ordered = (src: ReportSource): FindingDetail[] => [...src.findings].sort(bySeverity);
