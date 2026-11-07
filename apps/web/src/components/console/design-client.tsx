@@ -43,7 +43,7 @@ export function PendingButton({
   readonly icon?: IconName;
   /** A key hint shown on the button (the page binds the key). */
   readonly shortcut?: string;
-  readonly title?: string;
+  readonly title?: string | undefined;
   readonly autoFocus?: boolean;
   readonly type?: 'button' | 'submit';
   readonly describedBy?: string;
