@@ -4,7 +4,8 @@
 import { z } from 'zod';
 
 import { callApi } from '../../../lib/api';
-import { requestSchema, runSchema, type Gate2 } from '../../../lib/schemas';
+import { objectivePhrase } from '../../../lib/plan-text';
+import { LIVE_RUN_STATES, requestSchema, runSchema, type Gate2 } from '../../../lib/schemas';
 
 import type { AuditContext } from '../../../components/console/gate2-view';
 import type { Viewer } from '../../../lib/auth';
@@ -55,6 +56,8 @@ export async function askedInRun(session: Viewer, runId: string): Promise<RunAsk
       startedAt: run.data.startedAt ?? run.data.createdAt,
       requester: request.success ? request.data.requester.name : null,
       mine: request.success && request.data.viewerIsRequester,
+      objective: request.success ? objectivePhrase(request.data.objective) : null,
+      live: LIVE_RUN_STATES.includes(run.data.state),
     },
     history: run.data.gate2,
   };

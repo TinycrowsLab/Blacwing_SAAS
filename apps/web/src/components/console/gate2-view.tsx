@@ -6,12 +6,13 @@
 // gate2.requested event, the deterministic whyOutside text. Only the dashed box holds Claude's words.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Chip, Icon, InlineMessage, Receipt } from './design';
 import { Countdown, PendingButton, useCountdown } from './design-client';
 import {
   DECIDED_EVENT,
+  decidedHere,
   fetchGate2,
   FOOTNOTE,
   Gate2Actions,
@@ -34,6 +35,10 @@ export interface AuditContext {
   readonly requester: string | null;
   /** The viewer asked for this audit. */
   readonly mine: boolean;
+  /** What the audit looks for, in a few words ("the OWASP Top 10"): tells two audits of one site apart. */
+  readonly objective: string | null;
+  /** Still queued, running or paused: the receipt then leads back to it. */
+  readonly live: boolean;
 }
 
 /** "your audit" or "started by Avery": whose audit this is, so requests from two audits never look alike. */
@@ -59,17 +64,15 @@ export const gate2Question = (role: string | null): string =>
 export const plainWhy = (text: string): string =>
   text.replace(/\bactive-safe\b/g, '“Probe gently”').replace(/\bpassive\b/g, '“Look, don’t touch”');
 
-/** The one plain line before the runner's rule: what the request could do, and how it would be sent. */
-export function plainLead(gate2: { method: string }, role: string | null): string {
-  const what = CHANGES_DATA.has(gate2.method.toUpperCase())
-    ? 'This could change data on the site, and your plan only lets Claude probe gently.'
-    : 'This goes beyond what your plan lets Claude do on its own.';
-  const how =
-    role === null
-      ? 'It would go as a visitor, without any test account.'
-      : `It would go signed in as your test account “${role}”.`;
-  return `${what} ${how}`;
-}
+const asWho = (role: string | null): string =>
+  role === null ? 'sent without signing in' : `sent as ${role}`;
+
+/**
+ * What an allow really covers (the worker's grant is METHOD + path + role, for the rest of the run): every agent, any
+ * body, no further question. Said before the person commits, because the card shows one body and one reason.
+ */
+export const grantScope = (gate2: { method: string; url: string }, role: string | null): string =>
+  `Allowing covers every ${gate2.method} ${pathOf(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again.`;
 
 /** The latest closed request in the same audit for the same method, path and role (the runner asks again after a no). */
 export function earlierDecision(
@@ -186,98 +189,136 @@ function ClaudeReason({
   );
 }
 
-/** One plain line first, then the runner's own rule (deterministic, so it stays: muted, and folded on phones). */
-function WhyAsked({
-  gate2,
-  role,
-  phone = false,
-}: {
-  readonly gate2: Card;
-  readonly role: string | null;
-  readonly phone?: boolean;
-}) {
-  const rule = gate2.whyOutside === '' ? null : plainWhy(gate2.whyOutside);
+/** The runner's own rule (deterministic): one muted line between the chips and Claude's words, as in prototype 04. */
+function WhyAsked({ gate2, phone = false }: { readonly gate2: Card; readonly phone?: boolean }) {
+  if (gate2.whyOutside === '') return null;
   return (
-    <div className={phone ? 'mt-1' : 'mt-2.5'}>
-      <p className="m-0 text-[13px] leading-5 text-foreground">
-        <span className="font-medium">Why you&apos;re asked: </span>
-        {plainLead(gate2, role)}
-      </p>
-      {rule === null ? null : phone ? (
-        <details className="mt-0.5 text-[12px] leading-[18px] text-muted-foreground">
-          <summary className="inline-flex min-h-11 cursor-pointer items-center font-medium text-gold-ink">
-            The exact rule
-          </summary>
-          <p className="m-0">{rule}</p>
-        </details>
-      ) : (
-        <p className="m-0 mt-0.5 text-[12px] leading-[18px] text-muted-foreground">
-          The rule: {rule}
-        </p>
-      )}
-    </div>
+    <p
+      className={`m-0 text-[12.5px] leading-[19px] text-muted-foreground ${phone ? 'mt-1.5' : 'mt-2'}`}
+    >
+      {plainWhy(gate2.whyOutside)}
+    </p>
   );
 }
 
-/** "You denied POST /api/Users at 1:11 pm in this audit.": the card remembers, so a second ask never looks like a lost click. */
+/**
+ * "You denied this at 2:41 pm (Web & API specialist: …). Allowing now opens it to every agent, that one included.": the
+ * card remembers, so a second ask never looks like a lost click, and an allow never silently undoes an earlier no.
+ */
 function Earlier({
   earlier,
+  current,
   viewerName,
 }: {
   readonly earlier: Gate2;
+  readonly current: Card;
   readonly viewerName: string | null;
 }) {
   const time = <When iso={earlier.decidedAt ?? earlier.deadlineAt} />;
-  const what = (
-    <span className="font-mono text-[12px]">
-      {earlier.method} {pathOf(earlier.url)}
-    </span>
-  );
   const who =
     earlier.decidedBy === null
       ? null
       : earlier.decidedBy === viewerName
         ? 'You'
         : earlier.decidedBy;
+  const asked = (
+    <>
+      {' '}
+      ({agentName(earlier.agent)}
+      {earlier.reason === '' ? '' : `: “${earlier.reason}”`})
+    </>
+  );
+  const sameAsker = earlier.agent === current.agent && earlier.reason === current.reason;
   return (
-    <p className="m-0 mt-2 flex items-start gap-1.5 rounded-[10px] bg-surface-2 px-2.5 py-1.5 text-[12.5px] leading-5 text-muted-foreground">
+    <p className="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-[19px] text-muted-foreground">
       <Icon name="repeat" size={13} className="mt-[3px] shrink-0" />
       <span>
         {earlier.status === 'approved' ? (
           <>
-            {who ?? 'Someone'} allowed {what} at {time} in this audit.
-          </>
-        ) : who === null ? (
-          <>
-            {what} was denied automatically at {time} in this audit.
+            {who ?? 'Someone'} allowed this same method, path and role at {time}. Claude is asking
+            again.
           </>
         ) : (
           <>
-            {who} denied {what} at {time} in this audit.
+            {who === null ? 'Denied automatically' : `${who} denied`} this same method, path and role
+            at {time}
+            {sameAsker ? '' : asked}.{' '}
+            <span className="text-foreground">
+              Allowing now opens it to every agent
+              {sameAsker ? '' : ', that request included'}.
+            </span>
           </>
-        )}{' '}
-        Claude is asking again.
+        )}
       </span>
     </p>
   );
 }
 
-/** The decision, collapsed. A human decision is on the ledger; an automatic denial is the runner's (no ledger row). */
+/**
+ * The decision, collapsed. A human decision is on the ledger; an automatic denial is the runner's (no ledger row).
+ * `line`: one row (the inbox, for requests closed elsewhere or by the deadline), so settled requests never crowd the
+ * ones still waiting.
+ */
 function DecisionReceipt({
   gate2,
+  role,
   viewerName,
   alreadyDecided,
+  line = false,
 }: {
   readonly gate2: Card;
+  readonly role: string | null;
   readonly viewerName: string | null;
   readonly alreadyDecided: boolean;
+  readonly line?: boolean;
 }) {
   const time = <When iso={gate2.decidedAt ?? gate2.deadlineAt} />;
-  const detail = (consequence: string) => (
+  const request = (
+    <span className="font-mono text-[12px]">
+      {gate2.method} {pathOf(gate2.url)}
+    </span>
+  );
+  const human =
+    gate2.status === 'approved' || (gate2.status === 'denied' && gate2.decidedBy !== null);
+  const who =
+    gate2.decidedBy === null || gate2.decidedBy === viewerName ? 'you' : gate2.decidedBy;
+  // `denied` without a person: the audit stopped. `expired`, or still `pending` past the deadline: nobody answered.
+  const stopped = gate2.status === 'denied';
+  const title = human ? (
+    gate2.status === 'approved' ? (
+      <>
+        Allowed for this run by {who} at {time}
+        {gate2.decisionReason === null ? '' : `: “${gate2.decisionReason}”`}
+      </>
+    ) : (
+      <>
+        Denied by {who} at {time}
+      </>
+    )
+  ) : (
     <>
-      <span className="block font-mono text-[12px]">
-        {gate2.method} {pathOf(gate2.url)}
-      </span>
+      Denied automatically at {time} {stopped ? '(the audit stopped)' : '(no answer)'}
+    </>
+  );
+  if (line)
+    return (
+      <div
+        role="status"
+        className="flex min-h-11 items-center gap-2.5 rounded-[12px] border border-border bg-surface-2 px-3.5 py-2 text-[12.5px] leading-5 text-muted-foreground"
+      >
+        <span
+          className={`flex size-4 shrink-0 items-center justify-center rounded-full ${gate2.status === 'approved' ? 'bg-ok text-white' : 'bg-text text-bg'}`}
+        >
+          <Icon name={gate2.status === 'approved' ? 'check' : 'x'} size={10} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          <span className="text-foreground">{title}</span> · {request}
+        </span>
+      </div>
+    );
+  const detail = (consequence: ReactNode) => (
+    <>
+      <span className="block">{request}</span>
       <span className="block">{consequence}</span>
       {alreadyDecided ? (
         <span className="block">Already decided in another tab or by a teammate.</span>
@@ -285,37 +326,20 @@ function DecisionReceipt({
     </>
   );
   const hash = 'audit' in gate2 ? (gate2.audit?.hash ?? null) : null;
-  if (gate2.status === 'approved' || (gate2.status === 'denied' && gate2.decidedBy !== null)) {
-    const who =
-      gate2.decidedBy === null || gate2.decidedBy === viewerName ? 'you' : gate2.decidedBy;
-    return gate2.status === 'approved' ? (
+  if (human)
+    return (
       <Receipt
-        tone="ok"
-        title={
-          <>
-            Allowed for this run by {who} at {time}
-            {gate2.decisionReason === null ? '' : `: “${gate2.decisionReason}”`}
-          </>
-        }
-        detail={detail('Claude may send this method, path and role until the run ends.')}
-        hash={hash}
-      />
-    ) : (
-      <Receipt
-        tone="bad"
-        title={
-          <>
-            Denied by {who} at {time}
-          </>
-        }
-        detail={detail('Not sent. Claude moves on to its next test.')}
+        tone={gate2.status === 'approved' ? 'ok' : 'bad'}
+        title={title}
+        detail={detail(
+          gate2.status === 'approved'
+            ? `Claude may now send any ${gate2.method} ${pathOf(gate2.url)} ${asWho(role)}, from any agent, until the run ends.`
+            : 'Not sent. Claude moves on to its next test.',
+        )}
         hash={hash}
       />
     );
-  }
-  // `denied` without a person: the audit stopped. `expired`, or still `pending` past the deadline: nobody answered.
   // No person decided, so there is no ledger entry: the runner records it in the audit's activity (gate2.decided).
-  const stopped = gate2.status === 'denied';
   return (
     <div
       role="status"
@@ -325,11 +349,13 @@ function DecisionReceipt({
         <Icon name="x" size={12} />
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[13.5px] font-medium leading-5 text-foreground">
-          Denied automatically at {time} {stopped ? '(the audit stopped)' : '(no answer)'}
-        </span>
+        <span className="text-[13.5px] font-medium leading-5 text-foreground">{title}</span>
         <span className="text-[12.5px] leading-5 text-muted-foreground">
-          {detail('Not sent. Claude moves on to its next test.')}
+          {detail(
+            stopped
+              ? 'Not sent.'
+              : 'Not sent. If Claude still needs it, it asks again in this audit. To be sure it gets tested, use “Run this audit again” on the results once this audit ends.',
+          )}
         </span>
         <span className="text-[11.5px] text-muted-foreground">
           Recorded in the audit&apos;s activity. No one decided, so there is no ledger entry.
@@ -359,13 +385,24 @@ function Checking({ gate2 }: { readonly gate2: Card }) {
 const PAGE_POLL_MS = 5000;
 const CHECK_RETRY_MS = 2000;
 
-/** Where to go after a decision on the full page: the next thing that waits for this person, this audit's first. */
+interface NextStep {
+  readonly href: string;
+  readonly label: string;
+}
+
+/**
+ * Where to go after a decision on the full page. `decision`: another request with a deadline (this audit's first), which
+ * leads. `later`: a plan or a release, offered only as a quiet link, so a live audit never loses the person to triage.
+ */
 function useNextDecision(
   active: boolean,
   id: string,
   runId: string,
-): { href: string; label: string } | null {
-  const [next, setNext] = useState<{ href: string; label: string } | null>(null);
+): { decision: NextStep | null; later: NextStep | null } {
+  const [next, setNext] = useState<{ decision: NextStep | null; later: NextStep | null }>({
+    decision: null,
+    later: null,
+  });
   useEffect(() => {
     if (!active) return;
     let live = true;
@@ -374,26 +411,31 @@ function useNextDecision(
       .then((parsed) => {
         if (!live || parsed?.success !== true) return;
         const d = parsed.data;
-        const others = d.gate2.filter((x) => x.id !== id);
+        const others = d.gate2
+          .filter((x) => x.id !== id && decidedHere(x.id) === null)
+          .sort((a, b) => Date.parse(a.deadlineAt) - Date.parse(b.deadlineAt));
         const same = others.find((x) => x.runId === runId);
         const g = same ?? others[0];
         const plan = d.plans[0];
         const release = d.releases[0];
-        setNext(
-          g !== undefined
-            ? {
-                href: `/decisions/gate2/${g.id}`,
-                label:
-                  same === undefined
-                    ? 'Next decision, from another audit'
-                    : 'Next decision in this audit',
-              }
-            : plan !== undefined
-              ? { href: `/audits/${plan.id}`, label: 'Next: a plan to approve' }
+        setNext({
+          decision:
+            g === undefined
+              ? null
+              : {
+                  href: `/decisions/gate2/${g.id}`,
+                  label:
+                    same === undefined
+                      ? 'Next request, from another audit'
+                      : 'Next request in this audit',
+                },
+          later:
+            plan !== undefined
+              ? { href: `/audits/${plan.id}`, label: 'A plan waits for your approval' }
               : release !== undefined
-                ? { href: `/findings/${release.id}`, label: 'Next: a finding to release' }
+                ? { href: `/findings/${release.id}`, label: 'A finding waits for your release' }
                 : null,
-        );
+        });
       })
       .catch(() => null);
     return () => {
