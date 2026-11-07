@@ -31,7 +31,7 @@ export function announceDecided(gate2: Gate2Detail): void {
 }
 
 /** The route and the API cap a reason at this length; the field stops there too. */
-export const MAX_REASON = 500;
+const MAX_REASON = 500;
 const NEAR_LIMIT = 400;
 // One tap, like Gate 1's reasons: each says why changing data here is safe.
 const REASONS = ['Our own test lab', 'Test account we own', 'Needed to prove the finding'] as const;

@@ -4,7 +4,7 @@ const KEY = 'bw.staleChunkReloadAt';
 const ONCE_MS = 60_000;
 const STALE = /ChunkLoadError|Loading (CSS )?chunk [\w-]+ failed|Failed to fetch dynamically imported module/i;
 
-export function isStaleChunk(error: unknown): boolean {
+function isStaleChunk(error: unknown): boolean {
   if (error instanceof Error) return STALE.test(error.name) || STALE.test(error.message);
   return typeof error === 'string' && STALE.test(error);
 }

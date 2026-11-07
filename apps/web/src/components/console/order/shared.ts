@@ -71,7 +71,7 @@ const PRIVATE_HOST =
 export type Care = 'passive' | 'active_safe';
 
 /** A loopback or private-network host ("localhost:3001", "10.0.0.5"): it can't be checked from outside. */
-export const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
+const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
 
 /** Q4's recommendation from the host: gentle probing suits staging, local and lab hosts; a live site gets look-only. */
 export const recommendedCare = (host: string): Care =>

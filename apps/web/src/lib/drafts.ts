@@ -9,7 +9,7 @@ export const DRAFTS_EVENT = 'bw:drafts';
 const MAX_DRAFTS = 5;
 const QUESTIONS = 4;
 
-export const draftSchema = z.object({
+const draftSchema = z.object({
   /** Stable id of the draft (the order picks it, e.g. crypto.randomUUID()). */
   id: z.string().min(1),
   /** The normalised origin being ordered. */

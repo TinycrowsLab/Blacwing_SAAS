@@ -43,7 +43,7 @@ export interface AuditContext {
 }
 
 /** "your audit" or "started by Avery": whose audit this is, so requests from two audits never look alike. */
-export const whoseAudit = (audit: AuditContext): string =>
+const whoseAudit = (audit: AuditContext): string =>
   audit.mine
     ? 'your audit'
     : audit.requester === null
@@ -100,7 +100,7 @@ export function earlierDecision(
   );
 }
 
-export function hostOf(url: string): string {
+function hostOf(url: string): string {
   try {
     return new URL(url).host;
   } catch {

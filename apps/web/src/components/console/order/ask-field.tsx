@@ -81,7 +81,7 @@ export interface WaitingPlan {
 }
 
 /** The live line under the field: what we understood, or the one fix. */
-export function TargetLine({
+function TargetLine({
   result,
   known,
   showError,

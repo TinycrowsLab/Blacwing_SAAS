@@ -30,24 +30,3 @@ export function Shell({ viewer, workspaceName, sidebar, children }: ShellProps) 
     </div>
   );
 }
-
-/** Right-hand context panel: what the screen is for, who sees it, what is audited. */
-export function ContextPanel({
-  sections,
-}: {
-  readonly sections: readonly { title: string; body: string }[];
-}) {
-  return (
-    <aside
-      aria-label="Context"
-      className="flex w-full flex-col gap-4 text-[12.5px] leading-5 text-muted-foreground xl:w-[240px]"
-    >
-      {sections.map((s) => (
-        <div key={s.title} className="flex flex-col gap-1">
-          <h2 className="text-[13px] font-semibold text-foreground">{s.title}</h2>
-          <p className="m-0">{s.body}</p>
-        </div>
-      ))}
-    </aside>
-  );
-}

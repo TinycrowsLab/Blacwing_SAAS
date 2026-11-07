@@ -89,7 +89,7 @@ export function escapeCloses(close: () => void) {
 }
 
 /** Who decided and when, with the reason: "Dismissed by you · 6 Nov, 09:10 · "Accepted risk, tracked"". */
-export function Decided({
+function Decided({
   finding,
   viewerName,
 }: {

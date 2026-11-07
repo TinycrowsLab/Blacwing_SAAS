@@ -69,7 +69,7 @@ const plural = (n: number, one: string, many: string): string => `${n} ${n === 1
 const usd = (n: number): string => `$${n.toFixed(2)}`;
 
 /** A date people read anywhere: day, month, year and time in UTC, said as UTC (the server's zone is nobody's). */
-export function when(iso: string | null | undefined): string | null {
+function when(iso: string | null | undefined): string | null {
   if (iso === null || iso === undefined) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
@@ -90,7 +90,7 @@ const careful = (intrusiveness: string): string =>
     : 'Only look, never touch (passive)';
 
 /** "1 high, 4 medium and 1 low". */
-export function severityWords(findings: readonly Pick<FindingDetail, 'severity'>[]): string {
+function severityWords(findings: readonly Pick<FindingDetail, 'severity'>[]): string {
   const parts = SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length] as const)
     .filter(([, n]) => n > 0)
     .map(([s, n]) => `${n} ${s}`);

@@ -47,7 +47,7 @@ const END_KINDS: ReadonlySet<string> = new Set(['run.completed', 'run.killed', '
 
 const noSubscribe = (): (() => void) => () => undefined;
 /** False during the server render and hydration, true after: times are formatted in the viewer's own clock. */
-export function useMounted(): boolean {
+function useMounted(): boolean {
   return useSyncExternalStore(noSubscribe, () => true, () => false);
 }
 

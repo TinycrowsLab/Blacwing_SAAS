@@ -10,7 +10,7 @@ import { LIVE_RUN_STATES, requestSchema, runSchema, type Gate2 } from '../../../
 import type { AuditContext } from '../../../components/console/gate2-view';
 import type { Viewer } from '../../../lib/auth';
 
-export interface Asked {
+interface Asked {
   readonly body: string | null;
   readonly asRole: string | null;
 }

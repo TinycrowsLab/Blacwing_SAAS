@@ -49,10 +49,6 @@ export function mergeEvents(
   return [...bySeq.values()].sort((a, b) => a.seq - b.seq);
 }
 
-export function clock(iso: string): string {
-  return new Date(iso).toISOString().slice(11, 19);
-}
-
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
 const num = (value: unknown): number => (typeof value === 'number' ? value : 0);
 
@@ -367,8 +363,7 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
   return [...byId.values()];
 }
 
-export const CASE_STATUSES = ['executed', 'executing', 'proposed', 'skipped', 'blocked'] as const;
-export type CaseStatus = (typeof CASE_STATUSES)[number];
+export type CaseStatus = 'executed' | 'executing' | 'proposed' | 'skipped' | 'blocked';
 
 export interface TestCase {
   readonly id: string;
@@ -411,7 +406,7 @@ export function testCases(events: readonly RunEvent[]): {
 
 /** The one line shown after a gated decision: the ledger event id and a shortened hash. */
 /** UUIDv7 ids start with their timestamp, so the random tail tells ledger events apart. */
-export function auditEventLabel(eventId: string): string {
+function auditEventLabel(eventId: string): string {
   return eventId.replace(/-/g, '').slice(-8);
 }
 
@@ -427,9 +422,9 @@ export function auditLine(audit: { eventId: string; hash: string } | null): stri
 /** The validator replays every probe this many times (worker hunt/validator.ts). */
 export const VALIDATOR_REPLAYS = 3;
 /** A team node spins only while its lane spoke within this window. */
-export const SPIN_WINDOW_MS = 10_000;
+const SPIN_WINDOW_MS = 10_000;
 /** Liveness turns to "Quiet" after this long without an event. */
-export const QUIET_AFTER_MS = 15_000;
+const QUIET_AFTER_MS = 15_000;
 
 const RULE_WORDS: Readonly<Record<string, string>> = {
   out_of_scope_origin: 'another site, outside the scope',
@@ -457,7 +452,7 @@ const CASE_UPDATE: Readonly<Record<string, string>> = {
 };
 
 /** A non-delegation tool call as a short chip under the turn that made it (words, never raw case ids). */
-export function toolChip(tool: string, input: Readonly<Record<string, unknown>>): string {
+function toolChip(tool: string, input: Readonly<Record<string, unknown>>): string {
   switch (tool) {
     case 'record_test_cases':
       return `recorded ${plural(Array.isArray(input.cases) ? input.cases.length : 0, 'test case', 'test cases')}`;
@@ -521,7 +516,7 @@ export interface ValidatorItem {
   readonly calls: CallRow[];
 }
 
-export interface Gate2Item {
+interface Gate2Item {
   readonly type: 'gate2';
   readonly key: string;
   readonly seq: number;
@@ -888,7 +883,7 @@ function delegations(events: readonly RunEvent[]): Delegation[] {
 }
 
 /** `active`: still busy behind the current stage. `stopped`: the run ended before this stage's work did. */
-export type StageState = 'done' | 'current' | 'active' | 'stopped' | 'upcoming' | 'skipped';
+type StageState = 'done' | 'current' | 'active' | 'stopped' | 'upcoming' | 'skipped';
 
 export interface Stage {
   readonly key: 'approved' | 'mapping' | 'planning' | 'testing' | 'proving' | 'review';
@@ -981,7 +976,7 @@ export function stages(
 }
 
 /** `stopped`: the run was stopped while this agent still had work open (never shown as done). */
-export type NodeState = 'working' | 'waiting' | 'done' | 'idle' | 'stopped';
+type NodeState = 'working' | 'waiting' | 'done' | 'idle' | 'stopped';
 
 export interface TeamNode {
   readonly id: string;

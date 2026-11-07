@@ -35,7 +35,7 @@ export interface FindingFilters {
 type Key = keyof FindingFilters;
 
 /** The filters a URL asks for, matched forgivingly; anything unknown is ignored. */
-export function parseFilters(
+function parseFilters(
   read: (key: Key) => string | null,
   targets: readonly string[],
   audits: readonly string[] = [],

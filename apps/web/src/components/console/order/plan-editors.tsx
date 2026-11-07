@@ -227,7 +227,7 @@ export interface AccountRow {
   readonly note?: string | null;
 }
 
-export const MAX_ACCOUNTS = 3;
+const MAX_ACCOUNTS = 3;
 const EMPTY_ROW: AccountRow = { role: '', headerName: 'Authorization', headerValue: '' };
 
 /** The rows as the API takes them, or the one thing to fix. */

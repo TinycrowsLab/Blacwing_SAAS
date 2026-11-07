@@ -15,7 +15,7 @@ import type { Asset } from '../../../lib/schemas';
 export type ProofMethod = 'file' | 'attest';
 
 /** "Confirmed by Jatin Singh: authorised to test https://x.example." (sent as owner_attestation). */
-export const attestationStatement = (name: string, origin: string): string =>
+const attestationStatement = (name: string, origin: string): string =>
   `Confirmed by ${name}: authorised to test ${origin}.`;
 
 /** Sends the attestation; the order's Continue and Targets' Confirm both use it. */

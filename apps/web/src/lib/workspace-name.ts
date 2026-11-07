@@ -68,6 +68,3 @@ export function workspaceNameError(name: string): string | null {
   if (trimmed.length > WORKSPACE_NAME_MAX) return 'Keep it under 60 characters.';
   return null;
 }
-
-/** "Jatin" from "Jatin Singh" when Google gave no given name. */
-export const firstName = (fullName: string): string => fullName.trim().split(/\s+/)[0] ?? fullName;

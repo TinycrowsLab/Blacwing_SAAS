@@ -40,7 +40,7 @@ export function objectivePhrase(objective: string): string {
 }
 
 /** What the person wrote after the first sentence ("Focus on checkout"), clipped; null when nothing. */
-export function objectiveNote(objective: string): string | null {
+function objectiveNote(objective: string): string | null {
   const parts = objective.trim().split(SENTENCE_END);
   const rest = parts.slice(1).join(' ').replace(/\s+/g, ' ').trim().replace(/\.$/, '');
   if (rest === '') return null;

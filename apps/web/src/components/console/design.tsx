@@ -254,15 +254,6 @@ export function StatusChip({ value }: { readonly value: string }) {
   );
 }
 
-/** IDs, hashes and requests are set in JetBrains Mono. */
-export function IdChip({ children }: { readonly children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs font-medium text-foreground">
-      {children}
-    </span>
-  );
-}
-
 /** Gauge and countdown colour: primary under 80 %, warn from 80 %, bad from 100 %. */
 export function gaugeTone(pct: number): 'primary' | 'warn' | 'bad' {
   if (pct >= 100) return 'bad';
@@ -380,54 +371,6 @@ export function CardHeader({
   );
 }
 
-/** Table: header on surface-2, rows 48 px comfortable. */
-export function DataTable({
-  head,
-  children,
-  label,
-}: {
-  readonly head: readonly string[];
-  readonly children: ReactNode;
-  readonly label: string;
-}) {
-  return (
-    <div className="overflow-x-auto">
-      <table aria-label={label} className="w-full border-collapse text-[13px]">
-        <thead className="bg-surface-2 text-left text-xs font-medium text-muted-foreground">
-          <tr>
-            {head.map((h) => (
-              <th key={h} scope="col" className="h-9 px-4 font-medium">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">{children}</tbody>
-      </table>
-    </div>
-  );
-}
-
-/** Agent text is set in a dashed box and labelled. It is never shown as a system message. */
-export function AgentText({
-  label,
-  children,
-}: {
-  readonly label: string;
-  readonly children: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-dashed border-border-strong bg-code">
-      <div className="border-b border-dashed border-border-strong px-3.5 py-2 text-xs font-medium text-muted-foreground">
-        {label}
-      </div>
-      <div className="px-3.5 py-3 font-mono text-[12.5px] leading-5 text-foreground">
-        {children}
-      </div>
-    </div>
-  );
-}
-
 /** Text input grammar: 44 px, 10 px radius, the input boundary colour, gold focus. Use `aria-invalid` for errors. */
 export const INPUT_CLASS =
   'h-11 w-full rounded-[10px] border border-input-strong bg-card px-3.5 text-[14px] text-foreground placeholder:text-muted-foreground focus-visible:border-gold-ink focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus aria-[invalid=true]:border-bad disabled:bg-surface-2 disabled:text-muted-foreground';
@@ -478,11 +421,6 @@ export function PageHeader({
       {actions ? <div className="flex flex-wrap items-center gap-2.5">{actions}</div> : null}
     </div>
   );
-}
-
-/** Filter pill: the active one is `bg-text text-bg`. */
-export function filterPillClass(active: boolean): string {
-  return `inline-flex h-7 items-center rounded-full px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${active ? 'bg-text text-bg' : 'bg-surface-2 text-text'}`;
 }
 
 const VERDICT_RING: Record<string, { tone: string; ring: string; label: string }> = {
@@ -538,64 +476,6 @@ export function KindTag({
       {children}
     </span>
   );
-}
-
-/** Banner: a warn (decision needed) or kill (run halted) strip, with an optional pinging dot. */
-export function Banner({
-  tone,
-  ping = false,
-  children,
-  actions,
-}: {
-  readonly tone: 'warn' | 'kill';
-  readonly ping?: boolean;
-  readonly children: ReactNode;
-  readonly actions?: ReactNode;
-}) {
-  const colour = tone === 'warn' ? 'border-warn bg-warn-soft' : 'border-kill bg-kill-soft';
-  const dot = tone === 'warn' ? 'bg-warn' : 'bg-kill';
-  return (
-    <div
-      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-[13.5px] text-foreground ${colour}`}
-    >
-      <span aria-hidden="true" className="relative flex size-2.5 shrink-0">
-        {ping ? (
-          <span
-            className={`absolute inset-0 rounded-full ${dot} motion-safe:animate-[bwping_1.6s_ease-out_infinite]`}
-          />
-        ) : null}
-        <span className={`relative size-2.5 rounded-full ${dot}`} />
-      </span>
-      <div className="min-w-0 flex-1">{children}</div>
-      {actions}
-    </div>
-  );
-}
-
-/** A refusal from the API, passed back on the page as ?error=<code>&message=<detail>. */
-export function ErrorBanner({
-  error,
-  message,
-}: {
-  readonly error?: string | undefined;
-  readonly message?: string | undefined;
-}) {
-  if (error === undefined) return null;
-  return (
-    <p
-      role="alert"
-      className="flex items-start gap-2.5 rounded-xl border border-bad bg-bad-soft p-4 text-[13.5px] text-bad"
-    >
-      <Icon name="x" size={18} />
-      <span>
-        <strong className="font-semibold">{error}</strong>: {message ?? 'The action was refused.'}
-      </span>
-    </p>
-  );
-}
-
-export function queryText(value: string | string[] | undefined): string | undefined {
-  return typeof value === 'string' ? value : undefined;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

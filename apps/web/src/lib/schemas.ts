@@ -228,7 +228,6 @@ export const findingSchema = findingSummarySchema.extend({
   reproCurl: z.string().default(''),
   agent: z.string().nullable().default(null),
 });
-export type Finding = z.infer<typeof findingSchema>;
 
 const runSummarySchema = z.object({
   id: z.string(),
@@ -318,24 +317,3 @@ export function toSidebar(d: Dashboard): SidebarData {
     earlier: d.runs.filter((r) => !LIVE_RUN_STATES.includes(r.state)).slice(0, EARLIER_RUNS),
   };
 }
-
-export const auditListSchema = z.object({
-  items: z.array(
-    z.object({
-      eventId: z.string(),
-      seq: z.number(),
-      at: iso,
-      actor: z.object({ id: z.string().nullable(), name: z.string() }),
-      action: z.string(),
-      targetType: z.string(),
-      targetId: z.string(),
-      payload: z.object({ selfApproved: z.boolean().default(false) }).default({ selfApproved: false }),
-      hash: z.string(),
-    }),
-  ),
-  chain: z.object({
-    verified: z.boolean(),
-    count: z.number(),
-    brokenAtSeq: z.number().nullable(),
-  }),
-});
