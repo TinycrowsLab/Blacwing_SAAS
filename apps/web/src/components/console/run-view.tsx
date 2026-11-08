@@ -644,12 +644,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </div>
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2.5">
           {liveShown ? <Liveness tone={live.tone} text={live.text} className="max-md:hidden" /> : null}
-          <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
-            {terminal ? 'Ran for' : 'Elapsed'}
-            <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
-              {hms(elapsedS)}
-            </b>
-          </div>
+          {/* A run stopped before it started never ran: no "Ran for 0m 00s". */}
+          {terminal && startedMs === null ? null : (
+            <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
+              {terminal ? 'Ran for' : 'Elapsed'}
+              <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
+                {hms(elapsedS)}
+              </b>
+            </div>
+          )}
           {/* One gold next step: the conversation's last line carries it; other views get it here. */}
           {terminal ? (
             tab === 'conversation' && filter === null ? null : (

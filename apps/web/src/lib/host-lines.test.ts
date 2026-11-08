@@ -27,6 +27,7 @@ describe('host lines', () => {
     expect(line('gate2.decided', { status: 'expired' })).toBe('Denied automatically: no answer in 5 min.');
     expect(line('run.paused', {}, 'Run paused by Jatin Singh.')).toBe('Paused by Jatin Singh.');
     expect(line('run.killed', { haltMs: 1840 })).toBe('Stopped. Every agent halted in 1,840 ms.');
+    expect(hostLine({ kind: 'run.killed', data: { haltMs: 0 } }, { started: false })).toBe('Stopped before testing began.');
     expect(line('run.completed', { reason: 'duration_budget' })).toBe(
       'Finished: Claude stopped at the time limit. Your results are ready.',
     );

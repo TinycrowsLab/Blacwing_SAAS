@@ -687,6 +687,7 @@ export function conversationItems(
   const findingToCandidate = new Map<string, string>();
   const gate2Items = new Map<string, Gate2Item>();
   let lastValidator: ValidatorItem | null = null;
+  const started = events.some((x) => x.kind === 'run.started');
 
   const openThread = (lane: string): ThreadItem | undefined =>
     threads.findLast((t) => t.to === lane && !t.replied) ?? threads.findLast((t) => t.to === lane);
@@ -895,7 +896,7 @@ export function conversationItems(
           hostLine(e, {
             viewerName,
             cases: e.kind === 'run.completed' ? caseTally(events) : null,
-            started: events.some((x) => x.kind === 'run.started'),
+            started,
           }),
         );
     }
