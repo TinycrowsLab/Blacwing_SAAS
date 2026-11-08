@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { proposeWorkspaceName, registrableLabel, workspaceNameError } from './workspace-name';
+import {
+  proposeWorkspaceName,
+  registrableLabel,
+  tidyWorkspaceName,
+  workspaceNameError,
+} from './workspace-name';
 
 describe('workspace name', () => {
   it('proposes the company from the hd claim or the e-mail domain', () => {
-    expect(proposeWorkspaceName({ email: 'jatin@tinycrows.com' })).toEqual({ name: 'Tinycrows', domain: 'tinycrows.com' });
+    expect(proposeWorkspaceName({ email: 'jatin@tinycrows.com' })).toEqual({
+      name: 'Tinycrows',
+      domain: 'tinycrows.com',
+    });
     expect(proposeWorkspaceName({ email: 'a@mail.example.co.uk' }).name).toBe('Example');
     expect(proposeWorkspaceName({ email: 'a@x.com', hd: 'blue-river.io' })).toEqual({
       name: 'Blue River',
@@ -29,5 +37,7 @@ describe('workspace name', () => {
     expect(workspaceNameError(' Tinycrows ')).toBeNull();
     expect(workspaceNameError(' a ')).toBe('A name needs at least 2 characters.');
     expect(workspaceNameError('x'.repeat(61))).toBe('Keep it under 60 characters.');
+    expect(workspaceNameError('😀')).toBe('A name needs at least 2 characters.');
+    expect(tidyWorkspaceName('  NCU   India  ')).toBe('NCU India');
   });
 });

@@ -7,24 +7,17 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 import { nameWorkspaceAction } from '../../../app/welcome/actions';
-import { WORKSPACE_NAME_MAX, WORKSPACE_NAME_MIN } from '../../../lib/workspace-name';
+import {
+  tidyWorkspaceName,
+  WORKSPACE_NAME_MAX,
+  WORKSPACE_NAME_MIN,
+  workspaceNameError,
+} from '../../../lib/workspace-name';
 import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { useDarkTheme } from '../theme-toggle';
 import { useSettledAction } from './triage';
 
-/** "  Tinycrows   Security " is saved as "Tinycrows Security". */
-const tidy = (name: string): string => name.trim().replace(/\s+/g, ' ');
-/**
- * 2 to 60 characters, counted as people count them (code points, as the API does): "😀" is one character, so it is
- * too short here instead of passing a length check that counts it as two and then failing on the server.
- */
-const nameError = (name: string): string | null => {
-  const n = Array.from(name).length;
-  if (n < WORKSPACE_NAME_MIN) return `A name needs at least ${WORKSPACE_NAME_MIN} characters.`;
-  if (n > WORKSPACE_NAME_MAX) return `Keep it to ${WORKSPACE_NAME_MAX} characters or fewer.`;
-  return null;
-};
 const HTTP_BAD_REQUEST = 400;
 
 export function WorkspaceNameForm({
@@ -37,16 +30,16 @@ export function WorkspaceNameForm({
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   // A name stored untidied (from an older form) opens tidied and unchanged: a pristine page never looks dirty.
-  const [saved, setSaved] = useState(tidy(current));
-  const [name, setName] = useState(tidy(current));
+  const [saved, setSaved] = useState(tidyWorkspaceName(current));
+  const [name, setName] = useState(tidyWorkspaceName(current));
   const [touched, setTouched] = useState(false);
   const [state, setState] = useState<
     { kind: 'idle' } | { kind: 'saved' } | { kind: 'failed'; message: string }
   >({
     kind: 'idle',
   });
-  const invalid = nameError(tidy(name));
-  const changed = tidy(name) !== saved;
+  const invalid = workspaceNameError(tidyWorkspaceName(name));
+  const changed = tidyWorkspaceName(name) !== saved;
   // The error shows as soon as an edit makes the name invalid, and on Enter or leaving the field.
   const showError = (touched || changed) && invalid !== null;
 
@@ -57,7 +50,7 @@ export function WorkspaceNameForm({
       return false;
     }
     if (!changed) return false;
-    const result = await nameWorkspaceAction(tidy(name));
+    const result = await nameWorkspaceAction(tidyWorkspaceName(name));
     if (!result.ok) {
       // The server's own wording for a rejected body is for developers; the person gets the rule instead.
       const message =

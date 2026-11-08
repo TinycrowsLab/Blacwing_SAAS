@@ -31,11 +31,17 @@ const titleCase = (label: string): string =>
 
 /** The registrable label of a domain: `mail.tinycrows.co.uk` gives `tinycrows`. */
 export function registrableLabel(domain: string): string {
-  const labels = domain.toLowerCase().split('.').filter((l) => l !== '');
+  const labels = domain
+    .toLowerCase()
+    .split('.')
+    .filter((l) => l !== '');
   const twoPart =
-    labels.length >= MIN_LABELS_FOR_TWO_PART && SECOND_LEVEL.test(labels.slice(1 - MIN_LABELS_FOR_TWO_PART).join('.'));
+    labels.length >= MIN_LABELS_FOR_TWO_PART &&
+    SECOND_LEVEL.test(labels.slice(1 - MIN_LABELS_FOR_TWO_PART).join('.'));
   // The label before the suffix: second to last, or third to last under a two-part suffix.
-  return labels.at(twoPart ? -MIN_LABELS_FOR_TWO_PART : 1 - MIN_LABELS_FOR_TWO_PART) ?? labels[0] ?? '';
+  return (
+    labels.at(twoPart ? -MIN_LABELS_FOR_TWO_PART : 1 - MIN_LABELS_FOR_TWO_PART) ?? labels[0] ?? ''
+  );
 }
 
 export interface ProposedName {
@@ -53,7 +59,8 @@ export function proposeWorkspaceName(input: {
   const domain = (input.hd ?? input.email.split('@')[1] ?? '').trim().toLowerCase();
   if (domain !== '' && !CONSUMER_DOMAINS.has(domain)) {
     const name = titleCase(registrableLabel(domain));
-    if (name.length >= WORKSPACE_NAME_MIN) return { name: name.slice(0, WORKSPACE_NAME_MAX), domain };
+    if (name.length >= WORKSPACE_NAME_MIN)
+      return { name: name.slice(0, WORKSPACE_NAME_MAX), domain };
   }
   const fromClaim = input.givenName?.trim() ?? '';
   const fromEmail = titleCase(input.email.split('@')[0] ?? '');
@@ -61,10 +68,16 @@ export function proposeWorkspaceName(input: {
   return { name: `${given}'s workspace`.slice(0, WORKSPACE_NAME_MAX), domain: null };
 }
 
-/** Null when the name is fine; otherwise the message to show under the field. Whitespace is trimmed first. */
+/** "  Tinycrows   Security " is stored as "Tinycrows Security". */
+export const tidyWorkspaceName = (name: string): string => name.trim().replace(/\s+/g, ' ');
+
+/**
+ * Null when the name is fine; otherwise the message to show under the field. Checked on the tidied name and counted
+ * in code points, as the API counts: "😀" is one character, so it is too short here instead of failing on the server.
+ */
 export function workspaceNameError(name: string): string | null {
-  const trimmed = name.trim();
-  if (trimmed.length < WORKSPACE_NAME_MIN) return 'A name needs at least 2 characters.';
-  if (trimmed.length > WORKSPACE_NAME_MAX) return 'Keep it under 60 characters.';
+  const length = Array.from(tidyWorkspaceName(name)).length;
+  if (length < WORKSPACE_NAME_MIN) return 'A name needs at least 2 characters.';
+  if (length > WORKSPACE_NAME_MAX) return 'Keep it under 60 characters.';
   return null;
 }
