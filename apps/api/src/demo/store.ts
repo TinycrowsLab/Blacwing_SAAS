@@ -1113,9 +1113,8 @@ export class DemoStore {
        FROM demo.workspace_settings WHERE tenant_id = $1`,
       [tenantId],
     );
-    const row = r.rows[0];
-    if (row === undefined || row.name === null || row.phone === null) return null;
-    return { name: row.name, phone: row.phone };
+    const { name = null, phone = null } = r.rows[0] ?? {};
+    return name === null || phone === null ? null : { name, phone };
   }
 
   /** Sets (or, with null, clears) the emergency contact. */

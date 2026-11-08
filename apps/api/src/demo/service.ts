@@ -11,7 +11,6 @@ import { newId } from '@blackwing/ids';
 import { verifyChain, type AuditPayload, type AuditRef, type ChainState } from './audit.js';
 import { BUDGET_LIMITS, BUDGET_PRESETS, DEFAULT_HUNT_CONCURRENCY, OBJECTIVE_MAX } from './config.js';
 import { defaultLookup, firstRefusal, isLabOrigin, type Lookup, type OriginPolicy } from './ownership.js';
-import { InProcessRateLimiter } from '../rate-limit/limiter.js';
 import {
   BODY_EXCERPT_CHARS,
   type AssetRow,
@@ -26,6 +25,7 @@ import {
   type RunEventRow,
   type RunRow,
 } from './store.js';
+import { InProcessRateLimiter } from '../rate-limit/limiter.js';
 
 /** Identity forwarded by the web server from the signed-in Google session (internal hop only). */
 export interface DemoActor {
@@ -1176,7 +1176,7 @@ export class DemoService {
   /** The emergency stop links that still work (administrators only). */
   async emergencyLinks(actor: DemoActor): Promise<{ items: Record<string, unknown>[] }> {
     this.requireAdmin(actor, 'Only an administrator can see emergency stop links.');
-    return { items: (await this.store.listActiveEmergencyLinks(this.tenantId)).map(emergencyLinkDto) };
+    return { items: (await this.store.listActiveEmergencyLinks(this.tenantId)).map((row) => emergencyLinkDto(row)) };
   }
 
   /**
@@ -1281,7 +1281,7 @@ export class DemoService {
       payload,
     });
     const [audit] = await this.store.appendAudits(this.tenantId, [
-      entry('emergency_link.used', 'emergency_link', link.id, { label: link.label, runs: runs.map((r) => r.id) }),
+      entry('emergency_link.used', 'emergency_link', link.id, { label: link.label, runs: runs.length }),
       ...runs.map((r) =>
         entry('run.kill', 'run', String(r.id), { via: 'emergency_link', linkId: link.id, queued: r.queued === true }),
       ),
