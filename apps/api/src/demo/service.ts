@@ -48,7 +48,7 @@ export class DemoRefusal extends HttpException {
 export const INTRUSIVENESS = ['passive', 'active_safe'] as const;
 /** Gate 3 release mode of a request: `hold` waits for a human, `auto` releases what the validator proves. */
 export const RELEASE_MODES = ['hold', 'auto'] as const;
-export type ReleaseMode = (typeof RELEASE_MODES)[number];
+type ReleaseMode = (typeof RELEASE_MODES)[number];
 const DEFAULT_GATE2_TIMEOUT_S = 300;
 
 const WELL_KNOWN_PATH = '/.well-known/blackwing-verification.txt';
