@@ -29,6 +29,12 @@ const row = (over: Partial<Gate2>): Gate2 => ({
   decidedAt: null,
   secondsLeft: 0,
   decisionReason: null,
+  body: null,
+  asRole: null,
+  assetName: null,
+  requester: null,
+  runStartedAt: null,
+  closeReason: null,
   ...over,
 });
 
