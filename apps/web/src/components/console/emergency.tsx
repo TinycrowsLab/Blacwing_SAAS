@@ -5,8 +5,8 @@
 // fills; letting go early cancels; Space or Enter held works the same), then the halt of each audit it reached.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-import { haltAction, stopAllAction } from '../../app/emergency/[token]/actions';
 import { buttonClass, Icon } from './design';
+import { haltAction, stopAllAction } from '../../app/emergency/[token]/actions';
 
 import type { EmergencyContact, EmergencyRun } from '../../lib/schemas';
 
@@ -159,7 +159,7 @@ export function EmergencyStop({
   // After the stop: read each audit's halt until all have ended (the runner halts a running audit within seconds).
   const pending = phase.kind === 'sent' && phase.runs.some((r) => !ENDED.has(r.state));
   useEffect(() => {
-    if (!pending || phase.kind !== 'sent') return;
+    if (!pending) return;
     const ids = phase.runs.map((r) => r.id);
     const since = Date.now();
     const timer = window.setInterval(() => {

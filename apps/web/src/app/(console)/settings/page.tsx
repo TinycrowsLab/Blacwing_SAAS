@@ -1,5 +1,7 @@
 // Settings (experience spec §2, §8): the workspace name (editable by an administrator), your account and theme, and
 // the settings your administrator sets on the server, shown read-only with where they come from.
+import { z } from 'zod';
+
 import { Chip, Icon, InlineMessage } from '../../../components/console/design';
 import {
   EmergencyContactForm,
@@ -18,7 +20,6 @@ import { getViewer } from '../../../lib/auth';
 import { usd } from '../../../lib/plan-text';
 import { emergencyLinkSchema, workspaceSchema } from '../../../lib/schemas';
 
-import { z } from 'zod';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';

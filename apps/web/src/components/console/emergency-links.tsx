@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers -- design pixel and timing values, see design/README.md */
+ 
 'use client';
 
 // Emergency stop links (design 3b): an administrator creates a time-limited link someone without a login (the SOC, an
@@ -8,14 +8,14 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from './design';
+import { CopyField, PendingButton } from './design-client';
 import {
   createEmergencyLinkAction,
   revokeEmergencyLinkAction,
   setEmergencyContactAction,
   type EmergencyValidity,
 } from '../../app/(console)/settings/emergency-actions';
-import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from './design';
-import { CopyField, PendingButton } from './design-client';
 
 import type { EmergencyContact, EmergencyLink } from '../../lib/schemas';
 
