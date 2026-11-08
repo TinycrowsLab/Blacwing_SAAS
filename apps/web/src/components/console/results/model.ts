@@ -435,6 +435,20 @@ export function decisions(input: {
         by: who(g.decidedBy),
         at,
       });
+    } else if (g.closeReason !== null && g.closeReason !== 'deadline') {
+      // The run closed it (it ended or was stopped): nobody answered, nobody denied it, and it was not sent.
+      rows.push({
+        key: g.id,
+        group: 'Request',
+        verb: 'Not sent',
+        subject,
+        detail: [asRole, g.closeReason === 'killed' ? 'the audit was stopped before anyone answered' : 'not answered before the audit ended']
+          .filter(Boolean)
+          .join(', '),
+        reason: null,
+        by: null,
+        at,
+      });
     } else if (g.status === 'expired') {
       const total =
         input.gate2TimeoutS ??
