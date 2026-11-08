@@ -49,16 +49,18 @@ describe('classifyOrigin', () => {
 
 describe('firstRefusal', () => {
   it('allows a public origin and a listed lab, and refuses the rest in plain words', async () => {
-    expect(await firstRefusal(['https://shop.example.com', 'http://127.0.0.1:3001'], policy, lookup)).toBeNull();
+    expect(
+      await firstRefusal(['https://shop.example.com', 'http://127.0.0.1:3001'], policy, lookup),
+    ).toBeNull();
     expect(await firstRefusal(['http://localhost:3000'], policy, lookup)).toBe(
       'Blackwing cannot test its own console or API.',
     );
     expect(await firstRefusal(['http://169.254.169.254'], policy, lookup)).toBe(
       'Cloud metadata and link-local addresses can never be tested.',
     );
-    expect(await firstRefusal(['https://shop.example.com', 'http://127.0.0.1:8091'], policy, lookup)).toContain(
-      'only when your Blackwing operator has listed it as a lab',
-    );
+    expect(
+      await firstRefusal(['https://shop.example.com', 'http://127.0.0.1:8091'], policy, lookup),
+    ).toContain('only when your Blackwing operator has listed it as a lab');
   });
 });
 
@@ -75,16 +77,22 @@ describe('BW_LAB_ORIGINS', () => {
   };
 
   it('parses the lab list into normalised origins', () => {
-    const config = loadDemoConfig({ ...env, BW_LAB_ORIGINS: 'http://127.0.0.1:3001/, http://127.0.0.1:5077' });
+    const config = loadDemoConfig({
+      ...env,
+      BW_LAB_ORIGINS: 'http://127.0.0.1:3001/, http://127.0.0.1:5077',
+    });
     expect(config.origins.labOrigins).toEqual(['http://127.0.0.1:3001', 'http://127.0.0.1:5077']);
     expect(config.origins.platformPorts).toEqual(expect.arrayContaining([3000, 13400, 13401]));
     expect(config.huntConcurrency).toBe(3);
   });
 
-  it.each(['http://localhost:3000', 'http://127.0.0.1:13400', 'http://169.254.169.254', 'http://metadata', 'ftp://x'])(
-    'refuses to boot with %s listed as a lab',
-    (lab) => {
-      expect(() => loadDemoConfig({ ...env, BW_LAB_ORIGINS: lab })).toThrow(/BW_LAB_ORIGINS/);
-    },
-  );
+  it.each([
+    'http://localhost:3000',
+    'http://127.0.0.1:13400',
+    'http://169.254.169.254',
+    'http://metadata',
+    'ftp://x',
+  ])('refuses to boot with %s listed as a lab', (lab) => {
+    expect(() => loadDemoConfig({ ...env, BW_LAB_ORIGINS: lab })).toThrow(/BW_LAB_ORIGINS/);
+  });
 });

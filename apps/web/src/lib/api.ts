@@ -84,7 +84,7 @@ export async function toResult<T>(call: () => Promise<T>): Promise<ActionResult<
 export async function callApi<T = unknown>(
   session: Viewer,
   path: string,
-  init: { readonly method?: 'GET' | 'POST'; readonly body?: unknown } = {},
+  init: { readonly method?: 'GET' | 'POST' | 'PATCH'; readonly body?: unknown } = {},
 ): Promise<T> {
   const token = process.env.BW_DEMO_INTERNAL_TOKEN ?? '';
   if (token === '')

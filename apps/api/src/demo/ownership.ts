@@ -32,7 +32,11 @@ const METADATA_HOSTS = new Set([
   'fd00:ec2::254',
 ]);
 
-function blockList(v4: readonly string[], v6: readonly string[], addresses: readonly string[]): BlockList {
+function blockList(
+  v4: readonly string[],
+  v6: readonly string[],
+  addresses: readonly string[],
+): BlockList {
   const list = new BlockList();
   for (const [cidrs, family] of [
     [v4, 'ipv4'],
@@ -105,7 +109,10 @@ export function staticClass(origin: string, policy: OriginPolicy): 'platform' | 
   if (policy.platformOrigins.includes(url.origin)) return 'platform';
   if (METADATA_HOSTS.has(host) || (isIP(host) !== 0 && inList(FORBIDDEN, host))) return 'forbidden';
   const loopbackName = host === 'localhost' || host.endsWith('.localhost');
-  if ((loopbackName || (isIP(host) !== 0 && inList(LOOPBACK, host))) && policy.platformPorts.includes(portOf(url))) {
+  if (
+    (loopbackName || (isIP(host) !== 0 && inList(LOOPBACK, host))) &&
+    policy.platformPorts.includes(portOf(url))
+  ) {
     return 'platform';
   }
   return null;
@@ -115,7 +122,11 @@ export const isLabOrigin = (origin: string, policy: OriginPolicy): boolean =>
   policy.labOrigins.includes(new URL(origin).origin);
 
 /** Classifies one origin: the static rules first, then every address its host resolves to. */
-export async function classifyOrigin(origin: string, policy: OriginPolicy, lookup: Lookup): Promise<OriginClass> {
+export async function classifyOrigin(
+  origin: string,
+  policy: OriginPolicy,
+  lookup: Lookup,
+): Promise<OriginClass> {
   const fixed = staticClass(origin, policy);
   if (fixed !== null) return fixed;
   const url = new URL(origin);
@@ -126,8 +137,10 @@ export async function classifyOrigin(origin: string, policy: OriginPolicy, looku
     return 'unresolved';
   }
   if (addresses.length === 0) return 'unresolved';
-  if (addresses.some((a) => METADATA_HOSTS.has(a.toLowerCase()) || inList(FORBIDDEN, a))) return 'forbidden';
-  if (addresses.some((a) => inList(LOOPBACK, a)) && policy.platformPorts.includes(portOf(url))) return 'platform';
+  if (addresses.some((a) => METADATA_HOSTS.has(a.toLowerCase()) || inList(FORBIDDEN, a)))
+    return 'forbidden';
+  if (addresses.some((a) => inList(LOOPBACK, a)) && policy.platformPorts.includes(portOf(url)))
+    return 'platform';
   if (addresses.some((a) => inList(PRIVATE, a))) return 'private';
   return 'public';
 }

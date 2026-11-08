@@ -85,7 +85,9 @@ async function recoverStaleRuns(): Promise<void> {
 async function executeRetest(job: RetestJob): Promise<void> {
   const quiet: HuntStore = { ...store, appendEvent: () => Promise.resolve(), insertExchange: () => Promise.resolve() };
   const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), job.run.budgetSeconds * MS_PER_S);
+  const timer = setTimeout(() => {
+    abort.abort();
+  }, job.run.budgetSeconds * MS_PER_S);
   const ctx: HuntContext = { run: job.run, store: quiet, log: new EventLog(quiet, job.run.id, logger), signal: abort.signal, deps, state: newHuntState() };
   let result: RetestResult;
   try {
@@ -100,7 +102,9 @@ async function executeRetest(job: RetestJob): Promise<void> {
 }
 
 function track(task: Promise<void>): void {
-  const tracked = task.finally(() => active.delete(tracked));
+  const tracked = task.finally(() => {
+    active.delete(tracked);
+  });
   active.add(tracked);
 }
 

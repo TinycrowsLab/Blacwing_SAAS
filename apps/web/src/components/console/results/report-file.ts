@@ -11,7 +11,7 @@ import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { agentName } from '../../../lib/agents';
 import { coverageSchema } from '../../../lib/schemas';
 import { escapeHtml as esc, markdownToHtml } from '../markdown';
-import { oracleWords, PROOF_BY, proofSentence, requestLine } from './issue-body';
+import { identityOf, oracleWords, PROOF_BY, proofSentence, requestLine } from './issue-body';
 import { bySeverity, duration, findingDetailSchema, notTested, SEVERITIES, type FindingDetail } from './model';
 
 /** The API's `GET /runs/:id/report?format=json`: only what the report says is read; the rest passes through. */
@@ -230,7 +230,21 @@ function releaseLine(f: FindingDetail): string | null {
 function sideWords(side: FindingDetail['evidence']['probe']): string {
   const line = requestLine(side);
   if (line === null) return 'Not recorded';
-  return side.response === undefined ? line : `${line} → HTTP ${side.response.status}`;
+  const who = identityOf(side);
+  const sent = who === null ? line : `${line} (${who})`;
+  return side.response === undefined ? sent : `${sent} → HTTP ${side.response.status}`;
+}
+
+/** The proof in the report's words: a released issue the validator did not prove says who released it anyway. */
+function proofOf(f: FindingDetail): { proven: boolean; text: string; heading: string } {
+  const proof = proofSentence(f);
+  return proof.proven
+    ? { ...proof, heading: 'How it was proved' }
+    : {
+        proven: false,
+        text: proof.text.replace('Kept back from the report.', 'A person released it without proof.'),
+        heading: 'What the validator saw',
+      };
 }
 
 function meta(f: FindingDetail): string {
@@ -286,7 +300,7 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
   ];
   out.push('## About this audit', '', ...facts(src).map(([k, v]) => `- **${k}:** ${v}`), '');
   findings.forEach((f, i) => {
-    const proof = proofSentence(f);
+    const proof = proofOf(f);
     const check = oracleWords(f.oracle);
     const remediation = f.evidence.remediation?.trim() ?? '';
     out.push(`## ${i + 1}. ${f.title}`, '', `**${cap(f.severity)}** · ${meta(f)}  `);
@@ -294,7 +308,7 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     if (released !== null) out.push(released);
     out.push(
       '',
-      `### How it was proved (${PROOF_BY})`,
+      `### ${proof.heading} (${PROOF_BY})`,
       '',
       proof.text.replace(/^Proven: /, 'Proven: '),
     );
@@ -397,7 +411,7 @@ export function renderHtml(
   ).filter(([, n]) => n > 0);
   const issues = findings
     .map((f, i) => {
-      const proof = proofSentence(f);
+      const proof = proofOf(f);
       const check = oracleWords(f.oracle);
       const remediation = f.evidence.remediation?.trim() ?? '';
       const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
@@ -405,8 +419,8 @@ export function renderHtml(
       return `<article>
 <h3><span class="chip" style="${SEV_STYLE[f.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(f.severity))}</span>${i + 1}. ${esc(f.title)}</h3>
 <p class="meta">${esc(meta(f))}</p>${released === null ? '' : `\n<p class="meta">${esc(released)}</p>`}
-<h4>How it was proved <span>· ${esc(PROOF_BY)}</span></h4>
-<p class="proof">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">Blackwing checked that ${esc(check)}: the probe should show it, the control should not.</p>`}
+<h4>${esc(proof.heading)} <span>· ${esc(PROOF_BY)}</span></h4>
+<p class="${proof.proven ? 'proof' : 'meta'}">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">Blackwing checked that ${esc(check)}: the probe should show it, the control should not.</p>`}
 <table>
 <tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
 <tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">A similar request that should not show it.</span></td></tr>

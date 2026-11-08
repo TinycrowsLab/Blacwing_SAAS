@@ -1228,8 +1228,9 @@ export class DemoService {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_retestable', 'Only a proven finding can be retested.');
     }
     const evidence = finding.evidence as { probe?: { request?: { method?: unknown } }; control?: { request?: { method?: unknown } } };
-    const methods = [evidence.probe?.request?.method ?? finding.location.method, evidence.control?.request?.method];
-    if (methods.some((m, index) => (index === 0 || m !== undefined) && !(typeof m === 'string' && SAFE_METHODS.has(m.toUpperCase())))) {
+    const safe = (method: unknown): boolean => typeof method === 'string' && SAFE_METHODS.has(method.toUpperCase());
+    const control = evidence.control?.request?.method;
+    if (!safe(evidence.probe?.request?.method ?? finding.location.method) || (control !== undefined && !safe(control))) {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'retest_needs_gate2', 'Run the audit again to retest this one.');
     }
     await this.recheckOwnership(actor, await this.assetRow(finding.asset_id), 'retest');

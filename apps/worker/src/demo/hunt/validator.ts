@@ -326,20 +326,22 @@ const REDACTED_MARK = /\[redacted/i;
 export function replayableRequest(stored: unknown, roles: readonly string[]): { request: HttpRequest } | { reason: string } {
   const parsed = storedRequestSchema.safeParse(scrubDeep(stored));
   if (!parsed.success) return { reason: 'The finding has no stored request to send again.' };
-  const { method, url, body, asRole } = parsed.data;
+  const { method, url } = parsed.data;
+  const body = parsed.data.body ?? undefined;
+  const asRole = parsed.data.asRole ?? undefined;
   const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(parsed.data.headers)) {
-    if (RUNNER_HEADERS.has(name.toLowerCase()) || (asRole != null && ROLE_PLACEHOLDER.test(value))) continue;
+    if (RUNNER_HEADERS.has(name.toLowerCase()) || (asRole !== undefined && ROLE_PLACEHOLDER.test(value))) continue;
     headers[name] = value;
   }
   if ([url, body ?? '', ...Object.values(headers)].some((part) => REDACTED_MARK.test(part))) {
     return { reason: 'The request needs a fresh sign-in: it used a value Blackwing does not keep.' };
   }
-  if (asRole != null && !roles.some((role) => role.toLowerCase() === asRole.toLowerCase())) {
+  if (asRole !== undefined && !roles.some((role) => role.toLowerCase() === asRole.toLowerCase())) {
     return { reason: `The test account ${asRole} is no longer on this audit's plan.` };
   }
   return {
-    request: { method, url, ...(Object.keys(headers).length === 0 ? {} : { headers }), ...(body == null ? {} : { body }), ...(asRole == null ? {} : { as_role: asRole }) },
+    request: { method, url, ...(Object.keys(headers).length === 0 ? {} : { headers }), ...(body === undefined ? {} : { body }), ...(asRole === undefined ? {} : { as_role: asRole }) },
   };
 }
 

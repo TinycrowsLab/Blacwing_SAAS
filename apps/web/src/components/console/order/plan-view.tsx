@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DISCARDED, Gate1Card, type Person } from './gate1-card';
 import {
   type AccountRow,
+  type AccountValue,
   AccountsEditor,
   CareEditor,
   checkAccounts,
@@ -19,9 +20,8 @@ import {
   readPathList,
   ReleaseEditor,
 } from './plan-editors';
-import { type AccountValue, recallAccounts, rememberAccounts } from './secrets';
 import { type Care, originOf, refreshSidebar, wasApproved } from './shared';
-import { replacePlanAction } from '../../../app/(console)/audits/actions';
+import { amendPlanAction } from '../../../app/(console)/audits/actions';
 import { objectiveConflicts, type PlanField, planSegments, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, LinkButton, type Voice, VoiceTag } from '../design';
 import { PendingButton } from '../design-client';
@@ -108,8 +108,6 @@ function Fact({ label, value, unit }: { readonly label: string; readonly value: 
 }
 
 const isField = (v: string | null): v is PlanField => v !== null && v in FIELD_LABEL;
-const list = (items: readonly string[]): string =>
-  new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(items);
 
 export function PlanView({
   request,
@@ -138,11 +136,9 @@ export function PlanView({
   const [field, setField] = useState<PlanField | null>(null);
   const [edit, setEdit] = useState<Values>(values);
   const [limitsOk, setLimitsOk] = useState(true);
-  const known = recallAccounts(request.id);
-  const missingValues = request.testAccounts.length > 0 && known === undefined;
+  // Blackwing keeps the accounts' values; the browser never sees them, and an edit leaves them in place.
   const startRows = (): AccountRow[] =>
-    known?.map((a) => ({ ...a })) ??
-    request.testAccounts.map((a) => ({ role: a.role, headerName: a.headerName, headerValue: '' }));
+    request.testAccounts.map((a) => ({ role: a.role, headerName: a.headerName, headerValue: '', saved: true }));
   const [rows, setRows] = useState<readonly AccountRow[]>(startRows);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -212,35 +208,34 @@ export function PlanView({
       }
       paths = typed.paths;
     }
-    let accounts: readonly AccountValue[];
-    if (field === 'accounts' || missingValues) {
+    let accounts: readonly AccountValue[] | undefined;
+    if (field === 'accounts') {
       const checked = checkAccounts(rows);
       if ('error' in checked) {
-        // The values are asked for right here (below the editor), so the person stays on what they were changing.
-        setError(field === 'accounts' ? checked.error : `To keep your test accounts: ${checked.error.charAt(0).toLowerCase()}${checked.error.slice(1)}`);
+        setError(checked.error);
         return false;
       }
       accounts = checked.accounts;
-    } else accounts = known ?? [];
-    if (asset === null) return false;
-    const r = await replacePlanAction(request.id, {
-      assetId: request.assetId,
-      objective: edit.objective,
-      intrusiveness: edit.care,
-      minutes: edit.limits.minutes,
-      requests: edit.limits.requests,
-      costUsd: edit.limits.costUsd,
-      excludedPaths: [...paths],
-      releaseProven: edit.release,
-      testAccounts: [...accounts],
+    }
+    if (field === null || field === 'host') return false;
+    // Only what this editor changes goes in the edit, named by the version on screen.
+    const r = await amendPlanAction(request.id, {
+      version: request.version,
+      ...(field === 'objective' ? { objective: edit.objective } : {}),
+      ...(field === 'intrusiveness' ? { intrusiveness: edit.care } : {}),
+      ...(field === 'limits' ? { limits: edit.limits } : {}),
+      ...(field === 'paths' ? { excludedPaths: [...paths] } : {}),
+      ...(field === 'release' ? { releaseProven: edit.release } : {}),
+      ...(accounts === undefined ? {} : { testAccounts: [...accounts] }),
     });
     if (!r.ok) {
       setError(r.message);
       return false;
     }
-    rememberAccounts(r.data.id, accounts);
     refreshSidebar();
-    router.replace(`/audits/${r.data.id}?updated=${field ?? 'objective'}`);
+    setField(null);
+    setUpdated(field);
+    router.refresh();
     return true;
   };
 
@@ -318,7 +313,7 @@ export function PlanView({
           />
         );
       case 'accounts':
-        return <AccountsEditor rows={rows} onRows={setRows} missingValues={missingValues} />;
+        return <AccountsEditor rows={rows} onRows={setRows} />;
       case 'limits':
         return settings === null ? (
           <InlineMessage tone="bad">We couldn&apos;t load your workspace limits. Reload the page and try again.</InlineMessage>
@@ -502,18 +497,6 @@ export function PlanView({
               </button>
             </div>
             {editor(field)}
-            {missingValues && field !== 'accounts' && field !== 'host' ? (
-              // shortcut: an edit re-creates the request and the API never returns account values, so they are asked
-              // for here, up front. Upgrade when the API copies them across a replacement (PATCH /requests/:id).
-              <div className="flex flex-col gap-2.5 border-t border-dashed border-border-strong pt-3.5">
-                <InlineMessage tone="gold">
-                  This plan signs in as <b>{list(request.testAccounts.map((a) => a.role))}</b>. Changing the plan needs
-                  {request.testAccounts.length === 1 ? ' that account\u2019s value' : ' those accounts\u2019 values'} again:
-                  they&apos;re never sent back to the browser.
-                </InlineMessage>
-                <AccountsEditor rows={rows} onRows={setRows} missingValues valuesOnly />
-              </div>
-            ) : null}
             {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
             {field === 'host' ? null : (
               // mousedown keeps focus in the field: its blur would turn typed text into a chip, move this row, and

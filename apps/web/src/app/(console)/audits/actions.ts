@@ -17,7 +17,6 @@ const HTTP_CONFLICT = 409;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_SERVICE_UNAVAILABLE = 503;
 const SECONDS_PER_MINUTE = 60;
-const REPLACED_REASON = 'Replaced by an edited plan';
 
 const signedOut = {
   ok: false,
@@ -238,28 +237,40 @@ export async function createAuditAction(input: AuditInput): Promise<ActionResult
   return toResult(() => createRequest(session, parsed.data));
 }
 
+/** A saved account keeps its stored value when `headerValue` is left out (the API never sends values back). */
+const amendSchema = z.object({
+  version: z.number().int().min(1),
+  objective: auditSchema.shape.objective.optional(),
+  intrusiveness: auditSchema.shape.intrusiveness.optional(),
+  limits: z
+    .object({ minutes: z.number().int().positive(), requests: z.number().int().positive(), costUsd: z.number().positive() })
+    .optional(),
+  excludedPaths: auditSchema.shape.excludedPaths.optional(),
+  releaseProven: auditSchema.shape.releaseProven.optional(),
+  testAccounts: z.array(accountSchema.extend({ headerValue: accountSchema.shape.headerValue.optional() })).max(3).optional(),
+});
+export type AmendInput = z.infer<typeof amendSchema>;
+
 /**
- * An edit on the plan while it is pending: a replacement request with the changed answers; the old one is rejected
- * with the reason "Replaced by an edited plan".
- * shortcut: an edit re-creates the request (no PATCH /requests/:id in the API). Upgrade when the API gains one.
+ * An edit on the plan while it is pending: the same request, amended in place (PATCH, one `gate1.amend` on the ledger),
+ * named by the version the editor saw, so an edit in another tab is never overwritten (409 plan_changed).
  */
-export async function replacePlanAction(
-  oldId: string,
-  input: AuditInput,
-): Promise<ActionResult<AssessmentRequest>> {
+export async function amendPlanAction(requestId: string, input: AmendInput): Promise<ActionResult<AssessmentRequest>> {
   const session = await getViewer();
   if (session === null) return signedOut;
-  const id = uuid.safeParse(oldId);
-  const parsed = auditSchema.safeParse(input);
+  const id = uuid.safeParse(requestId);
+  const parsed = amendSchema.safeParse(input);
   if (!id.success || !parsed.success) return invalid('That change is not complete yet.');
-  const created = await toResult(() => createRequest(session, parsed.data));
-  if (!created.ok) return created;
-  // Best effort: a person who may not decide their own plans leaves the old one pending; it is never started.
-  await callApi(session, `/requests/${enc(id.data)}/decision`, {
-    method: 'POST',
-    body: { decision: 'reject', reason: REPLACED_REASON },
-  }).catch(() => null);
-  return created;
+  const { limits, ...rest } = parsed.data;
+  const body = {
+    ...rest,
+    ...(limits === undefined
+      ? {}
+      : { budgetRequests: limits.requests, budgetSeconds: limits.minutes * SECONDS_PER_MINUTE, costCapUsd: limits.costUsd }),
+  };
+  return toResult(async () =>
+    requestSchema.parse(await callApi(session, `/requests/${enc(id.data)}`, { method: 'PATCH', body })),
+  );
 }
 
 const reasonSchema = z.string().trim().min(1).max(500);
@@ -277,20 +288,22 @@ async function runOf(session: NonNullable<Awaited<ReturnType<typeof getViewer>>>
 export async function approveAndStartAction(
   requestId: string,
   reason: string,
+  /** The plan version the approver read: a plan changed since is refused (409 plan_changed), never approved unseen. */
+  version: number,
 ): Promise<ActionResult<{ runId: string }>> {
   const session = await getViewer();
   if (session === null) return signedOut;
   const id = uuid.safeParse(requestId);
   const why = reasonSchema.safeParse(reason);
-  if (!id.success || !why.success) return invalid('Say why it is safe to run.');
+  if (!id.success || !why.success || !Number.isInteger(version)) return invalid('Say why it is safe to run.');
   const approved = await toResult(() =>
     callApi(session, `/requests/${enc(id.data)}/decision`, {
       method: 'POST',
-      body: { decision: 'approve', reason: why.data },
+      body: { decision: 'approve', reason: why.data, version },
     }),
   );
   if (!approved.ok) {
-    if (approved.status !== HTTP_CONFLICT) return plainOwnership(approved);
+    if (approved.status !== HTTP_CONFLICT || approved.code === 'plan_changed') return plainOwnership(approved);
     const current = await toResult(async () => requestSchema.parse(await callApi(session, `/requests/${enc(id.data)}`)));
     if (!current.ok) return current;
     if (!wasApproved(current.data.status))

@@ -506,6 +506,8 @@ function toolChip(tool: string, input: Readonly<Record<string, unknown>>): strin
       return str(input.title) === '' ? 'submitted a candidate' : `submitted a candidate: ${str(input.title)}`;
     case 'list_exchanges':
       return 'looked back at earlier requests';
+    case 'await_decision':
+      return 'waited for your decision';
     case 'TodoWrite':
       return 'updated its to-do list';
     default:

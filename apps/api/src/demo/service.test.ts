@@ -198,6 +198,7 @@ describe('triage', () => {
       appendEvent: vi.fn(),
       latestAudit: vi.fn(),
       recordDelivery: vi.fn(),
+      listRetests: vi.fn().mockResolvedValue([]),
     };
     return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
   }
@@ -984,5 +985,61 @@ describe('DTOs: queue, starter, Gate 2 details, OWASP and read-time scrub', () =
       at: new Date(),
     });
     expect(JSON.stringify(exchange)).not.toMatch(/hunter2|abc123|eyJhbGciOiJIUzI1NiJ9/);
+  });
+});
+
+describe('retest one finding (P2-rt1)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const lab: AssetRow = {
+    ...asset('tok'),
+    base_url: 'http://127.0.0.1:3001',
+    allowed_origins: ['http://127.0.0.1:3001'],
+    ownership_status: 'verified',
+    verification_method: 'owner_attestation',
+  };
+  const proven = (probe: string, control: string, status = 'released') =>
+    ({
+      id: 'f1',
+      run_id: 'r1',
+      asset_id: 'a1',
+      status,
+      location: { method: probe },
+      evidence: { probe: { request: { method: probe } }, control: { request: { method: control } } },
+    }) as unknown as FindingRow;
+
+  function retestService(row: FindingRow, inserted = true) {
+    const store = {
+      getFinding: vi.fn().mockResolvedValue(row),
+      getAsset: vi.fn().mockResolvedValue(lab),
+      insertRetest: vi.fn().mockResolvedValue(inserted),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options) };
+  }
+
+  it('queues a retest of a read-only probe and ledgers it', async () => {
+    const { store, service } = retestService(proven('GET', 'GET'));
+    const out = await service.requestRetest(engineer, 'f1');
+    expect(out.status).toBe('queued');
+    expect(store.insertRetest).toHaveBeenCalledWith(expect.objectContaining({ finding_id: 'f1', requested_by: 'u1' }));
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ action: 'finding.retest', payload: { retestId: out.retestId, runId: 'r1' } }),
+    );
+  });
+
+  it('refuses a state-changing probe, an unproven finding and a second open retest', async () => {
+    await expect(retestService(proven('POST', 'POST')).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+      response: { code: 'retest_needs_gate2' },
+    });
+    await expect(retestService(proven('GET', 'DELETE')).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+      response: { code: 'retest_needs_gate2' },
+    });
+    await expect(retestService(proven('GET', 'GET', 'dismissed')).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+      response: { code: 'finding_not_retestable' },
+    });
+    await expect(retestService(proven('GET', 'GET'), false).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+      response: { code: 'retest_in_progress' },
+    });
   });
 });

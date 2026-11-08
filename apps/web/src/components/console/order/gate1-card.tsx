@@ -175,7 +175,7 @@ export function Gate1Card({
     }
     if (!requireReason()) return false;
     onBusy(true);
-    const r = await approveAndStartAction(request.id, reason);
+    const r = await approveAndStartAction(request.id, reason, request.version);
     if (!r.ok) {
       onBusy(false);
       setError(`Not approved: ${r.message}`);

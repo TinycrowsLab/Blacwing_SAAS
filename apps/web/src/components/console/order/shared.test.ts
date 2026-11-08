@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { checkAccounts } from './plan-editors';
-import { composeObjective, readObjective, recommendedCare, toggleFocus } from './shared';
+import { approvalEnded, composeObjective, readObjective, recommendedCare, recommendedProof, toggleFocus, wasApproved } from './shared';
 
 describe('objective chips', () => {
   it('composes the objective from the template and reads it back', () => {
@@ -45,5 +45,28 @@ describe('checkAccounts', () => {
     ).toEqual({ error: 'Each role needs its own name.' });
     expect(checkAccounts([{ role: 'x', headerName: 'Host', headerValue: 'y' }])).toEqual({ error: 'Blackwing sets host itself.' });
     expect(checkAccounts([{ role: 'x', headerName: 'Cookie', headerValue: ' ' }])).toEqual({ error: 'Paste the header value.' });
+  });
+  it('keeps a saved account without its value (Blackwing holds it), and asks for a new one', () => {
+    expect(checkAccounts([{ role: 'alice', headerName: 'Authorization', headerValue: '', saved: true }])).toEqual({
+      accounts: [{ role: 'alice', headerName: 'Authorization' }],
+    });
+    expect(checkAccounts([{ role: 'bob', headerName: 'Authorization', headerValue: '' }])).toEqual({
+      error: 'Paste the header value.',
+    });
+  });
+});
+
+describe('ownership and approvals', () => {
+  const asset = (methods: ('http_token' | 'owner_attestation')[]) => ({ verification: { token: 't', wellKnownUrl: 'u', methods } });
+  it("recommends the owner's word only where the API accepts it", () => {
+    expect(recommendedProof('127.0.0.1:3082', asset(['http_token', 'owner_attestation']))).toBe('attest');
+    expect(recommendedProof('127.0.0.1:13400', asset(['http_token']))).toBe('file');
+    expect(recommendedProof('shop.example.com', asset(['http_token', 'owner_attestation']))).toBe('file');
+  });
+  it('an approval whose run was stopped or failed is used up', () => {
+    expect(wasApproved('killed')).toBe(true);
+    expect(approvalEnded('killed')).toBe(true);
+    expect(approvalEnded('failed')).toBe(true);
+    expect(approvalEnded('approved')).toBe(false);
   });
 });

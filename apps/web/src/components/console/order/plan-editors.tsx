@@ -19,10 +19,9 @@ import {
   splitHeaderPaste,
 } from '../../../lib/normalize';
 import { usd } from '../../../lib/plan-text';
-import { buttonClass, Icon, INPUT_CLASS, InlineMessage, OptionCard } from '../design';
+import { buttonClass, Icon, INPUT_CLASS, OptionCard } from '../design';
 import { ChipInput } from '../design-client';
 
-import type { AccountValue } from './secrets';
 import type { Workspace } from '../../../lib/schemas';
 
 export function ObjectiveEditor({ value, onChange }: { readonly value: string; readonly onChange: (v: string) => void }) {
@@ -226,6 +225,15 @@ export interface AccountRow {
   readonly headerName: string;
   readonly headerValue: string;
   readonly note?: string | null;
+  /** An account the plan already has: Blackwing keeps its value, so an empty value field means "keep it". */
+  readonly saved?: boolean;
+}
+
+/** An account as an edit sends it: no value means keep the one Blackwing stored for that role and header. */
+export interface AccountValue {
+  readonly role: string;
+  readonly headerName: string;
+  readonly headerValue?: string;
 }
 
 const MAX_ACCOUNTS = 3;
@@ -240,8 +248,9 @@ export function checkAccounts(rows: readonly AccountRow[]): { accounts: AccountV
     if (role === null) return { error: `Give each account a role name, like customer or admin${n}.` };
     const headerError = headerNameError(r.headerName.trim());
     if (headerError !== null) return { error: `${headerError}${n}` };
-    if (r.headerValue.trim() === '') return { error: `Paste the header value${n}.` };
-    accounts.push({ role, headerName: r.headerName.trim(), headerValue: r.headerValue.trim() });
+    const value = r.headerValue.trim();
+    if (value === '' && r.saved !== true) return { error: `Paste the header value${n}.` };
+    accounts.push(value === '' ? { role, headerName: r.headerName.trim() } : { role, headerName: r.headerName.trim(), headerValue: value });
   }
   if (new Set(accounts.map((a) => a.role)).size !== accounts.length) return { error: 'Each role needs its own name.' };
   return { accounts };
@@ -264,15 +273,9 @@ function settle(row: AccountRow, field: 'headerName' | 'headerValue', text: stri
 export function AccountsEditor({
   rows,
   onRows,
-  missingValues,
-  valuesOnly = false,
 }: {
   readonly rows: readonly AccountRow[];
   readonly onRows: (rows: readonly AccountRow[]) => void;
-  /** The plan has accounts whose values this tab does not know (after a reload). */
-  readonly missingValues: boolean;
-  /** Another editor is open: only the accounts' values are asked for, so an edit can keep them. */
-  readonly valuesOnly?: boolean;
 }) {
   const id = useId();
   const signedIn = rows.length > 0;
@@ -281,7 +284,7 @@ export function AccountsEditor({
   };
   return (
     <div className="flex flex-col gap-3">
-      <fieldset className={`m-0 grid gap-2.5 border-0 p-0 sm:grid-cols-2 ${valuesOnly ? 'hidden' : ''}`}>
+      <fieldset className="m-0 grid gap-2.5 border-0 p-0 sm:grid-cols-2">
         <legend className="sr-only">Signed-in testing</legend>
         <OptionCard
           name="plan-accounts"
@@ -306,17 +309,12 @@ export function AccountsEditor({
       </fieldset>
       {signedIn ? (
         <div className="flex flex-col gap-3">
-          {missingValues && !valuesOnly ? (
-            <InlineMessage tone="gold">
-              Values are never sent back to the browser. Paste them again to keep these accounts.
-            </InlineMessage>
-          ) : null}
           {rows.map((r, i) => {
             const slug = slugifyRole(r.role);
             const taken = slug !== null && rows.slice(0, i).some((x) => slugifyRole(x.role) === slug);
             return (
               <div key={i} className="flex flex-col gap-2 rounded-[12px] border border-border p-3">
-                <div className={`grid gap-2 ${valuesOnly ? 'sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)]' : 'sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]'}`}>
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
                   <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-r${i}`}>
                     Role
                     <input
@@ -327,7 +325,8 @@ export function AccountsEditor({
                       spellCheck={false}
                       aria-invalid={taken || undefined}
                       onChange={(e) => {
-                        set(i, { ...r, role: e.target.value });
+                        // A renamed account is a new one: its value is asked for again.
+                        set(i, { ...r, role: e.target.value, saved: false });
                       }}
                       className={`${INPUT_CLASS} h-10`}
                     />
@@ -340,7 +339,7 @@ export function AccountsEditor({
                       autoComplete="off"
                       spellCheck={false}
                       onChange={(e) => {
-                        set(i, settle(r, 'headerName', e.target.value));
+                        set(i, { ...settle(r, 'headerName', e.target.value), saved: false });
                       }}
                       className={`${INPUT_CLASS} h-10 font-mono text-[13px]`}
                     />
@@ -353,25 +352,23 @@ export function AccountsEditor({
                       value={r.headerValue}
                       autoComplete="off"
                       spellCheck={false}
-                      placeholder="Paste the token or header"
+                      placeholder={r.saved === true ? 'Value saved · paste to replace' : 'Paste the token or header'}
                       onChange={(e) => {
                         set(i, settle(r, 'headerValue', e.target.value));
                       }}
                       className={`${INPUT_CLASS} h-10 font-mono text-[13px]`}
                     />
                   </label>
-                  {valuesOnly ? null : (
-                    <button
-                      type="button"
-                      aria-label={`Remove account ${i + 1}`}
-                      onClick={() => {
-                        onRows(rows.filter((_, j) => j !== i));
-                      }}
-                      className={buttonClass('ghost', 'h-10 self-end px-3')}
-                    >
-                      <Icon name="x" size={15} />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    aria-label={`Remove account ${i + 1}`}
+                    onClick={() => {
+                      onRows(rows.filter((_, j) => j !== i));
+                    }}
+                    className={buttonClass('ghost', 'h-10 self-end px-3')}
+                  >
+                    <Icon name="x" size={15} />
+                  </button>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
                   {taken ? (
@@ -388,7 +385,7 @@ export function AccountsEditor({
               </div>
             );
           })}
-          {rows.length < MAX_ACCOUNTS && !valuesOnly ? (
+          {rows.length < MAX_ACCOUNTS ? (
             <button
               type="button"
               onClick={() => {
