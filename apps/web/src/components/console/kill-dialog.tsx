@@ -338,7 +338,10 @@ function KillDialog({
   const [audit, setAudit] = useState<{ eventId: string; hash: string } | null>(null);
   const single = pick ? undefined : runs[0];
   const mine = runs.filter((r) => r.mine === true);
-  const chosen = pick ? live.runs.find((r) => r.id === picked) : single;
+  // The live list names the target as the person registered it (the run page passes its host).
+  const chosen = pick
+    ? live.runs.find((r) => r.id === picked)
+    : (live.runs.find((r) => r.id === single?.id) ?? single);
 
   // The targets with live audits, in the order their newest audit started.
   const targetList = [...new Map(live.runs.flatMap((r) => (r.assetId === undefined ? [] : [[r.assetId, r.assetName] as const])))].map(
@@ -540,7 +543,7 @@ function KillDialog({
   /** The row's reach: '…' while the live list loads, nothing until a target is picked. */
   const count = (n: number | null | undefined) =>
     n === undefined ? null : (
-      <span className="ml-auto whitespace-nowrap text-[12.5px] font-normal text-muted-foreground">
+      <span className="ml-auto whitespace-nowrap text-[12.5px] text-muted-foreground">
         {n === null ? '…' : plural(n, 'audit')}
       </span>
     );
@@ -572,12 +575,8 @@ function KillDialog({
                   onChange={() => {
                     choose('run');
                   }}
-                  title={
-                    <>
-                      {pick ? 'One audit' : 'This audit'}
-                      {count(1)}
-                    </>
-                  }
+                  title={pick ? 'One audit' : 'This audit'}
+                  badge={count(1)}
                   description={
                     chosen === undefined ? 'Pick it from the running audits' : (
                       <>
@@ -605,12 +604,8 @@ function KillDialog({
                   onChange={() => {
                     choose('target');
                   }}
-                  title={
-                    <>
-                      {pick ? 'One target' : 'This target'}
-                      {count(anchorAsset === null ? undefined : live.loaded ? targetCount : null)}
-                    </>
-                  }
+                  title={pick ? 'One target' : 'This target'}
+                  badge={count(anchorAsset === null ? undefined : live.loaded ? targetCount : null)}
                   description={
                     anchorAsset === null ? 'Every audit on the target you pick' : `${targetName}, every audit on it`
                   }
@@ -633,12 +628,8 @@ function KillDialog({
                   onChange={() => {
                     choose('workspace');
                   }}
-                  title={
-                    <>
-                      Everything in this workspace
-                      {count(live.loaded ? live.runs.length : null)}
-                    </>
-                  }
+                  title="Everything in this workspace"
+                  badge={count(live.loaded ? live.runs.length : null)}
                   description={`${live.workspace ?? 'This workspace'}, every audit on every target`}
                 />
               </div>
