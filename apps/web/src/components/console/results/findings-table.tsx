@@ -58,9 +58,12 @@ function parseFilters(
     )?.key,
     severity: SEVERITIES.find((s) => s === severity),
     target: targets.find((t) => target !== null && fold(t) === target),
-    // An audit id, or its first 8 characters (the short id people copy).
+    // An audit id, or the short id people copy (its last 8 characters, as the ledger and results show it).
     audit: audits.find(
-      (a) => audit !== null && audit.length >= SHORT_ID && fold(a).startsWith(audit),
+      (a) =>
+        audit !== null &&
+        audit.length >= SHORT_ID &&
+        (fold(a).startsWith(audit) || a.replace(/-/g, '').toLowerCase().endsWith(audit)),
     ),
   };
 }
