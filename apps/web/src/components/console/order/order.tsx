@@ -27,6 +27,7 @@ import {
 import { Ticket, TicketPill, type TicketDetail, type TicketLine } from './ticket';
 import { attest, type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { createAuditAction, ensureTargetAction } from '../../../app/(console)/audits/actions';
+import { discardDraftAction, saveDraftAction } from '../../../app/(console)/audits/actions';
 import { readDrafts, removeDraft, saveDraft } from '../../../lib/drafts';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
 import { limitsPhrase, usd } from '../../../lib/plan-text';
@@ -50,6 +51,8 @@ export interface Limits {
   readonly costUsd: number;
 }
 
+/** Longest note the server keeps in a draft. */
+const SERVER_NOTE_MAX = 4000;
 /** Longest note carried in the address (the stored draft keeps the whole note). */
 const CARRIED_TEXT_MAX = 600;
 const carriedAnswers = (a: {
@@ -143,6 +146,7 @@ export function Order({
   initialStep,
   draftId,
   restoreDraft,
+  serverDraft,
   assets,
   viewerName,
   limits,
@@ -152,6 +156,8 @@ export function Order({
   readonly draftId: string;
   /** True when the sidebar's draft link brought the person here: its answers come back. */
   readonly restoreDraft: boolean;
+  /** The draft as the server holds it (answers, question), or null when it has none. */
+  readonly serverDraft: { readonly step: number; readonly answers: Record<string, unknown> } | null;
   readonly assets: readonly Asset[];
   readonly viewerName: string;
   /** The suggested limits preset from the workspace; null when the workspace settings did not load. */
@@ -203,12 +209,14 @@ export function Order({
     restored.current = true;
     const stored = readDrafts().find((x) => x.id === draftId);
     // Answers also travel in the page address, so a draft opened on another device or in a fresh browser still has them.
-    const carried = stored === undefined && restoreDraft ? answersFromUrl() : undefined;
+    const kept = stored === undefined && restoreDraft ? serverDraft : null;
+    const carried = stored === undefined && restoreDraft ? (answersFromUrl() ?? kept?.answers) : undefined;
     const d =
       stored ??
       (carried === undefined || first === null
         ? undefined
         : { id: draftId, origin: first.origin, host: first.host, step: initialStep, answers: carried, savedAt: '' });
+    if (kept !== null && d !== undefined && d.step === initialStep && kept.step > initialStep) d.step = kept.step;
     if (d === undefined || (!restoreDraft && d.origin !== first?.origin)) return;
     const a = answersSchema.safeParse(d.answers);
     if (!a.success) return;
@@ -225,7 +233,7 @@ export function Order({
         if (isVerified(r.data)) setStep(d.step);
       });
     else setStep(d.step);
-  }, [draftId, restoreDraft, startStep, initialStep, first, firstAsset]);
+  }, [draftId, restoreDraft, serverDraft, startStep, initialStep, first, firstAsset]);
 
   // Question 2 registers the site (the API reuses an existing one): the file needs its token, and only the API knows
   // whether the owner's word is accepted for it (a lab the operator listed) or the address is refused outright.
@@ -276,24 +284,22 @@ export function Order({
     // An address Blackwing refuses can never go further: it is not kept as a draft (and an earlier one goes).
     if (refusedTarget) {
       removeDraft(draftId);
+      void discardDraftAction(draftId);
       return;
     }
     const write = (): void => {
       unsavedDraft.current = null;
       if (submitted.current) return;
-      saveDraft({
-        id: draftId,
-        origin: target.origin,
-        host: target.host,
-        step,
-        answers: { focus, text: focusText, care, method },
-        savedAt: new Date().toISOString(),
+      const answers = { focus, text: focusText, care, method };
+      saveDraft({ id: draftId, origin: target.origin, host: target.host, step, answers, savedAt: new Date().toISOString() });
+      // The server keeps the answers too; "Draft saved" is said only once it has them.
+      void saveDraftAction(draftId, step, { ...answers, text: focusText.slice(0, SERVER_NOTE_MAX), origin: target.origin, host: target.host }).then((r) => {
+        if (r.ok && !submitted.current) setSaved(true);
       });
     };
     unsavedDraft.current = write;
     const timer = window.setTimeout(() => {
       write();
-      setSaved(true);
     }, DRAFT_DEBOUNCE_MS);
     return () => {
       window.clearTimeout(timer);
@@ -394,6 +400,7 @@ export function Order({
     }
     submitted.current = true;
     removeDraft(draftId);
+    void discardDraftAction(draftId);
     refreshSidebar();
     // Replace, so browser Back does not reopen question 4 of an order that is already a plan.
     router.replace(`/audits/${r.data.id}`);

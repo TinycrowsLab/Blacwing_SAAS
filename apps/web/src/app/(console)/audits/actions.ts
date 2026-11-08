@@ -90,6 +90,35 @@ export async function ensureTargetAction(
   );
 }
 
+const draftInput = z.object({
+  id: uuid,
+  step: z.number().int().min(1).max(4),
+  answers: z.record(z.string().max(120), z.unknown()),
+});
+
+/** Keeps the order's answers on the server (per person), so the draft's link restores them in any browser. */
+export async function saveDraftAction(id: string, step: number, answers: Record<string, unknown>): Promise<ActionResult<{ saved: true }>> {
+  const session = await getViewer();
+  if (session === null) return signedOut;
+  const input = draftInput.safeParse({ id, step, answers });
+  if (!input.success) return invalid('That draft could not be saved.');
+  return toResult(async () => {
+    await callApi(session, `/drafts/${input.data.id}`, { method: 'PUT', body: { step: input.data.step, answers: input.data.answers } });
+    return { saved: true as const };
+  });
+}
+
+/** Drops the server copy of a draft (the order was placed, or the address was refused). */
+export async function discardDraftAction(id: string): Promise<ActionResult<{ discarded: true }>> {
+  const session = await getViewer();
+  if (session === null) return signedOut;
+  if (!uuid.safeParse(id).success) return invalid('That draft could not be found.');
+  return toResult(async () => {
+    await callApi(session, `/drafts/${id}`, { method: 'DELETE' });
+    return { discarded: true as const };
+  });
+}
+
 /** Removes a target from the list (the API keeps it in the ledger and for past runs; refused while an audit is open). */
 export async function removeTargetAction(assetId: string): Promise<ActionResult<{ removed: true }>> {
   const session = await getViewer();
