@@ -2,6 +2,7 @@
 // API is busy (429) or slow at that moment, the page still opens and the client loader keeps trying: a person who just
 // approved an audit never lands on an error page while it runs.
 import Link from 'next/link';
+import { cache } from 'react';
 
 import { buttonClass } from '../../../../components/console/design';
 import { RunView, RunViewLoader } from '../../../../components/console/run-view';
@@ -9,12 +10,38 @@ import { ApiError, callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 import { runSchema } from '../../../../lib/schemas';
 
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 
 const HTTP_NOT_FOUND = 404;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** One read per request, shared by the title and the page. */
+const loadRun = cache(async (id: string) => {
+  const session = await getViewer();
+  if (session === null) return null;
+  return runSchema.parse(await callApi(session, `/runs/${encodeURIComponent(id)}?afterSeq=0`));
+});
+
+/** "127.0.0.1:3082 | Blackwing": the target's host, like the run header. A run that cannot be read keeps the default. */
+export async function generateMetadata({
+  params,
+}: {
+  readonly params: Promise<{ readonly id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!UUID.test(id)) return {};
+  const run = await loadRun(id).catch(() => null);
+  const base = run?.pins.asset?.baseUrl;
+  if (base === undefined) return run?.pins.asset?.name === undefined ? {} : { title: run.pins.asset.name };
+  try {
+    return { title: new URL(base).host };
+  } catch {
+    return { title: base };
+  }
+}
 
 /** A missing or malformed run reads the same, inside the console (sidebar kept), with a way back. */
 function NoSuchRun(): ReactNode {
@@ -41,9 +68,8 @@ export default async function RunPage({
   const { id } = await params;
   if (!UUID.test(id)) return <NoSuchRun />;
   try {
-    const run = runSchema.parse(
-      await callApi(session, `/runs/${encodeURIComponent(id)}?afterSeq=0`),
-    );
+    const run = await loadRun(id);
+    if (run === null) return null;
     return <RunView initial={run} viewerName={session.user.name} />;
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) return <NoSuchRun />;

@@ -8,8 +8,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { buttonClass, Chip, Icon, InlineMessage, Receipt } from './design';
-import { Countdown, PendingButton, useCountdown } from './design-client';
+import { AuthorisedUnder, buttonClass, Chip, Icon, InlineMessage, Receipt, withRedactions } from './design';
+import { clockLabel, Countdown, PendingButton, useCountdown } from './design-client';
 import {
   announceDecided,
   DECIDED_EVENT,
@@ -24,7 +24,13 @@ import {
 import { pathOf } from './run-model';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
-import { gate2DetailSchema, sidebarSchema, type Gate2, type SidebarData } from '../../lib/schemas';
+import {
+  gate2DetailSchema,
+  sidebarSchema,
+  type Gate2,
+  type PinnedAuthorisation,
+  type SidebarData,
+} from '../../lib/schemas';
 
 type Card = Gate2 | Gate2Detail;
 
@@ -40,6 +46,8 @@ export interface AuditContext {
   readonly objective: string | null;
   /** Still queued, running or paused: the receipt then leads back to it. */
   readonly live: boolean;
+  /** The authorisation the audit was pinned to (run.pins); absent when the run could not be read. */
+  readonly authorisation?: PinnedAuthorisation | null;
 }
 
 /** "your audit" or "Avery's audit": whose audit this is, so requests from two audits never look alike. */
@@ -145,14 +153,14 @@ function RequestBox({ gate2, body }: { readonly gate2: Card; readonly body: stri
   return (
     <div className="mt-2 rounded-[10px] border border-border bg-code px-2.5 py-1.5 font-mono text-[12.5px] leading-[19px]">
       <p className="m-0 break-all">
-        <span className="font-medium text-slate">{gate2.method}</span> {pathOf(gate2.url)}
+        <span className="font-medium text-slate">{gate2.method}</span> {withRedactions(pathOf(gate2.url))}
       </p>
       {body === null || body === '' ? null : (
         <>
           <p
             className={`m-0 whitespace-pre-wrap break-all text-muted-foreground ${open ? '' : 'line-clamp-4'}`}
           >
-            {body}
+            {withRedactions(body)}
           </p>
           {long ? (
             <button
@@ -173,14 +181,10 @@ function RequestBox({ gate2, body }: { readonly gate2: Card; readonly body: stri
 
 function Chips({ gate2 }: { readonly gate2: Card }) {
   const intent = intentLabel(gate2.method, gate2.url);
+  if (intent === null) return null;
   return (
     <div className="mt-2.5 flex flex-wrap gap-1.5">
       {intent === null ? null : <Chip tone="gold">{intent}</Chip>}
-      {/* Gate 2 only exists in "Probe gently" runs: "Look, don't touch" blocks every state-changing request outright. */}
-      {gate2.intrusiveness === 'state_changing' ? (
-        <Chip tone="neutral">Above &ldquo;Probe gently&rdquo;</Chip>
-      ) : null}
-      {/exclu/i.test(gate2.whyOutside) ? <Chip tone="warn">Excluded path</Chip> : null}
     </div>
   );
 }
@@ -206,15 +210,56 @@ function ClaudeReason({
   );
 }
 
-/** The runner's own rule (deterministic): one muted line between the chips and Claude's words, as in prototype 04. */
-function WhyAsked({ gate2, phone = false }: { readonly gate2: Card; readonly phone?: boolean }) {
-  if (gate2.whyOutside === '') return null;
+/** A tagged rule row: what the request hits (ABOVE CARE LEVEL, EXCLUDED PATH) and the rule it hits. */
+function RuleRow({ tag, children }: { readonly tag: string; readonly children: ReactNode }) {
   return (
-    <p
-      className={`m-0 text-[12.5px] leading-[19px] text-muted-foreground ${phone ? 'mt-1.5' : 'mt-2'}`}
-    >
-      {plainWhy(gate2.whyOutside)}
-    </p>
+    <li className="flex items-baseline gap-2">
+      <span className="shrink-0 rounded-[4px] bg-warn-soft px-1.5 py-px font-mono text-[10.5px] font-semibold tracking-[0.04em] text-warn">
+        {tag}
+      </span>
+      <span className="min-w-0">{children}</span>
+    </li>
+  );
+}
+
+/**
+ * Why this is outside the authorisation, as rule rows (deterministic: the runner's whyOutside and the pinned
+ * authorisation, never Claude's words). Falls back to the runner's sentence when it does not split into a rule.
+ */
+function WhyAsked({
+  gate2,
+  auth = null,
+  phone = false,
+}: {
+  readonly gate2: Card;
+  readonly auth?: PinnedAuthorisation | null;
+  readonly phone?: boolean;
+}) {
+  if (gate2.whyOutside === '') return null;
+  const path = grantPath(gate2.url);
+  const excluded = auth?.excludedPaths.find((p) => path.startsWith(p)) ?? null;
+  // The runner writes "<what it is>; the authorisation covers only active-safe requests. It would be sent as …".
+  const what = gate2.whyOutside.split(';')[0]?.trim() ?? '';
+  const above = gate2.intrusiveness === 'state_changing' && what !== '' && what !== gate2.whyOutside.trim();
+  const box = `m-0 text-[12.5px] leading-[19px] text-muted-foreground ${phone ? 'mt-1.5' : 'mt-2'}`;
+  if (!above && excluded === null) return <p className={box}>{plainWhy(gate2.whyOutside)}</p>;
+  return (
+    <div className={box}>
+      <span className="block text-[11.5px] font-medium text-foreground">Why this is outside the authorisation</span>
+      <ul className="m-0 mt-1 flex list-none flex-col gap-1 p-0">
+        {above ? (
+          <RuleRow tag="ABOVE CARE LEVEL">
+            {plainWhy(what)}. {auth === null ? 'The authorisation' : <span className="font-mono text-[11.5px]">{auth.saId}</span>} allows
+            up to {auth?.care === null || auth?.care === undefined ? '“Probe gently”' : `“${auth.care}”`}.
+          </RuleRow>
+        ) : null}
+        {excluded === null ? null : (
+          <RuleRow tag="EXCLUDED PATH">
+            <span className="font-mono text-[11.5px]">{excluded}</span> is on the paths to avoid.
+          </RuleRow>
+        )}
+      </ul>
+    </div>
   );
 }
 
@@ -297,7 +342,7 @@ function DecisionReceipt({
   const time = <When iso={gate2.decidedAt ?? gate2.deadlineAt} />;
   const request = (
     <span className="font-mono text-[12px]">
-      {gate2.method} {pathOf(gate2.url)}
+      {gate2.method} {withRedactions(pathOf(gate2.url))}
     </span>
   );
   const human =
@@ -360,7 +405,7 @@ function DecisionReceipt({
         hash={hash}
       />
     );
-  // No person decided, so there is no ledger entry: the runner records it in the audit's activity (gate2.decided).
+  // No person decided. A deadline is ledgered by the runner (gate2.expired); a stopped audit's close is in its activity.
   return (
     <div
       role="status"
@@ -379,7 +424,9 @@ function DecisionReceipt({
           )}
         </span>
         <span className="text-[11.5px] text-muted-foreground">
-          Recorded in the audit&apos;s activity. No one decided, so there is no ledger entry.
+          {stopped
+            ? 'Recorded in the audit’s activity.'
+            : 'Recorded in the audit ledger as an automatic deny.'}
         </span>
       </span>
     </div>
@@ -521,6 +568,9 @@ function DeadlinePanel({
             {...created}
             className={`text-[52px]! leading-[60px]! ${ink}`}
           />
+          {clock?.totalSeconds === null || clock === null ? null : (
+            <span className="text-[12px] text-muted-foreground">of {clockLabel(clock.totalSeconds)} allowed</span>
+          )}
         </span>
       </div>
       <p className="m-0 text-center text-[14px] leading-[21px] text-foreground">
@@ -541,6 +591,11 @@ function DeadlinePanel({
         <dt className="text-muted-foreground">Asked by</dt>
         <dd className="m-0 text-right text-foreground">{agentName(gate2.agent)}</dd>
       </dl>
+      {audit?.authorisation === null || audit?.authorisation === undefined ? null : (
+        <div className="w-full border-t border-border pt-4">
+          <AuthorisedUnder auth={audit.authorisation} variant="card" />
+        </div>
+      )}
       <Link href={runLink} className={`self-start text-[13px] ${LINK}`}>
         Open the live audit
       </Link>
@@ -552,7 +607,7 @@ function DeadlinePanel({
 function CompactRow({ gate2, onExpand }: { readonly gate2: Card; readonly onExpand: () => void }) {
   const created = gate2.createdAt === undefined ? {} : { createdAt: gate2.createdAt };
   const clock = useCountdown(gate2.deadlineAt, gate2.createdAt);
-  // The folded row shows urgency too (not only the open card): the frame turns warn under 60 s and bad under 15 s.
+  // The folded row shows urgency too (not only the open card): the frame turns warn, then bad in the last minute.
   const frame =
     clock?.tone === 'bad'
       ? 'border-bad shadow-[0_0_0_1px_var(--bad)]'
@@ -569,7 +624,7 @@ function CompactRow({ gate2, onExpand }: { readonly gate2: Card; readonly onExpa
       <Icon name="hand" size={15} className="shrink-0 text-gold-ink" />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-mono text-[12.5px] text-foreground">
-          <span className="font-medium text-slate">{gate2.method}</span> {pathOf(gate2.url)}
+          <span className="font-medium text-slate">{gate2.method}</span> {withRedactions(pathOf(gate2.url))}
         </span>
         <span className="truncate text-[12px] text-muted-foreground">
           {agentName(gate2.agent)}
@@ -854,7 +909,7 @@ export function Gate2Card({
 
   if (compact && onExpand !== undefined) return <CompactRow gate2={gate2} onExpand={onExpand} />;
 
-  // Prototypes 04 and 06 draw the clock in ink; it turns warn under 60 s and bad under 15 s.
+  // Prototypes 04 and 06 draw the clock in ink; it turns warn, then bad (pulsing) in the last minute.
   const ink = clock === null || clock.tone === 'normal' ? 'text-foreground!' : '';
   const created = gate2.createdAt === undefined ? {} : { createdAt: gate2.createdAt };
   const bar = <Countdown variant="bar" deadlineAt={gate2.deadlineAt} {...created} />;
@@ -903,7 +958,7 @@ export function Gate2Card({
           )}
           <RequestBox gate2={gate2} body={body} />
           <Chips gate2={gate2} />
-          <WhyAsked gate2={gate2} />
+          <WhyAsked gate2={gate2} auth={audit?.authorisation ?? null} />
           <ClaudeReason reason={gate2.reason} />
         </div>
         <Gate2Actions
@@ -959,7 +1014,7 @@ export function Gate2Card({
             )}
             <RequestBox gate2={gate2} body={body} />
             <Chips gate2={gate2} />
-            <WhyAsked gate2={gate2} phone />
+            <WhyAsked gate2={gate2} auth={audit?.authorisation ?? null} phone />
           </section>
           <ClaudeReason reason={gate2.reason} phone />
           <section className="rounded-2xl border border-border bg-card px-[15px] py-[13px]">
@@ -974,6 +1029,11 @@ export function Gate2Card({
               Open the live audit
             </Link>
           </section>
+          {audit?.authorisation === null || audit?.authorisation === undefined ? null : (
+            <section className="rounded-2xl border border-border bg-card px-[15px] py-[13px]">
+              <AuthorisedUnder auth={audit.authorisation} variant="card" />
+            </section>
+          )}
         </div>
         <div className="sticky bottom-0 border-t border-border bg-bg px-4 pb-[22px] pt-3">
           <Gate2Actions

@@ -592,6 +592,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     );
   const exchange = openCall === null ? null : (exchanges.items.find((x) => x.id === openCall.id) ?? null);
   const firstOpen = pending[0];
+  const authorisation = pinnedAuthorisation(run.pins);
 
   return (
     <section
@@ -734,6 +735,24 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       </header>
 
       <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)} resultsHref={terminal ? resultsHref : null} />
+
+      {authorisation === null ? null : (
+        <AuthorisedUnder
+          auth={authorisation}
+          variant="strip"
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setDetails(true);
+              }}
+              className="shrink-0 text-[12px] font-medium text-gold-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+            >
+              Details
+            </button>
+          }
+        />
+      )}
 
       {queued && !stopping ? (
         <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">

@@ -47,13 +47,24 @@ export default async function Gate2Page({
   const ask = askOf(gate2, asks);
   // Plain fallback: functions of the client card module cannot run here.
   const name = audit?.assetName ?? gate2.run?.assetName ?? 'Request during an audit';
+  let path = gate2.url;
+  try {
+    path = new URL(gate2.url).pathname;
+  } catch {
+    // A bare path is shown as it is.
+  }
   return (
     <>
       <div className="hidden md:block">
         <PageHeader
           crumbs={[{ label: 'Decisions', href: '/decisions' }, { label: 'Your decision' }]}
-          title={name}
+          title={
+            <span className="block truncate font-mono text-[22px] tracking-normal">
+              {gate2.method} {path}
+            </span>
+          }
         />
+        <p className="m-0 mt-1 text-[13px] text-muted-foreground">{name}</p>
       </div>
       <Gate2Card
         gate2={gate2}

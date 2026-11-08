@@ -439,28 +439,47 @@ export function ChipInput({
 export const clockLabel = (seconds: number): string =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
+/** Amber from this many seconds left (or half the allowed time, if shorter); red with a pulse in the last minute. */
+const WARN_S = 300;
+const BAD_S = 60;
+
 /**
- * The live countdown to a server deadline (Gate 2): seconds left, the m:ss label, the tone (`warn` under 60 s,
- * `bad` under 15 s) and the remaining share of `deadlineAt − createdAt`. Null until mounted (no SSR mismatch).
+ * The live countdown to a server deadline (Gate 2): seconds left, the m:ss label, the tone (`warn` under 5 min or half
+ * the allowed time, whichever comes later; `bad` in the last minute), the remaining share of `deadlineAt − createdAt`
+ * and that allowed time in seconds. Null until mounted (no SSR mismatch).
  */
 export function useCountdown(
   deadlineAt: string,
   createdAt?: string,
-): { secondsLeft: number; label: string; tone: 'normal' | 'warn' | 'bad'; share: number | null } | null {
+): {
+  secondsLeft: number;
+  label: string;
+  tone: 'normal' | 'warn' | 'bad';
+  share: number | null;
+  totalSeconds: number | null;
+} | null {
   const now = useNow();
   if (now === 0) return null;
   const deadline = Date.parse(deadlineAt);
   const secondsLeft = Math.max(0, Math.ceil((deadline - now) / 1000));
   const total = createdAt === undefined ? Number.NaN : deadline - Date.parse(createdAt);
+  const known = Number.isFinite(total) && total > 0;
+  const warnAt = known ? Math.min(WARN_S, total / 2000) : WARN_S;
   return {
     secondsLeft,
     label: clockLabel(secondsLeft),
-    tone: secondsLeft < 15 ? 'bad' : secondsLeft < 60 ? 'warn' : 'normal',
-    share: Number.isFinite(total) && total > 0 ? Math.max(0, Math.min(1, (deadline - now) / total)) : null,
+    tone: secondsLeft < BAD_S ? 'bad' : secondsLeft < warnAt ? 'warn' : 'normal',
+    share: known ? Math.max(0, Math.min(1, (deadline - now) / total)) : null,
+    totalSeconds: known ? Math.round(total / 1000) : null,
   };
 }
 
-const CLOCK_TONE = { normal: 'text-gold-ink', warn: 'text-warn', bad: 'text-bad' } as const;
+/** The clock's colour by tone: gold, amber, then red with a slow pulse (reduced motion: no pulse). */
+export const CLOCK_TONE = {
+  normal: 'text-gold-ink',
+  warn: 'text-warn',
+  bad: 'text-bad motion-safe:animate-[bwpulse_1.2s_ease-in-out_infinite]',
+} as const;
 
 /**
  * `inline`: "3:24 left" (gold, then warn and bad); `big`: the 64 px phone clock; `bar`: the 3 px remaining-time bar.
