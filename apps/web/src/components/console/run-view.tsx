@@ -39,6 +39,8 @@ import {
 } from './flight-deck';
 import { plainWhy } from './gate2-view';
 import { KillButton } from './kill-dialog';
+import { runAgainAction } from './results/actions';
+import { RunAgain } from './results/report-download';
 import { ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
   type Exchange,
@@ -61,8 +63,6 @@ import {
   stages,
   teamNodes,
 } from './run-model';
-import { runAgainAction } from './results/actions';
-import { RunAgain } from './results/report-download';
 import { StageSpine } from './stage-spine';
 import { TeamMap } from './team-map';
 import { useNow } from './use-now';

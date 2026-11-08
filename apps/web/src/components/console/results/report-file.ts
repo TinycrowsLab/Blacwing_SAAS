@@ -479,7 +479,7 @@ const INTERNAL_KEYS: ReadonlySet<string> = new Set([
 
 /** Removes INTERNAL_KEYS at any depth, so a report handed to a client carries no internal bookkeeping. */
 function dropInternal(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(dropInternal);
+  if (Array.isArray(value)) return value.map((v) => dropInternal(v));
   if (typeof value !== 'object' || value === null) return value;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)

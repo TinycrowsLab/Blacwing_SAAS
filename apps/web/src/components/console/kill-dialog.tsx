@@ -18,7 +18,7 @@ import { Modal } from './modal';
 import { shortId } from './run-model';
 import { auditRefSchema, sidebarSchema, type SidebarData } from '../../lib/schemas';
 
-const POLL_MS = 500;
+const POLL_MS = 250;
 const NO_EVENTS = 1_000_000;
 
 export interface StoppableRun {
@@ -440,7 +440,10 @@ function KillDialog({
 
   useEffect(() => {
     if (phase !== 'stopping' || busy) return;
-    const timer = window.setInterval(() => {
+    let inFlight = false;
+    const tick = (): void => {
+      if (inFlight) return;
+      inFlight = true;
       void (async () => {
         const read = await Promise.all(
           targets.map(async (t) => {
@@ -456,8 +459,12 @@ function KillDialog({
           window.dispatchEvent(new Event('bw:refresh'));
           router.refresh();
         }
-      })();
-    }, POLL_MS);
+      })().finally(() => {
+        inFlight = false;
+      });
+    };
+    tick();
+    const timer = window.setInterval(tick, POLL_MS);
     return () => {
       window.clearInterval(timer);
     };

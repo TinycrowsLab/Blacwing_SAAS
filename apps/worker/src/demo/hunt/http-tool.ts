@@ -289,8 +289,10 @@ export async function sleepUnlessStopped(ctx: HuntContext, ms: number): Promise<
   if (ctx.signal.aborted) return;
   let onAbort: (() => void) | undefined;
   const stopped = new Promise<void>((resolve) => {
-    onAbort = resolve;
-    ctx.signal.addEventListener('abort', resolve, { once: true });
+    onAbort = () => {
+      resolve();
+    };
+    ctx.signal.addEventListener('abort', onAbort, { once: true });
   });
   try {
     await Promise.race([ctx.deps.sleep(ms), stopped]);

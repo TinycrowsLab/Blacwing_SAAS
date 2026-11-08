@@ -242,6 +242,17 @@ function claudeNotCovered(summary: string | null): string | null {
   return cut > NOTE_MAX / 2 ? head.slice(0, cut + 1).trim() : `${head.slice(0, head.lastIndexOf(' '))}…`;
 }
 
+/**
+ * An agent's note is written at one moment ("pending Gate 2"); a report is read after the decision. Say what was true
+ * then, in plain words, with no internal ids or gate numbers.
+ */
+function plainGate(note: string): string {
+  return note
+    .replace(/\s*\(?\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b\)?/gi, '')
+    .replace(/\b(?:awaiting|pending) Gate 2\b/gi, 'held for your approval when this was recorded')
+    .replace(/\bGate 2\b/g, 'your approval');
+}
+
 export interface NotTested {
   /** False when the runner recorded no coverage for this run (older runs): the rows then hold only what the plan says. */
   readonly recorded: boolean;
@@ -267,7 +278,7 @@ export function notTested(input: {
       : 'Claude ended the audit before trying it';
   const rows: { what: string; why: string }[] = (coverage?.cases ?? []).flatMap((c) => {
     if (c.status === 'executed') return [];
-    const note = c.note === null || c.note.trim() === '' ? null : scrub(c.note.trim());
+    const note = c.note === null || c.note.trim() === '' ? null : plainGate(scrub(c.note.trim()));
     const why =
       c.status === 'skipped'
         ? `Skipped: ${note ?? 'Claude judged it not relevant'}`

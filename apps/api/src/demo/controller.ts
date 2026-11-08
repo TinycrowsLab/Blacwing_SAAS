@@ -180,9 +180,11 @@ const cloneSchema = z.preprocess(
 );
 
 /** The wizard's answers: plain JSON, bounded. Test-account secrets never belong here. */
+const DRAFT_STEPS = 10;
+const DRAFT_BYTES = 16_000;
 const draftSchema = z.strictObject({
-  step: z.number().int().min(1).max(10),
-  answers: z.record(z.string().max(LIMITS.name), z.unknown()).refine((v) => JSON.stringify(v).length <= 16_000, 'Too large.'),
+  step: z.number().int().min(1).max(DRAFT_STEPS),
+  answers: z.record(z.string().max(LIMITS.name), z.unknown()).refine((v) => JSON.stringify(v).length <= DRAFT_BYTES, 'Too large.'),
 });
 
 const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });

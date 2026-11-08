@@ -201,16 +201,36 @@ export function owaspLabel(stored: string): string {
   return title === null ? stored : `${code}:2021 ${title}`;
 }
 
+/**
+ * An oracle is the check Claude wrote, shown so the reader can see what was matched. When its text would be scrubbed
+ * (it names a secret field and value), the scrubber's marker would land inside the pattern and leave it unreadable (and a
+ * regex broken), so it is described in words instead: what kind of check, and which field, with the value hidden.
+ */
+export function scrubOracle<T>(oracle: T): T {
+  if (typeof oracle !== 'object' || oracle === null) return scrubDeep(oracle);
+  const { type, value } = oracle as { type?: unknown; value?: unknown };
+  if (typeof value !== 'string' || scrub(value) === value) return scrubDeep(oracle);
+  const field = /\\?"([A-Za-z0-9_$.-]{1,64})\\?"\s{0,8}:/.exec(value)?.[1];
+  const what = type === 'body_regex' ? 'a pattern' : 'text';
+  const hidden = field === undefined ? `${what} holding a secret (hidden)` : `${what} that names the field "${field}" with its value hidden`;
+  return { ...(oracle as object), value: hidden } as T;
+}
+
 /** Target data and model text of a finding with secrets replaced (rows stored before store-time scrubbing too). */
 export function scrubFinding(row: FindingRow): FindingRow {
+  const evidence = scrubDeep(row.evidence);
+  const raw = row.evidence;
   return {
     ...row,
     title: scrub(row.title),
     description: row.description === null ? null : scrub(row.description),
     repro_curl: scrub(row.repro_curl),
-    evidence: scrubDeep(row.evidence),
+    evidence:
+      'oracle' in raw
+        ? { ...evidence, oracle: scrubOracle(raw.oracle) }
+        : evidence,
     replay: scrubDeep(row.replay),
-    oracle: scrubDeep(row.oracle),
+    oracle: scrubOracle(row.oracle),
     location: scrubDeep(row.location),
   };
 }
