@@ -146,7 +146,7 @@ export default async function SettingsPage(): Promise<ReactNode> {
             </Fact>
             <Fact label="Time to decide a request">
               {minutes} {minutes === 1 ? 'minute' : 'minutes'}. If nobody answers, the request is
-              denied and the other agents keep working.
+              denied and never sent.
             </Fact>
             <Fact label="Approving your own audits">
               {s.selfApprove

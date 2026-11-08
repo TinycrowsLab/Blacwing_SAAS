@@ -23,6 +23,10 @@ export interface StoppableRun {
   readonly assetName: string;
   /** When it started, so two audits of one target can be told apart. */
   readonly startedAt?: string | null;
+  /** Who started it (the picker names them); null or absent when unknown. */
+  readonly startedBy?: string | null;
+  /** The viewer started it ("Stop all of mine"). */
+  readonly mine?: boolean;
 }
 
 const haltSchema = z.object({
@@ -30,12 +34,19 @@ const haltSchema = z.object({
   haltMs: z.number().nullable().default(null),
   gate2: z.array(z.object({ status: z.string(), decidedAt: z.string().nullable().default(null) })).default([]),
 });
+type Halt = z.infer<typeof haltSchema>;
 /** Clock skew allowed between the browser's "now" and the server's decision times. */
 const SKEW_MS = 1000;
+const ENDED = ['killed', 'completed', 'failed'];
 
-/** Opens the Stop dialog for `run`. Renders nothing visible while `run` is null (not queued, running or paused). */
+/**
+ * Opens the Stop dialog. On an audit's own page `run` is that audit (Enter stops it). Elsewhere `choices` are the live
+ * audits: the dialog lists them with who started each and when, nothing preselected, plus "Stop all of mine". Renders
+ * nothing visible while there is nothing to stop.
+ */
 export function KillButton({
   run,
+  choices = [],
   variant = 'header',
   label,
   className,
@@ -43,6 +54,8 @@ export function KillButton({
   hideTrigger = false,
 }: {
   readonly run: StoppableRun | null;
+  /** Off an audit's page (run null): the live audits to pick from. */
+  readonly choices?: readonly StoppableRun[];
   /** `header`: the run page button; `pill`: the sidebar "1 audit running · Stop"; `icon`: the 44 px mobile button. */
   readonly variant?: 'header' | 'pill' | 'icon';
   /** The pill's text, e.g. "1 audit running". */
@@ -53,33 +66,32 @@ export function KillButton({
   /** Keep the dialog and the shortcut, without a visible trigger (the sidebar on the run's own page). */
   readonly hideTrigger?: boolean;
 }) {
-  // The run the dialog was opened for: it stays mounted after the halt, when `run` becomes null.
-  const [target, setTarget] = useState<StoppableRun | null>(run);
+  // What the dialog was opened for: it stays mounted after the halt, when `run` becomes null.
+  const [target, setTarget] = useState<StoppableRun | 'pick' | null>(run);
   const [open, setOpen] = useState(false);
-  const openFor = (r: StoppableRun): void => {
-    setTarget(r);
+  const can = run !== null || choices.length > 0;
+  const openNow = (): void => {
+    setTarget(run ?? 'pick');
     setOpen(true);
   };
 
   useEffect(() => {
-    if (!shortcut || run === null) return;
+    if (!shortcut || !can) return;
     const onKey = (e: KeyboardEvent): void => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Period') {
         e.preventDefault();
-        openFor(run);
+        openNow();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
     };
-  }, [shortcut, run]);
+  });
 
   let trigger = null;
-  if (run !== null && !hideTrigger) {
-    const onClick = (): void => {
-      openFor(run);
-    };
+  if (can && !hideTrigger) {
+    const onClick = openNow;
     if (variant === 'pill')
       trigger = (
         <button
@@ -123,8 +135,9 @@ export function KillButton({
       {trigger}
       {target === null ? null : (
         <KillDialog
-          key={target.id}
-          run={target}
+          key={target === 'pick' ? 'pick' : target.id}
+          runs={target === 'pick' ? choices : [target]}
+          pick={target === 'pick'}
           open={open}
           onClose={() => {
             setOpen(false);
@@ -137,12 +150,65 @@ export function KillButton({
 
 type Phase = 'confirm' | 'stopping' | 'halted';
 
+interface KillAnswer {
+  readonly run: StoppableRun;
+  readonly ok: boolean;
+  readonly message: string;
+  readonly killRequestedAt: string | null;
+  readonly audit: unknown;
+}
+
+const UNREACHABLE = "Couldn't reach Blackwing. Nothing was stopped. Try again.";
+
+async function postKill(run: StoppableRun): Promise<KillAnswer> {
+  try {
+    const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/kill`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scope: 'run', confirm: shortId(run.id) }),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      message?: unknown;
+      code?: unknown;
+      killRequestedAt?: unknown;
+      audit?: unknown;
+    };
+    return {
+      run,
+      ok: res.ok,
+      message:
+        body.code === 'run_not_running'
+          ? 'This audit has already finished. Nothing is running.'
+          : typeof body.message === 'string'
+            ? body.message
+            : UNREACHABLE,
+      killRequestedAt: typeof body.killRequestedAt === 'string' ? body.killRequestedAt : null,
+      audit: body.audit ?? null,
+    };
+  } catch {
+    return { run, ok: false, message: UNREACHABLE, killRequestedAt: null, audit: null };
+  }
+}
+
+const time = (iso: string | null | undefined): string =>
+  iso === null || iso === undefined ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(new Date(iso));
+
+/** "Run 01A1B9 · started 10:31 by Avery": the line that tells two audits of one target apart. */
+function runLine(run: StoppableRun, seconds = false): string {
+  const at = run.startedAt === undefined || run.startedAt === null ? '' : ` · started ${seconds ? new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(run.startedAt)) : time(run.startedAt)}`;
+  const by = run.mine === true ? ' by you' : run.startedBy === undefined || run.startedBy === null ? '' : ` by ${run.startedBy}`;
+  return `Run ${shortId(run.id)}${at === '' ? (run.startedAt === null ? ' · queued' : '') : at}${by}`;
+}
+
 function KillDialog({
-  run,
+  runs,
+  pick,
   open,
   onClose,
 }: {
-  readonly run: StoppableRun;
+  /** The audit to stop, or (pick) the live audits to choose from. */
+  readonly runs: readonly StoppableRun[];
+  readonly pick: boolean;
   readonly open: boolean;
   readonly onClose: () => void;
 }) {
@@ -150,62 +216,58 @@ function KillDialog({
   const [phase, setPhase] = useState<Phase>('confirm');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  // The audits a stop was sent for (fixed at the click: the live list empties as they halt).
+  const [targets, setTargets] = useState<readonly StoppableRun[]>([]);
   const [requestedAt, setRequestedAt] = useState<string | null>(null);
-  const [halt, setHalt] = useState<z.infer<typeof haltSchema> | null>(null);
+  const [halts, setHalts] = useState<ReadonlyMap<string, Halt>>(new Map());
   const [audit, setAudit] = useState<{ eventId: string; hash: string } | null>(null);
+  const single = runs[0];
+  const mine = runs.filter((r) => r.mine === true);
+  const chosen = runs.find((r) => r.id === picked);
 
-  async function stop(): Promise<void> {
-    if (busy) return;
+  async function stop(list: readonly StoppableRun[]): Promise<void> {
+    if (busy || list.length === 0) return;
     setBusy(true);
     setError(null);
     // The halt view shows at once (the click settles in well under 2 s); a refusal brings the question back.
+    setTargets(list);
     setRequestedAt(new Date().toISOString());
     setPhase('stopping');
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/kill`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ scope: 'run', confirm: shortId(run.id) }),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        message?: unknown;
-        code?: unknown;
-        killRequestedAt?: unknown;
-        audit?: unknown;
-      };
-      if (!res.ok) {
+      const answers = await Promise.all(list.map(postKill));
+      const sent = answers.filter((a) => a.ok);
+      const refused = answers.find((a) => !a.ok);
+      if (sent.length === 0) {
         setPhase('confirm');
+        setTargets([]);
         setRequestedAt(null);
-        setError(
-          body.code === 'run_not_running'
-            ? 'This audit has already finished. Nothing is running.'
-            : typeof body.message === 'string'
-              ? body.message
-              : "Couldn't reach Blackwing. Nothing was stopped. Try again.",
-        );
+        setError(refused?.message ?? UNREACHABLE);
         return;
       }
-      setRequestedAt(typeof body.killRequestedAt === 'string' ? body.killRequestedAt : new Date().toISOString());
-      setAudit(auditRefSchema.parse(body.audit ?? null));
-    } catch {
-      setPhase('confirm');
-      setRequestedAt(null);
-      setError("Couldn't reach Blackwing. Nothing was stopped. Try again.");
+      setTargets(sent.map((a) => a.run));
+      if (refused !== undefined) setError(`${refused.run.assetName}: ${refused.message}`);
+      setRequestedAt(sent[0]?.killRequestedAt ?? new Date().toISOString());
+      setAudit(auditRefSchema.parse(sent[0]?.audit ?? null));
     } finally {
       setBusy(false);
     }
   }
 
   useEffect(() => {
-    if (phase !== 'stopping') return;
+    if (phase !== 'stopping' || busy) return;
     const timer = window.setInterval(() => {
       void (async () => {
-        const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}?afterSeq=${NO_EVENTS}`, { cache: 'no-store' });
-        if (!res.ok) return;
-        const parsed = haltSchema.safeParse(await res.json());
-        if (!parsed.success) return;
-        setHalt(parsed.data);
-        if (['killed', 'completed', 'failed'].includes(parsed.data.state)) {
+        const read = await Promise.all(
+          targets.map(async (t) => {
+            const res = await fetch(`/api/runs/${encodeURIComponent(t.id)}?afterSeq=${NO_EVENTS}`, { cache: 'no-store' }).catch(() => null);
+            const parsed = res?.ok === true ? haltSchema.safeParse(await res.json()) : null;
+            return parsed?.success === true ? ([t.id, parsed.data] as const) : null;
+          }),
+        );
+        const next = new Map(read.flatMap((r) => (r === null ? [] : [r])));
+        setHalts((old) => new Map([...old, ...next]));
+        if (targets.every((t) => ENDED.includes(next.get(t.id)?.state ?? ''))) {
           setPhase('halted');
           window.dispatchEvent(new Event('bw:refresh'));
           router.refresh();
@@ -215,7 +277,7 @@ function KillDialog({
     return () => {
       window.clearInterval(timer);
     };
-  }, [phase, run.id, router]);
+  }, [phase, busy, targets, router]);
 
   // The halt view replaces the Stop button: move focus to Close so the keyboard is never lost.
   useEffect(() => {

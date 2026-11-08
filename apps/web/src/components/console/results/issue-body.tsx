@@ -1,6 +1,7 @@
 // One issue in three voices, never blurred (experience spec §1, §7): Claude's explanation (not verified), Blackwing's
-// proof by the validator (probe and control side by side, replay count, no model) and Claude's fix suggestion, shown
-// only when the run recorded one. Used by the results page and the finding detail page.
+// proof by the validator (probe and control side by side, the replay count, the identity each was sent as) and Claude's
+// fix suggestion, shown only when the run recorded one. Used by the results page and the finding detail page. Evidence
+// arrives scrubbed (results/model findingDetailSchema).
 import { agentName } from '../../../lib/agents';
 import { Chip, Icon, VoiceTag } from '../design';
 import { Markdown } from '../markdown';
@@ -53,6 +54,25 @@ export function plainReason(reason: string): string {
     .replace(/\boracle\b/gi, 'expected result');
 }
 
+/** Who did what in a proof: Blackwing replays deterministically, but the check and the control are Claude's proposal. */
+export const PROOF_BY = 'replayed by Blackwing; check and control proposed by Claude';
+
+/** What differs between the probe and the control (`evidence.proof.delta`), in words. */
+const DELTA_WORDS: Readonly<Record<string, string>> = {
+  query: 'the query string',
+  body: 'the body',
+  header: 'a header',
+  role: 'the identity',
+  path_segment: 'one path segment',
+};
+
+/** "as alice" or "signed out" for a side the runner recorded with its identity; null for older evidence. */
+export function identityOf(side: Side): string | null {
+  const role = side.request?.asRole;
+  if (role === undefined) return null;
+  return role === null || role === '' ? 'signed out' : `as ${role}`;
+}
+
 /** Proven, or why not: counts come from the stored replays, never from the model. */
 export function proofSentence(f: FindingDetail): { proven: boolean; text: string } {
   if (f.evidence.reason !== undefined)
@@ -71,7 +91,7 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
         : ', the control behaved as expected';
   return {
     proven: true,
-    text: `Proven: replayed ${matched} of ${n} times${controlText}. No model involved.`,
+    text: `Proven: replayed ${matched} of ${n} times${controlText}. Blackwing replayed it deterministically; Claude proposed the check and the control.`,
   };
 }
 
@@ -97,13 +117,17 @@ function ProofSide({
   note,
   side,
   verdict,
+  delta = null,
 }: {
   readonly title: string;
   readonly note: string;
   readonly side: Side;
   readonly verdict: { text: string; tone: 'ok' | 'neutral'; title?: string } | null;
+  /** What this side changes against the other (`evidence.proof.delta`), when the validator recorded it. */
+  readonly delta?: string | null;
 }) {
   const line = requestLine(side);
+  const identity = identityOf(side);
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-code">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3.5 py-2.5 text-[13px]">
@@ -120,6 +144,17 @@ function ProofSide({
       <pre className="m-0 whitespace-pre-wrap px-3.5 pt-3 font-mono text-[12px] leading-5 text-foreground">
         {line === null ? 'Not recorded' : <Path text={line} />}
       </pre>
+      {identity === null && delta === null ? null : (
+        <div className="flex flex-wrap gap-1.5 px-3.5 pt-2">
+          {identity === null ? null : (
+            <Chip tone="neutral" title="The identity Blackwing sent this request as">
+              <Icon name="agent" size={12} />
+              {identity}
+            </Chip>
+          )}
+          {delta === null ? null : <Chip tone="neutral">Changed: {delta}</Chip>}
+        </div>
+      )}
       {/* What this side is for, so a control on another path still makes sense. */}
       <p className="m-0 px-3.5 pb-3 pt-1 text-[12px] leading-[18px] text-muted-foreground">
         {note}
@@ -142,6 +177,8 @@ export function IssueBody({
   const controlStatus = control.response?.status;
   const controlMatched = finding.replay?.control?.matched;
   const remediation = finding.evidence.remediation?.trim() ?? '';
+  const rawDelta = finding.evidence.proof?.delta;
+  const delta = rawDelta === undefined || rawDelta === null ? null : (DELTA_WORDS[rawDelta] ?? rawDelta.replace(/_/g, ' '));
   return (
     <div className="flex flex-col gap-3.5">
       {finding.description === null || finding.description.trim() === '' ? null : (
@@ -159,7 +196,7 @@ export function IssueBody({
         <Label voice="blackwing">
           {proof.proven ? (
             <>
-              <b>How it was proved</b> · by the validator
+              <b>How it was proved</b> · {PROOF_BY}
             </>
           ) : (
             <>
@@ -174,6 +211,7 @@ export function IssueBody({
               proof.proven ? 'The request that shows the issue.' : 'The request Claude suspected.'
             }
             side={probe}
+            delta={delta}
             verdict={
               probeStatus === undefined
                 ? null
@@ -188,6 +226,7 @@ export function IssueBody({
             title="Control"
             note="A similar request that should not show it."
             side={control}
+            delta={delta}
             verdict={
               controlStatus === undefined
                 ? null

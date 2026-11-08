@@ -1,4 +1,5 @@
-// DEMO-STORY audit ledger rules: a SHA-256 hash chain over demo.audit_events. Pure functions, no IO.
+// DEMO-STORY audit ledger rules (moved from apps/api/src/demo/audit.ts; the hash input is unchanged): a SHA-256
+// hash chain over demo.audit_events. Pure functions, no IO.
 // Payloads are flat (string, number, boolean or null), so jsonb key reordering cannot change a hash.
 import { createHash } from 'node:crypto';
 

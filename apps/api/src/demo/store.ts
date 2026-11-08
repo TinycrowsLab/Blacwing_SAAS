@@ -52,6 +52,8 @@ export interface RequestRow {
     readonly header_value: string;
   }[];
   readonly status: string;
+  /** Plan version: every amend bumps it; Gate 1 decides one version. */
+  readonly version: number;
   readonly decision_reason: string | null;
   readonly decided_at: Date | null;
   readonly created_at: Date;
@@ -64,6 +66,11 @@ export interface RunRow {
   readonly id: string;
   readonly tenant_id: string;
   readonly request_id: string;
+  readonly created_by: string;
+  readonly started_by_name: string | null;
+  /** Only while queued: queued runs (every tenant) ahead of this one, and runs running or paused. */
+  readonly queue_ahead: number | null;
+  readonly queue_running: number | null;
   readonly state: string;
   readonly paused: boolean;
   readonly pins: Record<string, unknown>;
@@ -95,6 +102,9 @@ export interface FindingRow {
   readonly tenant_id: string;
   readonly run_id: string;
   readonly asset_id: string;
+  readonly fingerprint: string;
+  /** Cross-run identity (asset, method, normalised path, CWE); null on rows written before it existed. */
+  readonly identity_key: string | null;
   readonly title: string;
   readonly class: string;
   readonly cwe_id: string;
@@ -119,6 +129,11 @@ export interface FindingRow {
   readonly created_at: Date;
   readonly asset_name: string | null;
   readonly triaged_by_name: string | null;
+  /** The earliest finding with the same identity in an earlier run of the tenant (none: all null). */
+  readonly seen_run_id: string | null;
+  readonly seen_finding_id: string | null;
+  readonly seen_status: string | null;
+  readonly seen_at: Date | null;
 }
 
 export interface ExchangeRow {
@@ -156,6 +171,14 @@ export interface Gate2Row {
   readonly decided_at: Date | null;
   readonly created_at: Date;
   readonly decided_by_name: string | null;
+  /** The request the agent asked to send (stored scrubbed); null on rows written before it existed. */
+  readonly request_body: string | null;
+  readonly as_role: string | null;
+  readonly close_reason: string | null;
+  readonly asset_name: string | null;
+  readonly requester_id: string | null;
+  readonly requester_name: string | null;
+  readonly run_started_at: Date | null;
 }
 
 export interface AuditRow extends AuditFields {
@@ -169,6 +192,45 @@ export interface DashboardCounts {
   readonly requestsPendingGate1: number;
   readonly runsRunning: number;
   readonly confirmedFindings: number;
+}
+
+/** Exact counts of what waits for a human, uncapped (the console badge and "Your turn"). */
+export interface PendingCounts {
+  readonly gate1: number;
+  readonly gate2: number;
+  readonly gate3: number;
+  readonly keptBack: number;
+  readonly live: number;
+}
+
+export interface FindingRetestRow {
+  readonly id: string;
+  readonly status: string;
+  readonly result: string | null;
+  readonly requested_by: string;
+  readonly detail: Record<string, unknown>;
+  readonly created_at: Date;
+  readonly finished_at: Date | null;
+}
+
+/** The plan fields an amend may change (request columns and the `scope` jsonb). */
+export interface RequestAmend {
+  readonly objective: string;
+  readonly scope: Record<string, unknown>;
+  readonly intrusiveness: string;
+  readonly budget_requests: number;
+  readonly budget_seconds: number;
+  readonly cost_cap_usd: number;
+  readonly test_accounts: readonly { role: string; header_name: string; header_value: string }[];
+}
+
+export interface AuditEntry {
+  readonly actorId: string | null;
+  readonly actorName: string;
+  readonly action: string;
+  readonly targetType: string;
+  readonly targetId: string;
+  readonly payload: AuditPayload;
 }
 
 export interface RunStats {
@@ -188,19 +250,45 @@ const REQUEST_SELECT = `
   LEFT JOIN users appr ON appr.id = r.approver_id`;
 
 const GATE2_SELECT = `
-  SELECT g.*, u.name AS decided_by_name FROM demo.gate2_requests g LEFT JOIN users u ON u.id = g.decided_by`;
+  SELECT g.*, u.name AS decided_by_name, a.name AS asset_name, rq.requester_id, req.name AS requester_name,
+    ru.started_at AS run_started_at
+  FROM demo.gate2_requests g
+  JOIN demo.runs ru ON ru.id = g.run_id
+  JOIN demo.assessment_requests rq ON rq.id = ru.request_id
+  JOIN demo.assets a ON a.id = rq.asset_id
+  LEFT JOIN users req ON req.id = rq.requester_id
+  LEFT JOIN users u ON u.id = g.decided_by`;
 
+// `prev`: the earliest non-suspected finding with the same identity in a run created before this finding's run.
 const FINDING_SELECT = `
-  SELECT f.*, a.name AS asset_name, u.name AS triaged_by_name
+  SELECT f.*, a.name AS asset_name, u.name AS triaged_by_name,
+    prev.run_id AS seen_run_id, prev.id AS seen_finding_id, prev.status AS seen_status, prev.created_at AS seen_at
   FROM demo.findings f
   JOIN demo.assets a ON a.id = f.asset_id
-  LEFT JOIN users u ON u.id = f.triaged_by`;
+  LEFT JOIN users u ON u.id = f.triaged_by
+  LEFT JOIN LATERAL (
+    SELECT p.run_id, p.id, p.status, p.created_at FROM demo.findings p
+    JOIN demo.runs pr ON pr.id = p.run_id
+    WHERE f.identity_key IS NOT NULL AND p.tenant_id = f.tenant_id AND p.identity_key = f.identity_key
+      AND p.run_id <> f.run_id AND p.status <> 'suspected'
+      AND pr.created_at < (SELECT r0.created_at FROM demo.runs r0 WHERE r0.id = f.run_id)
+    ORDER BY p.created_at LIMIT 1
+  ) prev ON true`;
 
+// The queue columns are computed only for a queued run; the worker claims the oldest queued run of any tenant.
 const RUN_SELECT = `
-  SELECT ru.*, rq.budget_seconds, rq.cost_cap_usd, a.name AS asset_name
+  SELECT ru.*, rq.budget_seconds, rq.cost_cap_usd, a.name AS asset_name, cb.name AS started_by_name,
+    CASE WHEN ru.state = 'queued' THEN (SELECT count(*) FROM demo.runs q
+      WHERE q.state = 'queued' AND (q.created_at, q.id) < (ru.created_at, ru.id))::int END AS queue_ahead,
+    CASE WHEN ru.state = 'queued' THEN (SELECT count(*) FROM demo.runs q
+      WHERE q.state IN ('running', 'paused'))::int END AS queue_running
   FROM demo.runs ru
   JOIN demo.assessment_requests rq ON rq.id = ru.request_id
-  JOIN demo.assets a ON a.id = rq.asset_id`;
+  JOIN demo.assets a ON a.id = rq.asset_id
+  LEFT JOIN users cb ON cb.id = ru.created_by`;
+
+/** Run states the console treats as live (Stop, the live list, the badge). */
+const LIVE_STATES = ['queued', 'running', 'paused'];
 
 /** Bodies in exchange lists are excerpts; the full body stays in the table. */
 const BODY_EXCERPT_CHARS = 2048;
@@ -361,6 +449,17 @@ export class DemoStore {
     return (r.rowCount ?? 0) === 1;
   }
 
+  /** Conditional update: a verified asset whose proof no longer holds goes back to unverified. */
+  async markAssetUnverified(tenantId: string, id: string): Promise<boolean> {
+    const r = await this.pool.query(
+      `UPDATE demo.assets SET ownership_status = 'unverified', verification_method = NULL, verified_by = NULL,
+         verified_at = NULL
+       WHERE tenant_id = $1 AND id = $2 AND ownership_status = 'verified'`,
+      [tenantId, id],
+    );
+    return (r.rowCount ?? 0) === 1;
+  }
+
   async insertRequest(row: {
     id: string;
     tenant_id: string;
@@ -410,21 +509,49 @@ export class DemoStore {
     return r.rows[0] ?? null;
   }
 
-  /** Conditional update: only a request still pending Gate 1 can be decided (no lost update). Separation of duties is the service's rule. */
+  /**
+   * Conditional update: only a request still pending Gate 1, at the plan version the approver saw (when given), can
+   * be decided (no lost update). Separation of duties is the service's rule.
+   */
   async decideRequest(
     tenantId: string,
     id: string,
     approverId: string,
     status: 'approved' | 'rejected',
     reason: string | null,
+    version: number | null = null,
   ): Promise<boolean> {
     const r = await this.pool.query(
       `UPDATE demo.assessment_requests
        SET status = $4, approver_id = $3, decision_reason = $5, decided_at = now()
-       WHERE tenant_id = $1 AND id = $2 AND status = 'pending_gate1'`,
-      [tenantId, id, approverId, status, reason],
+       WHERE tenant_id = $1 AND id = $2 AND status = 'pending_gate1' AND ($6::int IS NULL OR version = $6)`,
+      [tenantId, id, approverId, status, reason, version],
     );
     return (r.rowCount ?? 0) === 1;
+  }
+
+  /** Amends a pending plan in place, only at the version the editor saw. Returns the new version, or null. */
+  async amendRequest(tenantId: string, id: string, version: number, plan: RequestAmend): Promise<number | null> {
+    const r = await this.pool.query<{ version: number }>(
+      `UPDATE demo.assessment_requests
+       SET objective = $4, scope = $5, intrusiveness = $6, budget_requests = $7, budget_seconds = $8,
+         cost_cap_usd = $9, test_accounts = $10, version = version + 1
+       WHERE tenant_id = $1 AND id = $2 AND status = 'pending_gate1' AND version = $3
+       RETURNING version`,
+      [
+        tenantId,
+        id,
+        version,
+        plan.objective,
+        JSON.stringify(plan.scope),
+        plan.intrusiveness,
+        plan.budget_requests,
+        plan.budget_seconds,
+        plan.cost_cap_usd,
+        JSON.stringify(plan.test_accounts),
+      ],
+    );
+    return r.rows[0]?.version ?? null;
   }
 
   /** Moves an approved request to running, once. Returns false when another start won the race. */
@@ -498,6 +625,15 @@ export class DemoStore {
     return r.rows[0] ?? null;
   }
 
+  /** Every live run of the tenant, newest first (uncapped: Stop must reach each one). */
+  async listLiveRuns(tenantId: string): Promise<RunRow[]> {
+    const r = await this.pool.query<RunRow>(
+      `${RUN_SELECT} WHERE ru.tenant_id = $1 AND ru.state = ANY($2) ORDER BY ru.created_at DESC`,
+      [tenantId, LIVE_STATES],
+    );
+    return r.rows;
+  }
+
   async listRuns(tenantId: string, limit: number): Promise<RunRow[]> {
     const r = await this.pool.query<RunRow>(
       `${RUN_SELECT} WHERE ru.tenant_id = $1 ORDER BY ru.created_at DESC LIMIT $2`,
@@ -516,12 +652,21 @@ export class DemoStore {
     return (r.rowCount ?? 0) === 1;
   }
 
-  /** A queued run has no worker to halt it: it is killed right here. Null when it is no longer queued. */
+  /**
+   * A queued run has no worker to halt it: it is killed right here, and its request closes as `killed` (the approval
+   * is single-use). Null when it is no longer queued.
+   */
   async killQueuedRun(tenantId: string, id: string, by: string): Promise<Date | null> {
     const r = await this.pool.query<{ killed_at: Date }>(
-      `UPDATE demo.runs SET state = 'killed', kill_requested_at = now(), kill_requested_by = $3,
-         killed_at = now(), halt_ms = 0, finished_at = now()
-       WHERE tenant_id = $1 AND id = $2 AND state = 'queued' RETURNING killed_at`,
+      `WITH killed AS (
+         UPDATE demo.runs SET state = 'killed', kill_requested_at = now(), kill_requested_by = $3,
+           killed_at = now(), halt_ms = 0, finished_at = now()
+         WHERE tenant_id = $1 AND id = $2 AND state = 'queued' RETURNING request_id, killed_at
+       ), closed AS (
+         UPDATE demo.assessment_requests SET status = 'killed'
+         WHERE tenant_id = $1 AND id IN (SELECT request_id FROM killed) AND status IN ('approved', 'running')
+       )
+       SELECT killed_at FROM killed`,
       [tenantId, id, by],
     );
     return r.rows[0]?.killed_at ?? null;
@@ -543,6 +688,16 @@ export class DemoStore {
       `SELECT seq, kind, stage, message, data, at FROM demo.run_events
        WHERE run_id = $1 AND seq > $2 ORDER BY seq`,
       [runId, afterSeq],
+    );
+    return r.rows;
+  }
+
+  /** The latest event of each of `kinds` in the run (one row per kind that occurred). */
+  async lastEvents(runId: string, kinds: readonly string[]): Promise<RunEventRow[]> {
+    const r = await this.pool.query<RunEventRow>(
+      `SELECT DISTINCT ON (kind) seq, kind, stage, message, data, at FROM demo.run_events
+       WHERE run_id = $1 AND kind = ANY($2) ORDER BY kind, seq DESC`,
+      [runId, [...kinds]],
     );
     return r.rows;
   }
@@ -649,6 +804,31 @@ export class DemoStore {
     return r.rows;
   }
 
+  async getFindings(tenantId: string, ids: readonly string[]): Promise<FindingRow[]> {
+    const r = await this.pool.query<FindingRow>(
+      `${FINDING_SELECT} WHERE f.tenant_id = $1 AND f.id = ANY($2::uuid[])`,
+      [tenantId, [...ids]],
+    );
+    return r.rows;
+  }
+
+  /** Batch Gate 3: one conditional update for every id; returns the ids that moved. */
+  async triageFindings(
+    tenantId: string,
+    ids: readonly string[],
+    from: readonly string[],
+    to: 'released' | 'dismissed',
+    by: string,
+    reason: string,
+  ): Promise<string[]> {
+    const r = await this.pool.query<{ id: string }>(
+      `UPDATE demo.findings SET status = $4, triaged_by = $5, triaged_at = now(), triage_reason = $6
+       WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = ANY($3) RETURNING id`,
+      [tenantId, [...ids], [...from], to, by, reason],
+    );
+    return r.rows.map((row) => row.id);
+  }
+
   /** Conditional update: the finding moves to `to` only from one of the `from` statuses. */
   async triageFinding(
     tenantId: string,
@@ -675,17 +855,15 @@ export class DemoStore {
   }
 
   /** Appends to the tenant's hash chain: the last row is read under an advisory lock, then seq + 1 is written. */
-  async appendAudit(
-    tenantId: string,
-    entry: {
-      actorId: string;
-      actorName: string;
-      action: string;
-      targetType: string;
-      targetId: string;
-      payload: AuditPayload;
-    },
-  ): Promise<AuditRef> {
+  async appendAudit(tenantId: string, entry: AuditEntry): Promise<AuditRef> {
+    const [ref] = await this.appendAudits(tenantId, [entry]);
+    if (ref === undefined) throw new Error('audit append returned nothing');
+    return ref;
+  }
+
+  /** Appends several entries in order, in one transaction under the same lock as {@link appendAudit}. */
+  async appendAudits(tenantId: string, entries: readonly AuditEntry[]): Promise<AuditRef[]> {
+    if (entries.length === 0) return [];
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -697,31 +875,38 @@ export class DemoStore {
         'SELECT seq, hash FROM demo.audit_events WHERE tenant_id = $1 ORDER BY seq DESC LIMIT 1',
         [tenantId],
       );
-      const prevHash = last.rows[0]?.hash ?? GENESIS;
-      const fields: AuditFields = { ...entry, seq: (last.rows[0]?.seq ?? 0) + 1, at: new Date() };
-      const hash = auditHash(prevHash, fields);
-      const eventId = newId();
-      await client.query(
-        `INSERT INTO demo.audit_events (id, tenant_id, seq, actor_id, actor_name, action, target_type, target_id,
-           payload, prev_hash, hash, at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [
-          eventId,
-          tenantId,
-          fields.seq,
-          fields.actorId,
-          fields.actorName,
-          fields.action,
-          fields.targetType,
-          fields.targetId,
-          JSON.stringify(fields.payload),
-          prevHash,
-          hash,
-          fields.at,
-        ],
-      );
+      let prevHash = last.rows[0]?.hash ?? GENESIS;
+      let seq = last.rows[0]?.seq ?? 0;
+      const refs: AuditRef[] = [];
+      for (const entry of entries) {
+        seq += 1;
+        const fields: AuditFields = { ...entry, seq, at: new Date() };
+        const hash = auditHash(prevHash, fields);
+        const eventId = newId();
+        await client.query(
+          `INSERT INTO demo.audit_events (id, tenant_id, seq, actor_id, actor_name, action, target_type, target_id,
+             payload, prev_hash, hash, at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [
+            eventId,
+            tenantId,
+            fields.seq,
+            fields.actorId,
+            fields.actorName,
+            fields.action,
+            fields.targetType,
+            fields.targetId,
+            JSON.stringify(fields.payload),
+            prevHash,
+            hash,
+            fields.at,
+          ],
+        );
+        refs.push({ eventId, hash });
+        prevHash = hash;
+      }
       await client.query('COMMIT');
-      return { eventId, hash };
+      return refs;
     } catch (error) {
       await client.query('ROLLBACK').catch(() => undefined);
       throw error;
@@ -730,15 +915,18 @@ export class DemoStore {
     }
   }
 
+  /** The latest ledger event on a target, optionally of one action only. */
   async latestAudit(
     tenantId: string,
     targetType: string,
     targetId: string,
+    action: string | null = null,
   ): Promise<AuditRef | null> {
     const r = await this.pool.query<{ id: string; hash: string }>(
       `SELECT id, hash FROM demo.audit_events
-       WHERE tenant_id = $1 AND target_type = $2 AND target_id = $3 ORDER BY seq DESC LIMIT 1`,
-      [tenantId, targetType, targetId],
+       WHERE tenant_id = $1 AND target_type = $2 AND target_id = $3 AND ($4::text IS NULL OR action = $4)
+       ORDER BY seq DESC LIMIT 1`,
+      [tenantId, targetType, targetId, action],
     );
     const row = r.rows[0];
     return row === undefined ? null : { eventId: row.id, hash: row.hash };
@@ -772,6 +960,29 @@ export class DemoStore {
       prevHash: row.prev_hash,
       hash: row.hash,
     }));
+  }
+
+  /** What waits for a human, exact and uncapped, in one statement. `keptBack` is 0 unless `includeSuspected`. */
+  async pendingCounts(tenantId: string, includeSuspected: boolean): Promise<PendingCounts> {
+    const r = await this.pool.query<Record<keyof PendingCounts, number>>(
+      `SELECT (SELECT count(*) FROM demo.assessment_requests
+                 WHERE tenant_id = $1 AND status = 'pending_gate1')::int AS "gate1",
+              (SELECT count(*) FROM demo.gate2_requests
+                 WHERE tenant_id = $1 AND status = 'pending' AND deadline_at > now())::int AS "gate2",
+              (SELECT count(*) FROM demo.findings WHERE tenant_id = $1 AND status = 'confirmed')::int AS "gate3",
+              (CASE WHEN $2 THEN (SELECT count(*) FROM demo.findings WHERE tenant_id = $1 AND status = 'suspected')
+                 ELSE 0 END)::int AS "keptBack",
+              (SELECT count(*) FROM demo.runs WHERE tenant_id = $1 AND state = ANY($3))::int AS "live"`,
+      [tenantId, includeSuspected, LIVE_STATES],
+    );
+    const row = r.rows[0];
+    return {
+      gate1: row?.gate1 ?? 0,
+      gate2: row?.gate2 ?? 0,
+      gate3: row?.gate3 ?? 0,
+      keptBack: row?.keptBack ?? 0,
+      live: row?.live ?? 0,
+    };
   }
 
   async dashboardCounts(tenantId: string): Promise<DashboardCounts> {

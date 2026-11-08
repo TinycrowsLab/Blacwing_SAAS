@@ -1,12 +1,14 @@
 // In-memory HuntStore for unit tests and the live smoke script. Not used by the product.
-import type { ExchangeRow, FindingRow, Gate2Row, Gate2Status, HuntRun, HuntStore, RunControl, RunEvent, RunOutcome, StaleRun } from './types.js';
+import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RunControl, RunEvent, RunOutcome, StaleRun } from './types.js';
 
 const FAKE_KILL_HALT_MS = 5;
 
 export class FakeStore implements HuntStore {
   readonly events: RunEvent[] = [];
   readonly exchanges: ExchangeRow[] = [];
-  readonly gate2 = new Map<string, { row: Gate2Row; status: Gate2Status; decidedBy: string | null }>();
+  readonly gate2 = new Map<string, { row: Gate2Row; status: Gate2Status; decidedBy: string | null; closeReason?: string }>();
+  /** Ledger entries the worker wrote (gate2.expired). */
+  readonly ledger: { action: string; targetId: string; payload: Record<string, unknown> }[] = [];
   readonly findings: FindingRow[] = [];
   readonly deliveries: { findingId: string; status: string; detail: string }[] = [];
   control: RunControl = { paused: false, kill: null };
@@ -42,16 +44,24 @@ export class FakeStore implements HuntStore {
     const entry = this.gate2.get(id);
     return Promise.resolve({ status: entry?.status ?? 'denied', decidedBy: entry?.decidedBy ?? null });
   }
-  closeGate2(id: string, status: 'denied' | 'expired'): Promise<Gate2Status> {
+  closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status> {
     const entry = this.gate2.get(id);
-    if (entry?.status === 'pending') entry.status = status;
+    if (entry?.status === 'pending') {
+      entry.status = status;
+      entry.closeReason = reason;
+      if (status === 'expired') {
+        const { row } = entry;
+        this.ledger.push({ action: 'gate2.expired', targetId: id, payload: { method: row.method, url: row.url, deadlineAt: row.deadlineAt.toISOString() } });
+      }
+    }
     return Promise.resolve(entry?.status ?? status);
   }
-  denyPendingGate2(): Promise<string[]> {
+  denyPendingGate2(_runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
     const ids: string[] = [];
     for (const [id, entry] of this.gate2) {
       if (entry.status === 'pending') {
         entry.status = 'denied';
+        entry.closeReason = reason;
         ids.push(id);
       }
     }

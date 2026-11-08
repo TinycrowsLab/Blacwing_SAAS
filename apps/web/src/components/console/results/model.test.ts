@@ -41,6 +41,8 @@ const finding = (
   cwe: null,
   owasp: null,
   createdAt,
+  identityKey: null,
+  seenBefore: null,
 });
 const gate2 = (id: string, status: string, extra: Record<string, unknown> = {}) => ({
   id,
@@ -59,6 +61,12 @@ const gate2 = (id: string, status: string, extra: Record<string, unknown> = {}) 
   decidedAt: null,
   secondsLeft: 0,
   decisionReason: null,
+  body: null,
+  asRole: null,
+  assetName: null,
+  requester: null,
+  runStartedAt: null,
+  closeReason: null,
   ...extra,
 });
 
@@ -93,6 +101,25 @@ describe('testCases', () => {
     ];
     expect(testCases(events)).toEqual({ executed: 1, skipped: 1, blocked: 0, total: 3 });
     expect(testCases([])).toEqual({ executed: 0, skipped: 0, blocked: 0, total: 0 });
+    // The runner's coverage wins: it counts the cases nobody touched, which the plan events cannot.
+    const cov = (status: 'executed' | 'skipped' | 'blocked' | 'not_run', id: string) => ({
+      id,
+      title: id,
+      agent: 'web-api-specialist',
+      status,
+      note: null,
+      requests: 0,
+      candidates: 0,
+    });
+    expect(
+      testCases(events, {
+        cases: [cov('executed', 'a'), cov('not_run', 'b'), cov('not_run', 'c'), cov('blocked', 'd')],
+        rolesConfigured: [],
+        rolesUsed: {},
+        requestsSent: 0,
+        endReason: null,
+      }),
+    ).toEqual({ executed: 1, skipped: 0, blocked: 1, total: 4 });
   });
 });
 
@@ -119,13 +146,25 @@ describe('duration and stopLine', () => {
         0,
       ),
     ).toEqual({
-      tone: 'ok',
+      tone: 'warn',
       text: 'Finished in 18m 12s · Claude stopped at the time limit',
     });
+    // No plan recorded: never "finished its plan", and never a green tick.
     expect(
-      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0)
-        .text,
-    ).toContain('finished its plan');
+      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0),
+    ).toEqual({ tone: 'warn', text: 'Finished in 18m 12s · Claude ended the audit' });
+    expect(
+      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, {
+        executed: 4,
+        skipped: 0,
+        blocked: 0,
+        total: 4,
+      }),
+    ).toEqual({ tone: 'ok', text: 'Finished in 18m 12s · Claude finished its plan: it ran all 4 planned test cases' });
+    // Queued: no clock runs before the run starts.
+    expect(stopLine({ ...base, startedAt: null, finishedAt: null, state: 'queued', events: [], gate2: [] }, 0).text).toBe(
+      'Waiting to start. Nothing has been sent to the site yet.',
+    );
     // No reason from the runner: the words follow the cases, never "finished its plan" when a third was not run.
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, {

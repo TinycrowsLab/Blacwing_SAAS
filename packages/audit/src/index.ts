@@ -47,3 +47,12 @@ export {
   loginInput,
 } from './wrappers.js';
 export * from './siem/index.js';
+export {
+  GENESIS as DEMO_GENESIS,
+  auditHash as demoAuditHash,
+  verifyChain as verifyDemoChain,
+  type AuditPayload as DemoAuditPayload,
+  type AuditFields as DemoAuditFields,
+  type AuditRef as DemoAuditRef,
+  type ChainState as DemoChainState,
+} from './demo-chain.js';

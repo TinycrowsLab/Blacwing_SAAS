@@ -380,6 +380,8 @@ const EARLIER_RUNS = 8;
 /** The sidebar's slice of the dashboard (seeded by the console layout, refreshed through /api/sidebar). */
 export const sidebarSchema = z.object({
   workspaceName: z.string().nullable(),
+  /** The viewer's id as the API knows it: tells "my" live audits from the team's. */
+  actorId: z.string().nullable().default(null),
   gate2: z.array(
     z.object({ id: z.string(), runId: z.string(), method: z.string(), url: z.string(), deadlineAt: iso, createdAt: iso.optional() }),
   ),
@@ -398,6 +400,7 @@ export type SidebarData = z.infer<typeof sidebarSchema>;
 export function toSidebar(d: Dashboard): SidebarData {
   return {
     workspaceName: d.tenant?.name ?? null,
+    actorId: d.actor.id,
     gate2: d.pendingGate2.map((g) => ({
       id: g.id,
       runId: g.runId,

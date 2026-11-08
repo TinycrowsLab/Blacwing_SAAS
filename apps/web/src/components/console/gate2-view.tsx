@@ -32,7 +32,7 @@ type Card = Gate2 | Gate2Detail;
 export interface AuditContext {
   readonly assetName: string | null;
   readonly startedAt: string;
-  /** The person who asked for the audit, when known. */
+  /** The person who asked for the audit; null when it could not be read (shown as unknown, never guessed). */
   readonly requester: string | null;
   /** The viewer asked for this audit. */
   readonly mine: boolean;
@@ -42,12 +42,12 @@ export interface AuditContext {
   readonly live: boolean;
 }
 
-/** "your audit" or "started by Avery": whose audit this is, so requests from two audits never look alike. */
-const whoseAudit = (audit: AuditContext): string =>
+/** "your audit" or "Avery's audit": whose audit this is, so requests from two audits never look alike. */
+export const whoseAudit = (audit: Pick<AuditContext, 'mine' | 'requester'>): string =>
   audit.mine
     ? 'your audit'
     : audit.requester === null
-      ? 'a teammate’s audit'
+      ? 'an audit (owner unknown)'
       : `${audit.requester}’s audit`;
 
 /** The worker's gate key ends in " as {role}" or " as no test account" (worker hunt/scope.ts gateKey). */
@@ -56,7 +56,14 @@ export function roleFromPathKey(pathKey: string): string | null {
   return role === undefined || role === 'no test account' ? null : role;
 }
 
-const CHANGES_DATA = new Set(['POST', 'PUT', 'PATCH']);
+const CHANGES_DATA = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const SIGNS_IN = /(^|[/_.-])(log-?in|sign-?in|auth|oauth|token|session|sessions)([/_.?-]|$)/i;
+
+/** What the request is for, by its declared method and path: a sign-in is not a data change. Null for a read. */
+export function intentLabel(method: string, url: string): string | null {
+  if (SIGNS_IN.test(pathOf(url).split('?')[0] ?? '')) return 'Signs in';
+  return CHANGES_DATA.has(method.toUpperCase()) ? 'May change data' : null;
+}
 
 export const gate2Question = (role: string | null): string =>
   `Allow Claude to send this request ${role === null ? 'without signing in' : `as ${role}`}?`;
@@ -76,7 +83,7 @@ const asWho = (role: string | null): string =>
  * body, no further question. Said before the person commits, because the card shows one body and one reason.
  */
 export const grantScope = (gate2: { method: string; url: string }, role: string | null): string =>
-  `Allowing covers every ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again.`;
+  `Allowing covers every ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again. If this becomes a finding, Blackwing sends it once more to check it.`;
 
 /**
  * The latest closed request in the same audit for the same method, path and role: decided before this one was raised
@@ -165,9 +172,10 @@ function RequestBox({ gate2, body }: { readonly gate2: Card; readonly body: stri
 }
 
 function Chips({ gate2 }: { readonly gate2: Card }) {
+  const intent = intentLabel(gate2.method, gate2.url);
   return (
     <div className="mt-2.5 flex flex-wrap gap-1.5">
-      {CHANGES_DATA.has(gate2.method.toUpperCase()) ? <Chip tone="gold">Changes data</Chip> : null}
+      {intent === null ? null : <Chip tone="gold">{intent}</Chip>}
       {/* Gate 2 only exists in "Probe gently" runs: "Look, don't touch" blocks every state-changing request outright. */}
       {gate2.intrusiveness === 'state_changing' ? (
         <Chip tone="neutral">Above &ldquo;Probe gently&rdquo;</Chip>
@@ -525,7 +533,7 @@ function DeadlinePanel({
           <>
             <dt className="text-muted-foreground">Audit</dt>
             <dd className="m-0 text-right text-foreground">
-              {audit.mine ? 'Yours' : (audit.requester ?? 'A teammate')},{' '}
+              {audit.mine ? 'Yours' : audit.requester === null ? 'Owner unknown' : audit.requester.charAt(0).toUpperCase() + audit.requester.slice(1)},{' '}
               <When iso={audit.startedAt} />
             </dd>
           </>
@@ -1169,9 +1177,12 @@ const auditLabel = (i: InboxItem): string =>
 export function Gate2Inbox({
   items,
   viewerName,
+  more = 0,
 }: {
   readonly items: readonly InboxItem[];
   readonly viewerName: string;
+  /** Open requests beyond the listed ones (the list is capped; the count is exact). */
+  readonly more?: number;
 }) {
   const [seen, setSeen] = useState<readonly InboxItem[]>(items);
   const [prev, setPrev] = useState(items);
@@ -1219,7 +1230,7 @@ export function Gate2Inbox({
         title={INBOX_TITLE}
         term="Gate 2"
         lede="Claude wants to send something that could change data. No answer means denied."
-        count={open}
+        count={open + more}
       />
       {groups.map((group, n) => {
         const head = group[0];
@@ -1256,6 +1267,12 @@ export function Gate2Inbox({
           </div>
         );
       })}
+      {more === 0 ? null : (
+        <p className="m-0 text-[12.5px] text-muted-foreground">
+          And {more.toLocaleString()} more {more === 1 ? 'request' : 'requests'}, listed here as these
+          are decided.
+        </p>
+      )}
       {open === 0 ? null : (
         <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">{FOOTNOTE}</p>
       )}
@@ -1288,13 +1305,22 @@ const waitingOf = (d: SidebarData): Waiting => ({
  * return and on `bw:refresh`) it reads the small sidebar slice and refreshes the page only when what waits changed,
  * plus once every 30 s. The page reads every asking audit's events, so refreshing it blindly ran the rate limit dry.
  */
-export function InboxRefresh({ waiting }: { readonly waiting: Waiting }) {
+export function InboxRefresh({
+  waiting,
+  incomplete = false,
+}: {
+  readonly waiting: Waiting;
+  /** A read behind the page failed: refresh on the next poll even if nothing changed. */
+  readonly incomplete?: boolean;
+}) {
   const router = useRouter();
   const current = useRef(signature(waiting));
   const now = signature(waiting);
+  const retry = useRef(incomplete);
   useEffect(() => {
     current.current = now;
-  }, [now]);
+    retry.current = incomplete;
+  }, [now, incomplete]);
   useEffect(() => {
     let last = Date.now();
     let busy = false;
@@ -1306,8 +1332,11 @@ export function InboxRefresh({ waiting }: { readonly waiting: Waiting }) {
         .then((parsed) => {
           const changed =
             parsed?.success === true && signature(waitingOf(parsed.data)) !== current.current;
-          if (changed || Date.now() - last >= INBOX_FULL_MS) {
+          // A failed read is retried once a poll has passed (never on the mount check itself).
+          const again = retry.current && Date.now() - last >= INBOX_POLL_MS / 2;
+          if (changed || again || Date.now() - last >= INBOX_FULL_MS) {
             last = Date.now();
+            retry.current = false;
             router.refresh();
           }
         })

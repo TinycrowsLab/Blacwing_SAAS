@@ -1,6 +1,6 @@
 // The full-page Gate 2 decision (notifications and phones; prototype 06). The heading names the audit that asks; the
-// card's template question is the only question. The request's body and role come from the run's gate2.requested
-// event; without it the card reads the role from the gate key.
+// card's template question is the only question. The request's body and role come from the Gate 2 answer (older
+// requests: the run's gate2.requested event); without either the card reads the role from the gate key.
 import { notFound } from 'next/navigation';
 
 import { PageHeader } from '../../../../../components/console/design';
@@ -8,7 +8,7 @@ import { Gate2Card } from '../../../../../components/console/gate2-view';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 import { gate2DetailSchema } from '../../../../../lib/schemas';
-import { askedInRun, isUuid } from '../../asked';
+import { askedInRun, askOf, isUuid } from '../../asked';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -41,8 +41,10 @@ export default async function Gate2Page({
       notFound();
     throw caught;
   }
-  const { asked, audit, history } = await askedInRun(session, gate2.runId);
-  const ask = asked.get(gate2.id) ?? null;
+  // The answer says whether the viewer asked for this audit (run.viewerIsRequester), so no actor id is needed.
+  const asks = await askedInRun(session, gate2, null);
+  const { audit, history } = asks;
+  const ask = askOf(gate2, asks);
   // Plain fallback: functions of the client card module cannot run here.
   const name = audit?.assetName ?? gate2.run?.assetName ?? 'Request during an audit';
   return (
@@ -55,8 +57,8 @@ export default async function Gate2Page({
       </div>
       <Gate2Card
         gate2={gate2}
-        body={ask?.body ?? null}
-        {...(ask === null ? {} : { asRole: ask.asRole })}
+        body={ask.body}
+        {...(ask.asRole === undefined ? {} : { asRole: ask.asRole })}
         variant="page"
         viewerName={session.user.name}
         audit={audit}

@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { query, type HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 
-import { EventLog, type HuntContext, type HuntDeps, type Logger } from './context.js';
+import { EventLog, newHuntState, type CaseState, type HuntContext, type HuntDeps, type Logger } from './context.js';
+import { closePendingAsks, GATE2_POLL_MS, watchGate2 } from './http-tool.js';
 import { MessageRouter } from './messages.js';
 import { subagents, SUBAGENT_NAMES, systemPrompt } from './prompts.js';
 import { createHuntServer } from './tools.js';
@@ -16,11 +17,15 @@ import type { HuntRun, HuntStore } from './types.js';
 
 const MS_PER_S = 1000;
 const CONTROL_POLL_MS = 500;
+const PAUSE_POLL_MS = 500;
+/** Hook timeout headroom past the duration budget: the pause gate may hold a tool call that long. */
+const HOOK_TIMEOUT_SLACK_S = 60;
 const PROGRESS_POLL_MS = 5000;
 const MAX_TURNS = 200;
 const BUILT_IN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'NotebookEdit', 'BashOutput', 'KillShell'];
 const AGENT_LANES = ['orchestrator', ...SUBAGENT_NAMES, 'validator'];
-const hookInput = z.object({ tool_input: z.record(z.string(), z.unknown()), agent_type: z.string().optional() });
+const hookInput = z.object({ tool_name: z.string(), tool_input: z.record(z.string(), z.unknown()), agent_type: z.string().optional() });
+const BLACKWING_TOOL = 'mcp__blackwing__';
 
 export interface HuntConfig {
   readonly model: string;
@@ -37,18 +42,25 @@ export interface AgentEnd {
   readonly summary: string | null;
 }
 
-/** Stamps the calling agent into the tool input, so the model cannot claim to be another agent. */
-const stampAgent: HookCallbackMatcher = {
-  matcher: 'mcp__blackwing__(http_request|submit_candidate|record_test_cases|update_test_case)',
-  hooks: [
-    (input) => {
-      const parsed = hookInput.safeParse(input);
-      if (!parsed.success) return Promise.resolve({});
-      const agent = parsed.data.agent_type ?? 'orchestrator';
-      return Promise.resolve({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: { ...parsed.data.tool_input, agent } } });
-    },
-  ],
-};
+/**
+ * PreToolUse for every tool: while the run is paused no agent starts a tool call or a delegation (so no model turn
+ * follows either), and every Blackwing tool gets the calling agent stamped into its input, so the model cannot claim
+ * to be another agent.
+ */
+export function toolGate(ctx: HuntContext): HookCallbackMatcher {
+  return {
+    timeout: ctx.run.budgetSeconds + HOOK_TIMEOUT_SLACK_S,
+    hooks: [
+      async (input) => {
+        while (ctx.state.paused && !ctx.signal.aborted) await ctx.deps.sleep(PAUSE_POLL_MS);
+        const parsed = hookInput.safeParse(input);
+        if (!parsed.success || !parsed.data.tool_name.startsWith(BLACKWING_TOOL)) return {};
+        const agent = parsed.data.agent_type ?? 'orchestrator';
+        return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: { ...parsed.data.tool_input, agent } } };
+      },
+    ],
+  };
+}
 
 /** Streams the agent team's messages until it ends. Returns how the model run ended, or null when it threw or was aborted. */
 async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortController, router: MessageRouter): Promise<AgentEnd | null> {
@@ -65,7 +77,7 @@ async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortCo
         allowedTools: ['Agent', 'TodoWrite', 'mcp__blackwing__*'],
         disallowedTools: BUILT_IN_TOOLS,
         permissionMode: 'dontAsk',
-        hooks: { PreToolUse: [stampAgent] },
+        hooks: { PreToolUse: [toolGate(ctx)] },
         settingSources: [],
         strictMcpConfig: true,
         persistSession: false,
@@ -116,9 +128,10 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
     log,
     signal: abort.signal,
     deps,
-    state: { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, approved: new Set(), cases: new Map() },
+    state: newHuntState(),
   };
   const finishFailed = async (reason: string): Promise<void> => {
+    await emitCoverage(ctx, reason);
     await log.emit('run.failed', 'done', `Run failed: ${reason}`, { requestsUsed: ctx.state.requestsUsed, costUsd: router.totalCost, findings: ctx.state.findings, reason });
     await store.finishRun(run, { state: 'failed', requestsUsed: ctx.state.requestsUsed, costUsd: router.totalCost, summary: null });
   };
@@ -141,7 +154,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
           halted.reason = 'killed';
           halted.killedBy = control.kill.by;
           abort.abort();
-          await store.denyPendingGate2(run.id);
+          await closePendingAsks(ctx, 'killed');
         }
       })
       .catch((error: unknown) => {
@@ -151,6 +164,18 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
         polling = false;
       });
   }, CONTROL_POLL_MS);
+  let watching = false;
+  const gate2Timer = setInterval(() => {
+    if (watching || halted.reason !== null) return;
+    watching = true;
+    watchGate2(ctx)
+      .catch((error: unknown) => {
+        logger.warn({ event: 'demo.hunt.gate2_watch_failed', reason: error instanceof Error ? error.name : 'unknown' }, 'gate 2 watch failed');
+      })
+      .finally(() => {
+        watching = false;
+      });
+  }, GATE2_POLL_MS);
   const progressTimer = setInterval(() => {
     store.saveProgress(run.id, ctx.state.requestsUsed, router.totalCost).catch(() => undefined);
   }, PROGRESS_POLL_MS);
@@ -169,6 +194,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
     logger.error({ event: 'demo.hunt.agent_failed', runId: run.id, reason: failure }, 'agent run failed');
   } finally {
     clearInterval(controlTimer);
+    clearInterval(gate2Timer);
     clearInterval(progressTimer);
     clearTimeout(durationTimer);
   }
@@ -176,16 +202,19 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
   const used = { requestsUsed: ctx.state.requestsUsed, costUsd: router.totalCost };
   if (halted.reason === 'killed') {
     await store.saveProgress(run.id, used.requestsUsed, used.costUsd);
-    await store.denyPendingGate2(run.id);
+    await closePendingAsks(ctx, 'killed');
+    await emitCoverage(ctx, 'killed');
     const haltMs = await store.markKilled(run);
     await log.emit('run.killed', 'control', `Run killed. Halt measured in ${haltMs} ms.`, { by: halted.killedBy, haltMs });
     return;
   }
+  await closePendingAsks(ctx, 'run_ended');
   const settled = settle(halted.reason, failure, end);
   if (settled.state === 'failed') {
     await finishFailed(settled.reason ?? 'failed');
     return;
   }
+  await emitCoverage(ctx, settled.reason ?? (ctx.state.requestsUsed >= run.budgetRequests ? 'request_budget' : null));
   await log.emit('run.completed', 'done', 'Run completed', { ...used, findings: ctx.state.findings, ...(settled.reason === null ? {} : { reason: settled.reason }) });
   await store.finishRun(run, { state: 'completed', ...used, summary: end?.summary ?? null });
 }
@@ -205,4 +234,30 @@ export function settle(halt: HaltReason | null, failure: string | null, end: Age
     default:
       return { state: 'failed', reason: end.subtype };
   }
+}
+
+/** Runner-owned case status: the model's skip or block stands (with its note); otherwise only sent requests or candidates count. */
+export function caseOutcome(testCase: CaseState): 'executed' | 'skipped' | 'blocked' | 'not_run' {
+  if (testCase.status === 'skipped' || testCase.status === 'blocked') return testCase.status;
+  return testCase.requests > 0 || testCase.candidates > 0 ? 'executed' : 'not_run';
+}
+
+/** The `coverage.summary` event data: what was and was not tested, and which test accounts were actually used. */
+export function coverageOf(ctx: HuntContext, endReason: string | null): Record<string, unknown> {
+  return {
+    cases: [...ctx.state.cases].map(([id, c]) => ({ id, title: c.title, agent: c.agent, status: caseOutcome(c), note: c.note, requests: c.requests, candidates: c.candidates })),
+    rolesConfigured: ctx.run.testAccounts.map((a) => a.role),
+    rolesUsed: Object.fromEntries(ctx.state.roleCounts),
+    requestsSent: ctx.state.requestsUsed,
+    endReason,
+  };
+}
+
+async function emitCoverage(ctx: HuntContext, endReason: string | null): Promise<void> {
+  const cases = [...ctx.state.cases.values()].map(caseOutcome);
+  const count = (status: string): number => cases.filter((c) => c === status).length;
+  const message = cases.length === 0
+    ? 'Coverage: no test cases were recorded'
+    : `Coverage: ${count('executed')} of ${cases.length} test cases executed, ${count('skipped') + count('blocked')} skipped or blocked, ${count('not_run')} not run`;
+  await ctx.log.emit('coverage.summary', 'done', message, coverageOf(ctx, endReason));
 }

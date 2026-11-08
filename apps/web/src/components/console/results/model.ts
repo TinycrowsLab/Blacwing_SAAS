@@ -1,10 +1,11 @@
 // Results model (experience spec §7): pure functions over the run DTO, the request and the ledger. Every number and
 // sentence here is derived from what the runner and the API recorded; nothing is estimated.
+import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { z } from 'zod';
 
-import { finishReason } from '../../../lib/host-lines';
+import { finishedWhy } from '../../../lib/host-lines';
 import { resultsHeadline } from '../../../lib/plan-text';
-import { findingSchema, type AssessmentRequest, type Run } from '../../../lib/schemas';
+import { findingSchema, type AssessmentRequest, type Coverage, type Run } from '../../../lib/schemas';
 
 export type FindingSummary = Run['findings'][number];
 type RunEvent = Run['events'][number];
@@ -29,15 +30,28 @@ export const ledgerSchema = z.object({
 export type Ledger = z.infer<typeof ledgerSchema>;
 export type LedgerItem = Ledger['items'][number];
 
-/** A finding plus how its negative control behaved (`replay.control`), for "the control behaved as expected". */
-export const findingDetailSchema = findingSchema.extend({
-  replay: z
-    .object({
-      control: z.object({ status: z.number(), matched: z.boolean() }).nullable().default(null),
-    })
-    .nullable()
-    .default(null),
-});
+/**
+ * A finding plus how its negative control behaved (`replay.control`), for "the control behaved as expected". Everything
+ * taken from the site or written by the model is scrubbed of tokens, cookies and passwords here, so no page or report
+ * that shows a finding can print one (the API scrubs too; this covers anything it missed).
+ */
+export const findingDetailSchema = findingSchema
+  .extend({
+    replay: z
+      .object({
+        control: z.object({ status: z.number(), matched: z.boolean() }).nullable().default(null),
+      })
+      .nullable()
+      .default(null),
+  })
+  .transform((f) => ({
+    ...f,
+    title: scrub(f.title),
+    description: f.description === null ? null : scrub(f.description),
+    reproCurl: scrub(f.reproCurl),
+    oracle: f.oracle.value === undefined ? f.oracle : { ...f.oracle, value: scrub(f.oracle.value) },
+    evidence: scrubDeep(f.evidence),
+  }));
 export type FindingDetail = z.infer<typeof findingDetailSchema>;
 
 /** The findings filters (shared by the server page, which reads the URL, and the client list). */
@@ -88,8 +102,15 @@ export interface CaseCounts {
   readonly total: number;
 }
 
-/** Test cases from the plan events: the latest plan total and how each case ended. */
-export function testCases(events: readonly RunEvent[]): CaseCounts {
+/**
+ * Test cases and how each ended: the runner's coverage when it recorded one (it also counts the cases nobody ran), else
+ * the plan events (the latest plan total and each case's last status).
+ */
+export function testCases(events: readonly RunEvent[], coverage: Coverage | null = null): CaseCounts {
+  if (coverage !== null && coverage.cases.length > 0) {
+    const n = (status: string): number => coverage.cases.filter((c) => c.status === status).length;
+    return { executed: n('executed'), skipped: n('skipped'), blocked: n('blocked'), total: coverage.cases.length };
+  }
   const ids = new Set<string>();
   let total = 0;
   const latest = new Map<string, string>();
@@ -174,6 +195,50 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[]
   ].filter((x): x is string => x !== null);
 }
 
+const NOT_RUN_BECAUSE: Readonly<Record<string, string>> = {
+  killed: 'you stopped the audit first',
+  duration_budget: 'the time limit came first',
+  request_budget: 'the request budget ran out first',
+  cost_cap: 'the spend cap came first',
+  max_turns: 'Claude reached its turn limit first',
+};
+
+export interface NotTested {
+  /** False when the runner recorded no coverage for this run (older runs): the rows then hold only what the plan says. */
+  readonly recorded: boolean;
+  readonly rows: readonly { readonly what: string; readonly why: string }[];
+}
+
+/**
+ * "What was not tested and why", from the runner's coverage (every case that did not run, with the agent's note or the
+ * reason the run ended) and the paths the plan left out. Notes are the agents' words and are scrubbed like evidence.
+ */
+export function notTested(input: {
+  readonly coverage: Coverage | null;
+  readonly endReason: unknown;
+  readonly excludedPaths: readonly string[];
+}): NotTested {
+  const { coverage, endReason } = input;
+  const ended =
+    typeof endReason === 'string' && endReason !== ''
+      ? (NOT_RUN_BECAUSE[endReason] ?? 'the run stopped with an error first')
+      : 'Claude ended the audit before trying it';
+  const rows: { what: string; why: string }[] = (coverage?.cases ?? []).flatMap((c) => {
+    if (c.status === 'executed') return [];
+    const note = c.note === null || c.note.trim() === '' ? null : scrub(c.note.trim());
+    const why =
+      c.status === 'skipped'
+        ? `Skipped: ${note ?? 'Claude judged it not relevant'}`
+        : c.status === 'blocked'
+          ? `Blocked: ${note ?? 'a request it needed was refused or denied'}`
+          : `Not tried: ${ended}`;
+    return [{ what: scrub(c.title) || c.id, why }];
+  });
+  if (input.excludedPaths.length > 0)
+    rows.push({ what: input.excludedPaths.join(', '), why: 'Left out on purpose: the plan excluded these paths' });
+  return { recorded: coverage !== null, rows };
+}
+
 /** "a, b and c". */
 const listWords = (parts: readonly string[]): string =>
   parts.length < 2
@@ -181,26 +246,17 @@ const listWords = (parts: readonly string[]): string =>
     : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
 
 /**
- * Why a completed run ended, always as a sentence about Claude: the runner's reason (time limit, request budget, spend
- * cap), then how far it got through its plan when it did not run every case. Without a reason and with cases left,
- * Claude ended early, and the line says so instead of leaving the person to wonder.
+ * Why a completed run ended, always as a sentence about Claude (the run page's template, lib/host-lines): the runner's
+ * reason (time limit, request budget, spend cap), then how far it got through its plan and why the rest did not run.
  */
 function completedWhy(
   reason: unknown,
   cases: CaseCounts | undefined,
   run: Pick<Run, 'events' | 'gate2'>,
-): string {
-  const planDone = finishReason('');
-  // A limit the runner named (time, requests, spend, turns); anything else reads as the plan's own end.
-  const limit = finishReason(reason) === planDone ? null : finishReason(reason);
-  if (cases === undefined || cases.total === 0 || cases.executed >= cases.total)
-    return `Claude ${limit ?? planDone}`;
-  const ran = `ran ${cases.executed} of ${cases.total} planned test cases`;
-  const rest = notRun(cases, run);
-  const tail = rest.length === 0 ? '' : `; ${listWords(rest)}`;
-  return limit === null
-    ? `Claude ended the audit early: it ${ran}${tail}`
-    : `Claude ${limit} after it ${ran}${tail}`;
+): { text: string; complete: boolean } {
+  const why = finishedWhy(reason, cases ?? null);
+  const rest = cases === undefined || why.complete ? [] : notRun(cases, run);
+  return { text: `${why.text}${rest.length === 0 ? '' : `; ${listWords(rest)}`}`, complete: why.complete };
 }
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
@@ -208,20 +264,23 @@ export function stopLine(
   run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events' | 'gate2'>,
   now: number,
   cases?: CaseCounts,
-): { tone: 'ok' | 'muted' | 'bad'; text: string } {
-  const start = Date.parse(run.startedAt ?? run.createdAt);
+): { tone: 'ok' | 'warn' | 'muted' | 'bad'; text: string } {
+  // Every clock starts when the run started, never while it waited in the queue.
+  const start = run.startedAt === null ? null : Date.parse(run.startedAt);
   const end = run.finishedAt === null ? now : Date.parse(run.finishedAt);
-  const took = duration(end - start);
+  const took = duration(start === null ? 0 : end - start);
   switch (run.state) {
     case 'completed': {
       const done = run.events.findLast((e) => e.kind === 'run.completed');
-      return {
-        tone: 'ok',
-        text: `Finished in ${took} · ${completedWhy(done?.data.reason, cases, run)}`,
-      };
+      const why = completedWhy(done?.data.reason, cases, run);
+      // A green tick only for a plan that ran in full; a limit or untried cases read as a warning.
+      return { tone: why.complete ? 'ok' : 'warn', text: `Finished in ${took} · ${why.text}` };
     }
     case 'killed':
-      return { tone: 'muted', text: `Stopped after ${took} · you stopped testing` };
+      return {
+        tone: 'muted',
+        text: start === null ? 'Stopped before it started · you stopped testing' : `Stopped after ${took} · you stopped testing`,
+      };
     case 'failed': {
       const failed = run.events.findLast((e) => e.kind === 'run.failed');
       const why = str(failed?.data.reason);
@@ -233,7 +292,10 @@ export function stopLine(
     default:
       return {
         tone: 'muted',
-        text: `Still testing · ${took} so far. These are the results until now.`,
+        text:
+          start === null
+            ? 'Waiting to start. Nothing has been sent to the site yet.'
+            : `Still testing · ${took} so far. These are the results until now.`,
       };
   }
 }

@@ -16,7 +16,7 @@ import { gate2DetailSchema } from '../../lib/schemas';
 export type Gate2Detail = z.infer<typeof gate2DetailSchema>;
 
 export const FOOTNOTE =
-  'Allowing lets this method, path and role through until the run ends. No answer means denied. Other agents keep working.';
+  'While this waits, Claude carries on with other test cases where it can. Allowing lets this method, path and role through until the audit ends. No answer means denied.';
 
 /** Fired with the decided request, so every card for it in this tab (and a "Deny all") shows the same receipt. */
 export const DECIDED_EVENT = 'bw:gate2-decided';
@@ -37,6 +37,8 @@ const NEAR_LIMIT = 400;
 const REASONS = ['Our own test lab', 'Test account we own', 'Needed to prove the finding'] as const;
 
 const answerSchema = gate2DetailSchema.extend({ alreadyDecided: z.boolean().optional() });
+/** A decision that has no answer by then is checked against the server instead of waiting on forever. */
+const DECISION_TIMEOUT_MS = 15_000;
 const problemSchema = z.object({ message: z.string().optional() }).loose();
 
 type Decision =
@@ -51,6 +53,7 @@ export async function postDecision(
     const res = await fetch(`/api/gate2/${encodeURIComponent(id)}/decision`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(DECISION_TIMEOUT_MS),
       body: JSON.stringify({
         decision,
         ...(reason.trim() === '' ? {} : { reason: reason.trim() }),
@@ -248,18 +251,37 @@ export function Gate2Actions({
   const decide = async (decision: 'approve' | 'deny'): Promise<boolean> => {
     setFailed(null);
     const result = await postDecision(gate2Id, decision, decision === 'approve' ? reason : '');
-    if (!result.ok) {
-      setFailed({ decision, message: result.message });
+    // No answer (or a failed one) is not a "no": the server says whether a decision was recorded. Still open, the
+    // card says so and keeps the reason for Try again; closed, it shows the server's receipt.
+    const closed = result.ok ? null : await fetchGate2(gate2Id);
+    const receipt = result.ok
+      ? result
+      : closed !== null && closed.status !== 'pending'
+        ? { gate2: closed, alreadyDecided: true }
+        : null;
+    if (receipt === null) {
+      setFailed({ decision, message: result.ok ? null : result.message });
       return false;
     }
     quietUntil = Date.now() + QUIET_MS;
     writeDraft(gate2Id, '');
-    onDecided(result.gate2, result.alreadyDecided);
-    announceDecided(result.gate2);
+    onDecided(receipt.gate2, receipt.alreadyDecided);
+    announceDecided(receipt.gate2);
     // The sidebar, the inbox and the live run each refresh on this event; the card itself already shows the receipt.
     window.dispatchEvent(new Event('bw:refresh'));
     return true;
   };
+
+  // The confirm button (and a failure under it) is always on screen, even when the card sits low on the page.
+  useEffect(() => {
+    if (sheet || (!allowing && failed === null)) return;
+    const frame = window.requestAnimationFrame(() => {
+      (failed === null ? button(allowWrap) : root.current)?.scrollIntoView({ block: 'nearest' });
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [allowing, failed, sheet]);
 
   // Read once: a prop change (a list refresh) must never move the focus onto another request's Deny.
   const focusOnMount = useRef(autoFocus);

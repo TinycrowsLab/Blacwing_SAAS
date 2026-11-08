@@ -386,6 +386,13 @@
       "when": 1793901600000,
       "tag": "20261105180000_demo_admin_self_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1794139200000,
+      "tag": "20261108120000_demo_client_ready",
+      "breakpoints": true
     }
   ]
 }

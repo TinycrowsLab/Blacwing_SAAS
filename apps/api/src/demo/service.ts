@@ -4,18 +4,23 @@ import { randomBytes } from 'node:crypto';
 
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 
+import { owaspTop10Title } from '@blackwing/domain';
+import { scrub, scrubDeep, scrubHeaders } from '@blackwing/errors/scrub';
 import { newId } from '@blackwing/ids';
 
 import { verifyChain, type AuditPayload, type AuditRef, type ChainState } from './audit.js';
-import { BUDGET_LIMITS, BUDGET_PRESETS } from './config.js';
+import { BUDGET_LIMITS, BUDGET_PRESETS, DEFAULT_HUNT_CONCURRENCY, OBJECTIVE_MAX } from './config.js';
+import { defaultLookup, firstRefusal, isLabOrigin, type Lookup, type OriginPolicy } from './ownership.js';
 
 import type {
   AssetRow,
+  AuditEntry,
   DemoStore,
   ExchangeRow,
   FindingRow,
   Gate2Row,
   RequestRow,
+  RunEventRow,
   RunRow,
 } from './store.js';
 
@@ -108,7 +113,12 @@ const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
 /** Requests created before release modes existed behaved as `auto`; their DTO, pins and clones say so. */
 const releaseModeOf = (row: RequestRow): ReleaseMode => row.scope.releaseProven ?? 'auto';
 
-export function assetDto(row: AssetRow): Record<string, unknown> {
+/** True when every origin of the asset is an operator-listed lab (owner attestation is allowed only then). */
+export const assetIsLab = (row: AssetRow, policy: OriginPolicy): boolean =>
+  row.allowed_origins.length > 0 && row.allowed_origins.every((o) => isLabOrigin(o, policy));
+
+export function assetDto(row: AssetRow, policy: OriginPolicy = NO_LAB_POLICY): Record<string, unknown> {
+  const lab = assetIsLab(row, policy);
   return {
     id: row.id,
     slug: row.slug,
@@ -125,7 +135,9 @@ export function assetDto(row: AssetRow): Record<string, unknown> {
     verification: {
       token: row.verification_token,
       wellKnownUrl: `${new URL(row.base_url).origin}${WELL_KNOWN_PATH}`,
+      methods: lab ? ['http_token', 'owner_attestation'] : ['http_token'],
     },
+    lab,
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -145,6 +157,7 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
       costUsd: Number(row.cost_cap_usd),
     },
     status: row.status,
+    version: row.version,
     requester: { id: row.requester_id, name: row.requester_name },
     approver: row.approver_id === null ? null : { id: row.approver_id, name: row.approver_name },
     testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
@@ -155,7 +168,31 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
   };
 }
 
-export function runDto(row: RunRow): Record<string, unknown> {
+/** The OWASP Top 10 label in its canonical form (`A03:2021 Injection`); unknown text is shown as stored. */
+export function owaspLabel(stored: string): string {
+  const match = /\bA\s*0?(10|[1-9])\b/i.exec(stored);
+  if (match === null) return stored;
+  const code = match[1] === '10' ? 'A10' : `A0${match[1] ?? ''}`;
+  const title = owaspTop10Title(code);
+  return title === null ? stored : `${code}:2021 ${title}`;
+}
+
+/** Target data and model text of a finding with secrets replaced (rows stored before store-time scrubbing too). */
+export function scrubFinding(row: FindingRow): FindingRow {
+  return {
+    ...row,
+    title: scrub(row.title),
+    description: row.description === null ? null : scrub(row.description),
+    repro_curl: scrub(row.repro_curl),
+    evidence: scrubDeep(row.evidence),
+    replay: scrubDeep(row.replay),
+    oracle: scrubDeep(row.oracle),
+    location: scrubDeep(row.location),
+  };
+}
+
+export function runDto(row: RunRow, concurrency: number = DEFAULT_HUNT_CONCURRENCY): Record<string, unknown> {
+  const ahead = row.state === 'queued' ? row.queue_ahead : null;
   return {
     id: row.id,
     shortId: shortId(row.id),
@@ -175,8 +212,13 @@ export function runDto(row: RunRow): Record<string, unknown> {
     finishedAt: iso(row.finished_at),
     killRequestedAt: iso(row.kill_requested_at),
     haltMs: row.halt_ms,
-    summary: row.summary,
+    summary: row.summary === null ? null : scrub(row.summary),
     pins: row.pins,
+    startedBy: row.started_by_name === null ? null : { id: row.created_by, name: row.started_by_name },
+    queue:
+      ahead === null || ahead === undefined
+        ? null
+        : { position: ahead + 1, ahead, running: row.queue_running ?? 0, concurrency },
   };
 }
 
@@ -187,13 +229,18 @@ export function findingSummaryDto(row: FindingRow): Record<string, unknown> {
     runId: row.run_id,
     assetId: row.asset_id,
     assetName: row.asset_name,
-    title: row.title,
+    title: scrub(row.title),
     status: row.status,
     severity: severityOf(row.severity),
     cwe: row.cwe_id,
-    owasp: row.owasp_category,
+    owasp: owaspLabel(row.owasp_category),
     agent: row.agent,
     createdAt: row.created_at.toISOString(),
+    identityKey: row.identity_key ?? null,
+    seenBefore:
+      row.seen_run_id === null || row.seen_finding_id === null || row.seen_status === null || row.seen_at === null
+        ? null
+        : { runId: row.seen_run_id, findingId: row.seen_finding_id, status: row.seen_status, at: row.seen_at.toISOString() },
   };
 }
 
@@ -201,17 +248,18 @@ export function findingDto(
   row: FindingRow,
   audit: AuditRef | null = null,
 ): Record<string, unknown> {
+  const clean = scrubFinding(row);
   return {
-    ...findingSummaryDto(row),
+    ...findingSummaryDto(clean),
     class: row.class,
     confidence: Number(row.confidence),
-    description: row.description,
-    oracle: row.oracle,
-    evidence: row.evidence,
-    replay: row.replay,
-    reproCurl: row.repro_curl,
+    description: clean.description,
+    oracle: clean.oracle,
+    evidence: clean.evidence,
+    replay: clean.replay,
+    reproCurl: clean.repro_curl,
     testCaseId: row.test_case_id,
-    location: row.location,
+    location: clean.location,
     triage:
       row.triaged_at === null
         ? null
@@ -234,12 +282,12 @@ export function exchangeDto(row: ExchangeRow): Record<string, unknown> {
     seq: row.seq,
     agent: row.agent,
     method: row.method,
-    url: row.url,
-    requestHeaders: row.request_headers,
-    requestBody: row.request_body,
+    url: scrub(row.url),
+    requestHeaders: scrubHeaders(row.request_headers),
+    requestBody: row.request_body === null ? null : scrub(row.request_body),
     status: row.status,
-    responseHeaders: row.response_headers,
-    responseBody: row.response_body,
+    responseHeaders: row.response_headers === null ? null : scrubHeaders(row.response_headers),
+    responseBody: row.response_body === null ? null : scrub(row.response_body),
     durationMs: row.duration_ms,
     outcome: row.outcome,
     reason: row.reason,
@@ -253,10 +301,10 @@ export function gate2Dto(row: Gate2Row, now: Date): Record<string, unknown> {
     runId: row.run_id,
     agent: row.agent,
     method: row.method,
-    url: row.url,
+    url: scrub(row.url),
     pathKey: row.path_key,
     intrusiveness: row.intrusiveness,
-    reason: row.reason,
+    reason: row.reason === null ? null : scrub(row.reason),
     whyOutside: row.why_outside,
     status: row.status,
     deadlineAt: row.deadline_at.toISOString(),
@@ -265,8 +313,42 @@ export function gate2Dto(row: Gate2Row, now: Date): Record<string, unknown> {
     decisionReason: row.decision_reason,
     decidedAt: iso(row.decided_at),
     createdAt: row.created_at.toISOString(),
+    body: row.request_body === null || row.request_body === undefined ? null : scrub(row.request_body),
+    asRole: row.as_role ?? null,
+    assetName: row.asset_name,
+    requester:
+      row.requester_id === null ? null : { id: row.requester_id, name: row.requester_name ?? 'Unknown' },
+    runStartedAt: iso(row.run_started_at),
+    closeReason: row.close_reason ?? null,
   };
 }
+
+/** A run event as the console reads it: message and data scrubbed (the agent's own words can quote a secret). */
+const eventDto = (e: RunEventRow): Record<string, unknown> => ({
+  seq: e.seq,
+  kind: e.kind,
+  stage: e.stage,
+  message: scrub(e.message),
+  data: scrubDeep(e.data),
+  at: e.at.toISOString(),
+});
+
+/** How the run ended: the reason of its last end event (`killed` for a kill), or null while it runs. */
+export function endReasonOf(events: readonly RunEventRow[]): string | null {
+  const last = events
+    .filter((e) => (END_EVENT_KINDS as readonly string[]).includes(e.kind))
+    .sort((a, b) => b.seq - a.seq)[0];
+  if (last === undefined) return null;
+  if (last.kind === 'run.killed') return 'killed';
+  const reason = last.data.reason;
+  if (typeof reason === 'string') return reason;
+  return last.kind === 'run.failed' ? 'failed' : null;
+}
+
+const coverageOf = (events: readonly RunEventRow[]): Record<string, unknown> | null => {
+  const event = events.find((e) => e.kind === COVERAGE_KIND);
+  return event === undefined ? null : scrubDeep(event.data);
+};
 
 export interface CreateAssetInput {
   readonly name: string;
@@ -277,6 +359,29 @@ export interface CreateAssetInput {
 
 export interface VerifyInput {
   readonly method: 'http_token' | 'owner_attestation';
+  readonly statement?: string | undefined;
+}
+
+/** A plan edit (PATCH /requests/:id): every field optional; an account without a value keeps the stored one. */
+export interface AmendRequestInput {
+  readonly version: number;
+  readonly objective?: string | undefined;
+  readonly intrusiveness?: (typeof INTRUSIVENESS)[number] | undefined;
+  readonly budgetRequests?: number | undefined;
+  readonly budgetSeconds?: number | undefined;
+  readonly costCapUsd?: number | undefined;
+  readonly excludedPaths?: readonly string[] | undefined;
+  readonly releaseProven?: ReleaseMode | undefined;
+  readonly testAccounts?:
+    | readonly { role: string; headerName: string; headerValue?: string | undefined }[]
+    | undefined;
+}
+
+export interface TriageResult {
+  readonly id: string;
+  readonly ok: boolean;
+  readonly status?: string;
+  readonly code?: 'finding_not_triageable' | 'not_found';
 }
 
 export interface CreateRequestInput {
@@ -299,7 +404,22 @@ export interface WebhookOptions {
 export interface WorkspaceOptions {
   /** BW_GATE2_TIMEOUT_S, the deadline the worker gives each Gate 2 request. */
   readonly gate2TimeoutS: number;
+  /** BW_HUNT_CONCURRENCY: runs the hunt engine runs at once (queue positions). */
+  readonly huntConcurrency?: number;
+  /** Lab allow-list and Blackwing's own origins; without it every private address is refused. */
+  readonly origins?: OriginPolicy;
+  readonly lookup?: Lookup;
 }
+
+/** Ownership proof: the well-known file the site serves. */
+const ATTESTATION_STATEMENT_MAX = 1000;
+const NO_LAB_POLICY: OriginPolicy = { labOrigins: [], platformOrigins: [], platformPorts: [] };
+/** Kinds whose last event describes how a run ended and what it covered. */
+const END_EVENT_KINDS = ['run.completed', 'run.failed', 'run.killed'] as const;
+const COVERAGE_KIND = 'coverage.summary';
+const RETESTS_SHOWN = 5;
+/** A probe the runner may replay on its own (no Gate 2): methods that do not change state. */
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 const capitalise = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
 

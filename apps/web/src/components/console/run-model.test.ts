@@ -261,6 +261,12 @@ const G1: Gate2 = {
   decidedAt: null,
   secondsLeft: 300,
   decisionReason: null,
+  body: null,
+  asRole: null,
+  assetName: null,
+  requester: null,
+  runStartedAt: null,
+  closeReason: null,
 };
 
 suite('conversationItems', () => {

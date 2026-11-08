@@ -4,12 +4,14 @@
 // most severe first, and the three voices kept apart (Blackwing's proof, Claude's explanation and Claude's fix, the
 // last two marked "not verified"). It holds released issues only, so the agent's run summary (written about every
 // suspected issue, dismissed and unreleased ones too) never goes in. Pure functions, no IO; all text is escaped.
+import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { z } from 'zod';
 
 import { agentName } from '../../../lib/agents';
+import { coverageSchema } from '../../../lib/schemas';
 import { escapeHtml as esc, markdownToHtml } from '../markdown';
-import { oracleWords, proofSentence, requestLine } from './issue-body';
-import { bySeverity, duration, findingDetailSchema, SEVERITIES, type FindingDetail } from './model';
+import { oracleWords, PROOF_BY, proofSentence, requestLine } from './issue-body';
+import { bySeverity, duration, findingDetailSchema, notTested, SEVERITIES, type FindingDetail } from './model';
 
 /** The API's `GET /runs/:id/report?format=json`: only what the report says is read; the rest passes through. */
 export const reportSourceSchema = z
@@ -22,6 +24,10 @@ export const reportSourceSchema = z
         requestsUsed: z.number().default(0),
         costUsd: z.number().default(0),
         budget: z.object({ requests: z.number(), seconds: z.number(), costUsd: z.number() }),
+        /** Why the run ended (from its run.completed, run.failed or run.killed event); null on older reports. */
+        endReason: z.string().nullable().default(null),
+        /** Only Claude's own "not covered" note is read from it, marked not verified; the rest never goes in. */
+        summary: z.string().nullable().default(null),
       })
       .loose(),
     asset: z
@@ -50,6 +56,8 @@ export const reportSourceSchema = z
       })
       .loose(),
     findings: z.array(findingDetailSchema),
+    /** What the runner recorded about coverage; null for runs from before it did. */
+    coverage: coverageSchema.nullable().default(null),
   })
   .loose();
 export type ReportSource = z.infer<typeof reportSourceSchema>;
@@ -60,7 +68,10 @@ export type ReportFormat = (typeof REPORT_FORMATS)[number];
 const LIMITS = [
   'Severity is the label Claude proposed, not a computed CVSS score.',
   'Explanations and fixes are written by Claude and are not verified. The proof (replays and control) is.',
-  'Detection only: each probe is the least needed to show the issue, and no data was taken.',
+  'Claude proposed each check and its control; Blackwing replayed them. A finding holds for the state the site was in then.',
+  'Detection only: each probe is the least needed to show the issue.',
+  'No browser is used, so DOM-based XSS is not tested.',
+  'Tokens, cookies and passwords in the evidence are redacted by Blackwing.',
   'Only issues a person released are listed. Issues still awaiting release, kept back or dismissed are left out.',
 ];
 
@@ -99,11 +110,22 @@ function severityWords(findings: readonly Pick<FindingDetail, 'severity'>[]): st
     : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
 }
 
-/** The report's opening sentence: how many released issues it holds, by severity. */
-export function reportLede(findings: readonly Pick<FindingDetail, 'severity'>[]): string {
+/**
+ * The report's opening sentence: how many issues were released to it, how many of those the validator proved and how
+ * many a person released without proof, by severity.
+ */
+export function reportLede(findings: readonly Pick<FindingDetail, 'severity' | 'evidence'>[]): string {
   if (findings.length === 0)
-    return 'This report lists no issues: none were released from this audit. What was tested is described below.';
-  return `Claude proved ${plural(findings.length, 'issue', 'issues')} that you released to this report: ${severityWords(findings)}.`;
+    return 'This report lists no issues: none were released from this audit. What was and was not tested is described below.';
+  const unproven = findings.filter((f) => f.evidence.reason !== undefined).length;
+  const proven = findings.length - unproven;
+  const split =
+    unproven === 0
+      ? proven === 1
+        ? ', proven by replay'
+        : `, all ${proven} proven by replay`
+      : ` (${proven} proven, ${unproven} released without proof)`;
+  return `${plural(findings.length, 'issue was', 'issues were')} released to this report${split}: ${severityWords(findings)}.`;
 }
 
 /** `blackwing-report-local-shop-2026-11-06.html`: safe in a header, sortable, and says what it is. */
@@ -119,9 +141,24 @@ export function reportFilename(src: ReportSource, format: ReportFormat): string 
   return `blackwing-report-${slug}${/^\d{4}-\d{2}-\d{2}$/.test(day) ? `-${day}` : ''}.${ext}`;
 }
 
+/** "Configured: alice, bob · used in 14 requests (alice 14, bob 0)", from what was actually sent. */
+function signedIn(src: ReportSource): string {
+  const roles = src.request.testAccounts.map((a) => a.role);
+  if (roles.length === 0) return 'None';
+  const configured = `Configured: ${roles.join(', ')}`;
+  if (src.coverage === null) return `${configured} · how often they were used was not recorded`;
+  const used = src.coverage.rolesUsed;
+  const total = roles.reduce((n, r) => n + (used[r] ?? 0), 0);
+  return total === 0
+    ? `${configured} · not used in any request`
+    : `${configured} · used in ${plural(total, 'request', 'requests')} (${roles.map((r) => `${r} ${used[r] ?? 0}`).join(', ')})`;
+}
+
 /** The facts about the audit, in the words of the plan the person approved. */
 function facts(src: ReportSource): [string, string][] {
   const { run, asset, request } = src;
+  const cases = src.coverage?.cases ?? [];
+  const ran = cases.filter((c) => c.status === 'executed').length;
   const owner = asset.ownership;
   const verified =
     owner.status === 'verified'
@@ -154,17 +191,13 @@ function facts(src: ReportSource): [string, string][] {
   const rows: [string, string | null][] = [
     ['Target', `${asset.name} (${asset.baseUrl}). ${verified}.`],
     [
-      'What was tested',
+      'What you asked for',
       request.objective.trim() === '' ? 'The whole site' : request.objective.trim(),
     ],
+    ['Test cases', cases.length === 0 ? null : `${ran} of ${plural(cases.length, 'planned test case', 'planned test cases')} ran`],
     ['How careful', careful(request.intrusiveness)],
     ['Left out', request.excludedPaths.length === 0 ? 'Nothing' : request.excludedPaths.join(', ')],
-    [
-      'Signed-in testing',
-      request.testAccounts.length === 0
-        ? 'None'
-        : `As ${request.testAccounts.map((a) => a.role).join(', ')}`,
-    ],
+    ['Signed-in testing', signedIn(src)],
     ['Approved by', approved],
     [
       'When',
@@ -211,6 +244,36 @@ function meta(f: FindingDetail): string {
 
 const title = (src: ReportSource): string => `Security audit of ${src.asset.name}`;
 
+const NOTE_MAX = 1200;
+
+/**
+ * Claude's own "what was not covered" from its run summary (the part after a line that says so), scrubbed and clipped.
+ * The rest of the summary never goes in: it is written about suspected and dismissed issues too.
+ */
+export function claudeNotCovered(summary: string | null): string | null {
+  if (summary === null) return null;
+  const lines = summary.split('\n');
+  const at = lines.findIndex((l) => /\bnot (covered|tested)\b/i.test(l));
+  if (at === -1) return null;
+  const rest: string[] = [];
+  for (const [i, line] of lines.slice(at).entries()) {
+    if (i > 0 && /^\s*#/.test(line)) break;
+    rest.push(line);
+  }
+  const text = scrub(rest.join('\n').trim());
+  return text === '' ? null : text.length > NOTE_MAX ? `${text.slice(0, NOTE_MAX)}…` : text;
+}
+
+/** "What was not tested and why": the runner's case record, the plan's exclusions, and the fixed limits. */
+function notTestedOf(src: ReportSource): { rows: { what: string; why: string }[]; note: string | null; recorded: boolean } {
+  const n = notTested({ coverage: src.coverage, endReason: src.run.endReason, excludedPaths: src.request.excludedPaths });
+  return { rows: [...n.rows], note: claudeNotCovered(src.run.summary), recorded: n.recorded };
+}
+
+const NOT_RECORDED =
+  'Blackwing did not record test-case coverage for this audit, so it cannot list the cases that did not run.';
+const NO_GAPS = 'Every planned test case ran, and the plan left nothing out.';
+
 export function renderMarkdown(src: ReportSource, findings: readonly FindingDetail[]): string {
   const out: string[] = [
     `# ${title(src)}`,
@@ -230,7 +293,7 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     if (released !== null) out.push(released);
     out.push(
       '',
-      '### How it was proved (Blackwing’s validator, no model)',
+      `### How it was proved (${PROOF_BY})`,
       '',
       proof.text.replace(/^Proven: /, 'Proven: '),
     );
@@ -267,6 +330,12 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     if (remediation !== '')
       out.push('### How to fix it (Claude’s suggestion, not verified)', '', remediation, '');
   });
+  const gaps = notTestedOf(src);
+  out.push('## What was not tested and why', '');
+  if (!gaps.recorded) out.push(NOT_RECORDED, '');
+  if (gaps.rows.length > 0) out.push(...gaps.rows.map((r) => `- **${r.what}:** ${r.why}`), '');
+  else if (gaps.recorded) out.push(NO_GAPS, '');
+  if (gaps.note !== null) out.push('Claude’s own note (not verified):', '', ...gaps.note.split('\n').map((l) => `> ${l}`), '');
   out.push('## Limits of this report', '', ...LIMITS.map((l) => `- ${l}`), '');
   return out.join('\n');
 }
@@ -335,7 +404,7 @@ export function renderHtml(
       return `<article>
 <h3><span class="chip" style="${SEV_STYLE[f.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(f.severity))}</span>${i + 1}. ${esc(f.title)}</h3>
 <p class="meta">${esc(meta(f))}</p>${released === null ? '' : `\n<p class="meta">${esc(released)}</p>`}
-<h4>How it was proved <span>· Blackwing’s validator, no model</span></h4>
+<h4>How it was proved <span>· ${esc(PROOF_BY)}</span></h4>
 <p class="proof">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">Blackwing checked that ${esc(check)}: the probe should show it, the control should not.</p>`}
 <table>
 <tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
@@ -347,6 +416,20 @@ export function renderHtml(
       }${remediation === '' ? '' : `\n<h4>How to fix it <span>· Claude’s suggestion, not verified</span></h4>\n<div>${markdownToHtml(remediation)}</div>`}
 </article>`;
     })
+    .join('\n');
+  const gaps = notTestedOf(src);
+  const gapsHtml = [
+    gaps.recorded ? '' : `<p class="meta">${esc(NOT_RECORDED)}</p>`,
+    gaps.rows.length > 0
+      ? `<dl>${gaps.rows.map((r) => `<dt>${esc(r.what)}</dt><dd>${esc(r.why)}</dd>`).join('\n')}</dl>`
+      : gaps.recorded
+        ? `<p class="meta">${esc(NO_GAPS)}</p>`
+        : '',
+    gaps.note === null
+      ? ''
+      : `<h4>Claude’s own note <span>· not verified</span></h4>\n<div class="claude">${markdownToHtml(gaps.note)}</div>`,
+  ]
+    .filter((x) => x !== '')
     .join('\n');
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -365,6 +448,8 @@ ${facts(src)
   .join('\n')}
 </dl>
 ${findings.length === 0 ? '' : `<h2>Issues, most severe first</h2>\n${issues}`}
+<h2>What was not tested and why</h2>
+${gapsHtml}
 <h2>Limits of this report</h2>
 <ul class="limits">${LIMITS.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
 <footer>Generated by Blackwing on ${esc(when(generatedAt) ?? generatedAt)}. Every decision behind it is sealed in the workspace ledger.</footer>
@@ -389,7 +474,7 @@ export function renderJson(
       ? (x as { id: string }).id
       : '';
   list.sort((a, b) => (order.get(idOf(a)) ?? 0) - (order.get(idOf(b)) ?? 0));
-  return JSON.stringify({ ...raw, run, findings: list }, null, 2);
+  return JSON.stringify(scrubDeep({ ...raw, run, findings: list }), null, 2);
 }
 
 /** Released findings, most severe first (the order of the results page). */

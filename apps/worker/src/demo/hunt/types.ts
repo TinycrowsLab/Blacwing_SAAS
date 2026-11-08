@@ -17,6 +17,8 @@ export interface HuntRun {
   readonly testAccounts: readonly { readonly role: string; readonly headerName: string; readonly headerValue: string }[];
   /** Gate 3 mode chosen on the plan: `hold` keeps proven findings for a human release, `auto` releases them at once. */
   readonly releaseProven: 'hold' | 'auto';
+  /** Allowed origins the operator listed as labs (pins.asset.labOrigins): private addresses are allowed only there. */
+  readonly labOrigins: readonly string[];
 }
 
 export interface RunEvent {
@@ -51,13 +53,19 @@ export interface Gate2Row {
   readonly reason: string;
   readonly whyOutside: string;
   readonly deadlineAt: Date;
+  /** The request body as it would be sent (scrubbed), shown on the Gate 2 card. */
+  readonly body: string | null;
+  readonly asRole: string | null;
 }
 
 export type Gate2Status = 'pending' | 'approved' | 'denied' | 'expired';
+export type Gate2CloseReason = 'deadline' | 'run_ended' | 'killed';
 
 export interface FindingRow {
   readonly id: string;
   readonly fingerprint: string;
+  /** sha256(asset | METHOD | normalised path | CWE): the same issue across runs and agents. */
+  readonly identityKey: string | null;
   readonly agent: string;
   readonly title: string;
   readonly vulnClass: string;
@@ -107,9 +115,10 @@ export interface HuntStore {
   listExchanges(runId: string, limit: number): Promise<{ method: string; url: string; status: number | null; bytes: number }[]>;
   insertGate2(run: HuntRun, row: Gate2Row): Promise<void>;
   readGate2(id: string): Promise<{ status: Gate2Status; decidedBy: string | null }>;
-  /** Moves a still-pending request to `status`; returns the status it ends with. */
-  closeGate2(id: string, status: 'denied' | 'expired'): Promise<Gate2Status>;
-  denyPendingGate2(runId: string): Promise<string[]>;
+  /** Moves a still-pending request to `status` with `reason`; returns the status it ends with. An expiry is ledgered. */
+  closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status>;
+  /** Denies every pending request of the run (`close_reason` = reason); returns their ids. */
+  denyPendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]>;
   /** Returns the id of the inserted row (a proven row also upgrades a suspected one), or null for a duplicate. */
   insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
   /** Records the result of the webhook POST for a released finding. */

@@ -4,9 +4,9 @@
 import { redirect } from 'next/navigation';
 
 import { Shell } from '../../components/console/shell';
-import { callApi } from '../../lib/api';
 import { getViewer } from '../../lib/auth';
-import { dashboardSchema, toSidebar, workspaceSchema } from '../../lib/schemas';
+import { readDashboard, readWorkspace } from '../../lib/console-data';
+import { toSidebar } from '../../lib/schemas';
 
 import type { ReactNode } from 'react';
 
@@ -19,13 +19,10 @@ export default async function ConsoleLayout({
 }): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) redirect('/login');
+  // Shared with the page of this render (one API read each), retried on a busy moment.
   const [workspace, dashboard] = await Promise.all([
-    callApi(session, '/workspace')
-      .then((body) => workspaceSchema.parse(body))
-      .catch(() => null),
-    callApi(session, '/dashboard')
-      .then((body) => dashboardSchema.parse(body))
-      .catch(() => null),
+    readWorkspace().catch(() => null),
+    readDashboard().catch(() => null),
   ]);
   if (workspace !== null && workspace.name === null) redirect('/welcome');
   const { name, email, image } = session.user;

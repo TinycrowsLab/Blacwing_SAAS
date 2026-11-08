@@ -33,6 +33,23 @@ describe('auditHash', () => {
   });
 });
 
+describe('auditHash fixed vector', () => {
+  it('hashes exactly as before the chain moved to @blackwing/audit (existing rows keep verifying)', () => {
+    expect(
+      auditHash(GENESIS, {
+        seq: 1,
+        at: new Date('2026-11-08T12:00:00.000Z'),
+        actorId: null,
+        actorName: 'Blackwing',
+        action: 'gate2.expired',
+        targetType: 'gate2',
+        targetId: '0197a5d0-aaaa-7000-8000-000000000001',
+        payload: { runId: 'r1', method: 'POST', url: 'http://127.0.0.1:3001/api/Users', deadlineAt: '2026-11-08T12:05:00.000Z' },
+      }),
+    ).toBe('88fe19a2bc9426919521e02a62be8795679a9ad6cb3930f78f1d5338b06d17c9');
+  });
+});
+
 describe('verifyChain', () => {
   it('accepts an intact chain and an empty ledger', () => {
     expect(verifyChain(chain(3))).toEqual({ verified: true, count: 3, brokenAtSeq: null });

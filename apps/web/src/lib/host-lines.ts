@@ -15,6 +15,13 @@ export interface HostContext {
   readonly gate2TimeoutS?: number | undefined;
   /** The signed-in person's name, so "Paused by {name}" reads "Paused by you" for them. */
   readonly viewerName?: string | null | undefined;
+  /** How far the test plan got, for the finish line (run-model `caseTally`). */
+  readonly cases?: CaseTally | null | undefined;
+}
+
+export interface CaseTally {
+  readonly executed: number;
+  readonly total: number;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
@@ -35,6 +42,26 @@ export function finishReason(reason: unknown): string {
     default:
       return 'finished its plan';
   }
+}
+
+const LIMITS: ReadonlySet<unknown> = new Set(['duration_budget', 'request_budget', 'cost_cap', 'max_turns']);
+
+/**
+ * The one finish sentence (run page and results): the runner's limit when it named one, then how far the test plan got.
+ * `complete` only when every planned case ran and no limit stopped it; anything else is never shown as a clean finish.
+ */
+export function finishedWhy(reason: unknown, cases: CaseTally | null | undefined): { text: string; complete: boolean } {
+  const limit = LIMITS.has(reason) ? finishReason(reason) : null;
+  const total = cases?.total ?? 0;
+  const executed = Math.min(cases?.executed ?? 0, total);
+  if (total === 0) return { text: limit === null ? 'Claude ended the audit' : `Claude ${limit}`, complete: false };
+  const all = `all ${total} planned test ${total === 1 ? 'case' : 'cases'}`;
+  if (executed >= total)
+    return limit === null
+      ? { text: `Claude finished its plan: it ran ${all}`, complete: true }
+      : { text: `Claude ${limit} after it ran ${all}`, complete: false };
+  const ran = `ran ${executed} of ${total} planned test cases`;
+  return { text: limit === null ? `Claude ended the audit early: it ${ran}` : `Claude ${limit} after it ${ran}`, complete: false };
 }
 
 function requestLabel(request: HostContext['request']): string {
@@ -93,8 +120,15 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
       return ms === null ? 'Stopped. Every agent halted.' : `Stopped. Every agent halted in ${ms.toLocaleString('en-US')} ms.`;
     }
     case 'run.completed':
-      // Without a reason the planner ended on its own: "Finished: finished its plan" would stutter.
-      return `Finished: ${str(d.reason) === null ? 'Claude completed its plan' : finishReason(d.reason)}. Your results are ready.`;
+      return `Finished: ${finishedWhy(d.reason, ctx.cases).text}. Your results are ready.`;
+    case 'accounts.unused': {
+      const roles = Array.isArray(d.roles) ? d.roles.filter((r): r is string => typeof r === 'string') : [];
+      return `No request has used your test accounts yet${roles.length === 0 ? '' : ` (${roles.join(', ')})`}. Signed-in testing has not started.`;
+    }
+    case 'run.continued': {
+      const n = Array.isArray(d.untried) ? d.untried.length : 0;
+      return `Claude went back for ${n} untried test ${n === 1 ? 'case' : 'cases'}.`;
+    }
     case 'run.failed':
       return `The run stopped with an error: ${str(d.reason) ?? 'unknown'}. Findings so far are kept.`;
     default:

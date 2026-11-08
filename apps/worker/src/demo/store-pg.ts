@@ -1,11 +1,21 @@
 // Hunt persistence over `pg` (demo schema, see migration 20261105000000_demo_ai_hunt).
 import { z } from 'zod';
 
-import type { ExchangeRow, FindingRow, Gate2Row, Gate2Status, HuntRun, HuntStore, RunControl, RunEvent, RunOutcome, StaleRun } from './hunt/types.js';
+import { DEMO_GENESIS, demoAuditHash, type DemoAuditPayload } from '@blackwing/audit';
+import { newId } from '@blackwing/ids';
+
+import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RunControl, RunEvent, RunOutcome, StaleRun } from './hunt/types.js';
 import type pg from 'pg';
 
 const pinsSchema = z.object({
-  asset: z.object({ id: z.string(), name: z.string(), allowedOrigins: z.array(z.string()), excludedPaths: z.array(z.string()) }),
+  asset: z.object({
+    id: z.string(),
+    name: z.string(),
+    allowedOrigins: z.array(z.string()),
+    excludedPaths: z.array(z.string()),
+    // Runs pinned before the lab allow-list existed: no origin is a lab, so private addresses stay refused.
+    labOrigins: z.array(z.string()).default([]),
+  }),
   request: z.object({
     id: z.string(),
     objective: z.string(),
@@ -40,6 +50,34 @@ const CLAIM_SQL = `
   RETURNING id, tenant_id, request_id, pins,
     (SELECT test_accounts FROM demo.assessment_requests q WHERE q.id = demo.runs.request_id) AS test_accounts`;
 
+const LEDGER_ACTOR = 'Blackwing';
+
+/**
+ * Appends one worker entry to the tenant's demo ledger inside the caller's transaction, under the same advisory lock
+ * the API takes (packages/audit demo-chain rules), so the two writers never fork the chain.
+ */
+async function appendLedger(
+  client: pg.PoolClient,
+  tenantId: string,
+  action: string,
+  targetType: string,
+  targetId: string,
+  payload: DemoAuditPayload,
+): Promise<void> {
+  await client.query("SELECT pg_advisory_xact_lock(hashtext('demo.audit_events:' || $1::text))", [tenantId]);
+  const last = await client.query<{ seq: number; hash: string }>(
+    'SELECT seq, hash FROM demo.audit_events WHERE tenant_id = $1 ORDER BY seq DESC LIMIT 1',
+    [tenantId],
+  );
+  const prevHash = last.rows[0]?.hash ?? DEMO_GENESIS;
+  const fields = { seq: (last.rows[0]?.seq ?? 0) + 1, at: new Date(), actorId: null, actorName: LEDGER_ACTOR, action, targetType, targetId, payload };
+  await client.query(
+    `INSERT INTO demo.audit_events (id, tenant_id, seq, actor_id, actor_name, action, target_type, target_id, payload, prev_hash, hash, at)
+     VALUES ($1, $2, $3, NULL, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [newId(), tenantId, fields.seq, LEDGER_ACTOR, action, targetType, targetId, JSON.stringify(payload), prevHash, demoAuditHash(prevHash, fields), fields.at],
+  );
+}
+
 export function pgHuntStore(pool: pg.Pool): HuntStore {
   const gate2Status = async (id: string): Promise<{ status: Gate2Status; decidedBy: string | null }> => {
     const r = await pool.query<{ status: Gate2Status; decided_by: string | null }>('SELECT status, decided_by FROM demo.gate2_requests WHERE id = $1', [id]);
@@ -67,6 +105,7 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         intrusiveness: pins.request.intrusiveness,
         testAccounts: testAccountsSchema.parse(row.test_accounts).map((a) => ({ role: a.role, headerName: a.header_name, headerValue: a.header_value })),
         releaseProven: pins.request.releaseProven,
+        labOrigins: pins.asset.labOrigins,
       };
     },
     async failStaleRuns(): Promise<StaleRun[]> {
@@ -76,8 +115,12 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
            (SELECT count(*)::int FROM demo.findings f WHERE f.run_id = r.id AND f.status IN ('confirmed', 'released')) AS findings`,
       );
       const ids = r.rows.map((row) => row.id);
-      await pool.query("UPDATE demo.gate2_requests SET status = 'denied', decided_at = now() WHERE run_id = ANY($1) AND status = 'pending'", [ids]);
-      await pool.query("UPDATE demo.assessment_requests SET status = 'approved' WHERE id = ANY($1)", [r.rows.map((row) => row.request_id)]);
+      await pool.query(
+        "UPDATE demo.gate2_requests SET status = 'denied', decided_at = now(), close_reason = 'worker_restarted' WHERE run_id = ANY($1) AND status = 'pending'",
+        [ids],
+      );
+      // Terminal: the approval was used by this run; another run needs a new Gate 1 decision.
+      await pool.query("UPDATE demo.assessment_requests SET status = 'failed' WHERE id = ANY($1)", [r.rows.map((row) => row.request_id)]);
       return r.rows.map((row) => ({ id: row.id, requestsUsed: row.requests_used, costUsd: Number(row.cost_usd), findings: row.findings }));
     },
     /** The API appends events to the same run, so the seq is computed in SQL; a lost race is retried. */
@@ -125,31 +168,61 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
     },
     async insertGate2(run: HuntRun, row: Gate2Row): Promise<void> {
       await pool.query(
-        `INSERT INTO demo.gate2_requests (id, tenant_id, run_id, agent, method, url, path_key, intrusiveness, reason, why_outside, deadline_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'state_changing', $8, $9, $10)`,
-        [row.id, run.tenantId, run.id, row.agent, row.method, row.url, row.pathKey, row.reason, row.whyOutside, row.deadlineAt],
+        `INSERT INTO demo.gate2_requests (id, tenant_id, run_id, agent, method, url, path_key, intrusiveness, reason, why_outside, deadline_at,
+           request_body, as_role)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'state_changing', $8, $9, $10, $11, $12)`,
+        [row.id, run.tenantId, run.id, row.agent, row.method, row.url, row.pathKey, row.reason, row.whyOutside, row.deadlineAt, row.body, row.asRole],
       );
     },
     readGate2: gate2Status,
-    async closeGate2(id: string, status: 'denied' | 'expired'): Promise<Gate2Status> {
-      await pool.query("UPDATE demo.gate2_requests SET status = $2, decided_at = now() WHERE id = $1 AND status = 'pending'", [id, status]);
+    /** The close and its `gate2.expired` ledger entry commit together: an expiry is never unrecorded. */
+    async closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status> {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const moved = await client.query<{ tenant_id: string; run_id: string; method: string; url: string; deadline_at: Date }>(
+          `UPDATE demo.gate2_requests SET status = $2, decided_at = now(), close_reason = $3 WHERE id = $1 AND status = 'pending'
+           RETURNING tenant_id, run_id, method, url, deadline_at`,
+          [id, status, reason],
+        );
+        const row = moved.rows[0];
+        if (row !== undefined && status === 'expired') {
+          await appendLedger(client, row.tenant_id, 'gate2.expired', 'gate2', id, {
+            runId: row.run_id,
+            method: row.method,
+            url: row.url,
+            deadlineAt: row.deadline_at.toISOString(),
+          });
+        }
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
       return (await gate2Status(id)).status;
     },
-    async denyPendingGate2(runId: string): Promise<string[]> {
-      const r = await pool.query<{ id: string }>("UPDATE demo.gate2_requests SET status = 'denied', decided_at = now() WHERE run_id = $1 AND status = 'pending' RETURNING id", [runId]);
+    async denyPendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
+      const r = await pool.query<{ id: string }>(
+        "UPDATE demo.gate2_requests SET status = 'denied', decided_at = now(), close_reason = $2 WHERE run_id = $1 AND status = 'pending' RETURNING id",
+        [runId, reason],
+      );
       return r.rows.map((row) => row.id);
     },
     async insertFinding(run: HuntRun, row: FindingRow): Promise<string | null> {
       const proven = row.status !== 'suspected';
       const r = await pool.query<{ id: string }>(
         `INSERT INTO demo.findings (id, tenant_id, run_id, asset_id, fingerprint, title, test_case_id, class, cwe_id, owasp_category,
-           severity, location, status, confidence, oracle, evidence, replay, repro_curl, agent, description, triaged_at, triage_reason)
+           severity, location, status, confidence, oracle, evidence, replay, repro_curl, agent, description, triaged_at, triage_reason,
+           identity_key)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 1, $14, $15, $16, $17, $18, $19,
-           CASE WHEN $13::text = 'released' THEN now() END, CASE WHEN $13::text = 'released' THEN $20::text END)
+           CASE WHEN $13::text = 'released' THEN now() END, CASE WHEN $13::text = 'released' THEN $20::text END, $21)
          ${
            proven
              ? `ON CONFLICT (tenant_id, fingerprint) DO UPDATE SET status = EXCLUDED.status, triaged_at = EXCLUDED.triaged_at, triage_reason = EXCLUDED.triage_reason,
-                  evidence = EXCLUDED.evidence, replay = EXCLUDED.replay, oracle = EXCLUDED.oracle WHERE demo.findings.status = 'suspected'`
+                  evidence = EXCLUDED.evidence, replay = EXCLUDED.replay, oracle = EXCLUDED.oracle, location = EXCLUDED.location,
+                  repro_curl = EXCLUDED.repro_curl WHERE demo.findings.status = 'suspected'`
              : 'ON CONFLICT (tenant_id, fingerprint) DO NOTHING'
          }
          RETURNING id`,
@@ -157,6 +230,7 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
           row.id, run.tenantId, run.id, run.assetId, row.fingerprint, row.title, row.testCaseId, row.vulnClass, row.cwe, row.owasp,
           JSON.stringify({ level: row.severity }), JSON.stringify(row.location), row.status, JSON.stringify(row.oracle),
           JSON.stringify(row.evidence), JSON.stringify(row.replay), row.reproCurl, row.agent, row.description, AUTO_RELEASE_REASON,
+          row.identityKey,
         ],
       );
       return r.rows[0]?.id ?? null;
@@ -171,7 +245,8 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       await pool.query('UPDATE demo.runs SET state = $2, requests_used = $3, cost_usd = $4, summary = $5, finished_at = now() WHERE id = $1', [
         run.id, outcome.state, outcome.requestsUsed, outcome.costUsd, outcome.summary,
       ]);
-      await pool.query('UPDATE demo.assessment_requests SET status = $3 WHERE tenant_id = $1 AND id = $2', [run.tenantId, run.requestId, outcome.state === 'completed' ? 'completed' : 'approved']);
+      // Terminal either way: an approval starts one run (a failed run needs a new Gate 1 decision).
+      await pool.query('UPDATE demo.assessment_requests SET status = $3 WHERE tenant_id = $1 AND id = $2', [run.tenantId, run.requestId, outcome.state]);
     },
     async markKilled(run: HuntRun): Promise<number> {
       const r = await pool.query<{ halt_ms: number }>(
@@ -180,7 +255,7 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
          WHERE id = $1 RETURNING halt_ms`,
         [run.id],
       );
-      await pool.query("UPDATE demo.assessment_requests SET status = 'approved' WHERE tenant_id = $1 AND id = $2", [run.tenantId, run.requestId]);
+      await pool.query("UPDATE demo.assessment_requests SET status = 'killed' WHERE tenant_id = $1 AND id = $2", [run.tenantId, run.requestId]);
       return r.rows[0]?.halt_ms ?? 0;
     },
   };

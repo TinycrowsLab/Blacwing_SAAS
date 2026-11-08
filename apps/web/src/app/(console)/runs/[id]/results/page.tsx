@@ -111,7 +111,7 @@ export default async function ResultsPage({
   const host = hostOf(run);
   const name = run.pins.asset?.name ?? host;
   const live = LIVE_RUN_STATES.includes(run.state);
-  const cases = testCases(run.events);
+  const cases = testCases(run.events, run.coverage);
   const stop = stopLine(run, Date.now(), cases);
   // The report card counts every proven issue, as the headline does, and says how many were dismissed.
   const severities = proven.map((f) => f.severity);
@@ -161,11 +161,12 @@ export default async function ResultsPage({
             </ol>
           </nav>
           <p
-            className={`m-0 flex items-center gap-1.5 text-[13px] font-medium ${stop.tone === 'ok' ? 'text-ok' : stop.tone === 'bad' ? 'text-bad' : 'text-muted-foreground'}`}
+            className={`m-0 flex items-center gap-1.5 text-[13px] font-medium ${stop.tone === 'ok' ? 'text-ok' : stop.tone === 'bad' ? 'text-bad' : stop.tone === 'warn' ? 'text-warn' : 'text-muted-foreground'}`}
           >
             <Icon
-              name={stop.tone === 'ok' ? 'check' : stop.tone === 'bad' ? 'warn' : 'clock'}
+              name={stop.tone === 'ok' ? 'check' : stop.tone === 'bad' || stop.tone === 'warn' ? 'warn' : 'clock'}
               size={14}
+              className="shrink-0"
             />
             {stop.text}
             {live ? (

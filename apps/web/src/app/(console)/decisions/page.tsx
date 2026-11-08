@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { z } from 'zod';
 
-import { askedInRun } from './asked';
+import { askedInRun, askOf } from './asked';
 import { EmptyState, Icon, LinkButton, SeverityChip } from '../../../components/console/design';
 import {
   Gate2Inbox,
@@ -12,10 +12,11 @@ import {
   InboxRefresh,
   When,
 } from '../../../components/console/gate2-view';
-import { callApi } from '../../../lib/api';
+import { readApi } from '../../../components/console/results/load';
 import { getViewer } from '../../../lib/auth';
+import { readDashboard } from '../../../lib/console-data';
 import { objectivePhrase } from '../../../lib/plan-text';
-import { dashboardSchema, findingSummarySchema, toSidebar } from '../../../lib/schemas';
+import { findingSummarySchema, toSidebar } from '../../../lib/schemas';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -69,6 +70,7 @@ function Row({
     <li>
       <Link
         href={href}
+        prefetch={false}
         className="flex min-h-14 items-center gap-3 rounded-[14px] border border-border bg-card px-4 py-3 hover:border-gold-line hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
       >
         {lead}
@@ -87,42 +89,52 @@ function Row({
   );
 }
 
+/** Under a capped list: how many more wait than are listed. */
+function More({ n, one, many }: { readonly n: number; readonly one: string; readonly many: string }) {
+  return (
+    <li className="px-4 py-1 text-[12.5px] text-muted-foreground">
+      And {n.toLocaleString()} more {n === 1 ? one : many}, listed here as these are decided.
+    </li>
+  );
+}
+
 export default async function DecisionsPage(): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
   const [dashboard, findings] = await Promise.all([
-    callApi(session, '/dashboard').then((b) => dashboardSchema.parse(b)),
-    callApi(session, '/findings')
+    // The layout's read of this render, retried on a busy moment (a 429 never becomes an error page at once).
+    readDashboard(),
+    readApi('/findings')
       .then((b) => findingsSchema.parse(b).items)
       .catch(() => null),
   ]);
   const gate2 = [...dashboard.pendingGate2].sort(
     (a, b) => Date.parse(a.deadlineAt) - Date.parse(b.deadlineAt),
   );
-  const runIds = [...new Set(gate2.map((g) => g.runId))];
+  // One read per asking audit (its first request stands for it): the history and the fallback for older requests.
+  const firstOfRun = new Map<string, (typeof gate2)[number]>();
+  for (const g of gate2) if (!firstOfRun.has(g.runId)) firstOfRun.set(g.runId, g);
   const runs = new Map(
     await Promise.all(
-      runIds.map(async (runId) => [runId, await askedInRun(session, runId)] as const),
+      [...firstOfRun.values()].map(
+        async (g) => [g.runId, await askedInRun(session, g, dashboard.actor.id)] as const,
+      ),
     ),
   );
   const gate2Items = gate2.map((g) => {
     const run = runs.get(g.runId);
-    const a = run?.asked.get(g.id);
-    return {
-      gate2: g,
-      body: a?.body ?? null,
-      // Unknown (the event was not found): the card reads the role from the gate key.
-      asRole: a === undefined ? undefined : a.asRole,
-      audit: run?.audit ?? null,
-      history: run?.history ?? [],
-    };
+    return { gate2: g, ...askOf(g, run), audit: run?.audit ?? null, history: run?.history ?? [] };
   });
   const plans = dashboard.requests.filter((r) => r.status === 'pending_gate1');
   const all = findings ?? dashboard.findings;
   const releases = all.filter((f) => f.status === 'confirmed');
-  const keptBack = all.filter((f) => f.status === 'suspected').length;
+  // Exact counts when the API sends them: the lists above are capped.
+  const counts = dashboard.pendingCounts;
+  const planCount = Math.max(counts?.gate1 ?? 0, plans.length);
+  const releaseCount = Math.max(counts?.gate3 ?? 0, releases.length);
+  const keptBack = counts?.keptBack ?? all.filter((f) => f.status === 'suspected').length;
   const nothing =
-    gate2.length === 0 && plans.length === 0 && releases.length === 0 && keptBack === 0;
+    gate2.length === 0 && planCount === 0 && releaseCount === 0 && keptBack === 0;
   // The same slice the sidebar polls, so the inbox refreshes only when what waits changes.
   const slice = toSidebar(dashboard);
   const waiting = {
@@ -133,7 +145,8 @@ export default async function DecisionsPage(): Promise<ReactNode> {
 
   return (
     <div className="flex max-w-[880px] flex-col gap-7">
-      <InboxRefresh waiting={waiting} />
+      {/* A read that failed (an owner not known yet) is tried again on the next poll. */}
+      <InboxRefresh waiting={waiting} incomplete={[...runs.values()].some((r) => !r.complete)} />
       <header className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
           Decisions
@@ -145,7 +158,11 @@ export default async function DecisionsPage(): Promise<ReactNode> {
       </header>
 
       {/* Always mounted: a request decided here keeps its receipt after the refresh drops it from the list. */}
-      <Gate2Inbox items={gate2Items} viewerName={session.user.name} />
+      <Gate2Inbox
+        items={gate2Items}
+        viewerName={session.user.name}
+        more={Math.max(0, (counts?.gate2 ?? 0) - gate2.length)}
+      />
 
       {nothing ? (
         <EmptyState
@@ -160,12 +177,12 @@ export default async function DecisionsPage(): Promise<ReactNode> {
         />
       ) : null}
 
-      {plans.length === 0 ? null : (
+      {planCount === 0 ? null : (
         <Section
           title="Plans to approve"
           term="Gate 1"
           lede="Nothing reaches the site until a plan is approved."
-          count={plans.length}
+          count={planCount}
         >
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {plans.map((p) => (
@@ -186,17 +203,18 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 }
               />
             ))}
+            {planCount > plans.length ? <More n={planCount - plans.length} one="plan" many="plans" /> : null}
           </ul>
         </Section>
       )}
 
-      {releases.length === 0 && keptBack === 0 ? null : (
+      {releaseCount === 0 && keptBack === 0 ? null : (
         <Section
           title="Findings to review"
           term="Gate 3"
           lede="Proven issues stay private until you release them. Kept-back ones were not proven: look at them when you have time."
           // The count is what waits on you (proven, to release), as in the sidebar; kept-back ones are optional.
-          count={releases.length}
+          count={releaseCount}
         >
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {releases.slice(0, RELEASES_SHOWN).map((f) => (
@@ -208,11 +226,11 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 sub={`Proven by replay${f.assetName === null ? '' : ` · ${f.assetName}`} · release or dismiss`}
               />
             ))}
-            {releases.length <= RELEASES_SHOWN ? null : (
+            {releaseCount <= RELEASES_SHOWN ? null : (
               <Row
                 href="/findings?status=confirmed"
                 lead={<Icon name="findings" size={16} className="shrink-0 text-muted-foreground" />}
-                title={`${releases.length - RELEASES_SHOWN} more proven issues to release`}
+                title={`${releaseCount - Math.min(RELEASES_SHOWN, releases.length)} more proven issues to release`}
                 sub="All of them, filtered, on Findings"
               />
             )}

@@ -68,8 +68,19 @@ function safeDecode(path: string): string {
 }
 
 const DECODE_ROUNDS = 3;
-// eslint-disable-next-line no-control-regex -- matching control bytes is the point
-const CONTROL_BYTES = /[\u0000-\u001f\u007f]|%(?:[01][0-9a-f]|7f)/i;
+const ENCODED_CONTROL = /%(?:[01][0-9a-f]|7f)/i;
+const FIRST_PRINTABLE = 0x20;
+const DEL = 0x7f;
+
+/** A C0 control byte or DEL, raw or still percent-encoded. */
+function hasControlByte(text: string): boolean {
+  if (ENCODED_CONTROL.test(text)) return true;
+  for (let i = 0; i < text.length; i += 1) {
+    const code = text.charCodeAt(i);
+    if (code < FIRST_PRINTABLE || code === DEL) return true;
+  }
+  return false;
+}
 
 /** Lower-case, `\` as `/`, `//` collapsed, `;params` stripped per segment, dot segments resolved. */
 function canonicalPath(path: string): string {
@@ -94,7 +105,7 @@ function pathForms(pathname: string): string[] | null {
     if (next === decoded.at(-1)) break;
     decoded.push(next);
   }
-  if (decoded.some((form) => CONTROL_BYTES.test(form))) return null;
+  if (decoded.some(hasControlByte)) return null;
   return [...decoded, ...decoded.map(canonicalPath)];
 }
 

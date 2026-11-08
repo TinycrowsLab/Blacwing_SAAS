@@ -318,6 +318,8 @@ export interface Candidate {
     'validating' | 'confirmed' | 'released' | 'suspected' | 'dismissed' | 'not_confirmed';
   readonly replays: number;
   readonly findingId: string | null;
+  /** The validator confirmed it (a `finding.confirmed` event): stays true whatever a person decides at Gate 3. */
+  readonly proven: boolean;
 }
 
 const CANDIDATE_STATUS: Readonly<Record<string, Candidate['status']>> = {
@@ -349,6 +351,7 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
         status: 'validating',
         replays: 0,
         findingId: null,
+        proven: false,
       });
     } else if (prev && e.kind === 'validator.replay') {
       byId.set(id, { ...prev, replays: Math.max(prev.replays, num(e.data.n)) });
@@ -357,6 +360,7 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
         ...prev,
         status,
         findingId: findingId ?? prev.findingId,
+        proven: prev.proven || e.kind === 'finding.confirmed',
       });
     }
   }
@@ -404,6 +408,42 @@ export function testCases(events: readonly RunEvent[]): {
   return { total: list.length, counts };
 }
 
+/**
+ * How far the test plan got, for the finish line: the runner's own `coverage.summary` when it sent one, else the
+ * case statuses the agents recorded.
+ */
+export function caseTally(events: readonly RunEvent[]): { executed: number; total: number } {
+  const cov = events.findLast((e) => e.kind === 'coverage.summary')?.data.cases;
+  if (Array.isArray(cov))
+    return {
+      executed: cov.filter((c) => typeof c === 'object' && c !== null && (c as { status?: unknown }).status === 'executed').length,
+      total: cov.length,
+    };
+  const plan = testCases(events);
+  return { executed: plan.counts.executed, total: plan.total };
+}
+
+/** Requests sent as each test-account role (`http.sent.asRole`), for "Account use". */
+export function accountUse(events: readonly RunEvent[]): Map<string, number> {
+  const used = new Map<string, number>();
+  for (const e of events) {
+    const role = e.kind === 'http.sent' ? str(e.data.asRole) : '';
+    if (role !== '') used.set(role, (used.get(role) ?? 0) + 1);
+  }
+  return used;
+}
+
+/**
+ * The open asks that hold their agent: every ask from a runner that waits on the decision. An ask whose
+ * `gate2.requested` says `blocking: false` lets the agent carry on with other cases, so it never marks it waiting.
+ */
+export function blockingAsks(events: readonly RunEvent[], open: readonly Gate2[]): Gate2[] {
+  const free = new Set(
+    events.filter((e) => e.kind === 'gate2.requested' && e.data.blocking === false).map((e) => str(e.data.gate2Id)),
+  );
+  return open.filter((g) => !free.has(g.id));
+}
+
 /** The one line shown after a gated decision: the ledger event id and a shortened hash. */
 /** UUIDv7 ids start with their timestamp, so the random tail tells ledger events apart. */
 function auditEventLabel(eventId: string): string {
@@ -437,6 +477,10 @@ const RULE_WORDS: Readonly<Record<string, string>> = {
   credentials_in_url: 'a username and password in the address',
   scheme_not_allowed: 'only http and https are tested',
   invalid_url: 'not a valid address',
+  gate2_denied: 'you denied this request earlier',
+  gate2_expired: 'an earlier ask got no answer in time',
+  private_address: 'a private or local network address',
+  invalid_path: 'the path has control characters',
 };
 
 /** A `policy.blocked` rule in words; an unknown rule shows as itself. */
@@ -529,6 +573,11 @@ interface Gate2Item {
   readonly asRole: string | null;
   /** The Blackwing line once `gate2.decided` arrived; until then the decision card shows. */
   decided: string | null;
+  /** The runner does not wait on this ask (`blocking: false`): its later use is tracked through `http.sent.gate2Id`. */
+  readonly nonBlocking: boolean;
+  /** When the allowed request went out (the first `http.sent` that used this approval). */
+  sentAt: string | null;
+  runEnded: boolean;
 }
 
 export interface HostItem {
@@ -743,6 +792,8 @@ export function conversationItems(
       }
       case 'http.sent':
       case 'policy.blocked': {
+        const used = e.kind === 'http.sent' ? gate2Items.get(str(d.gate2Id)) : undefined;
+        if (used !== undefined) used.sentAt ??= e.at;
         if (lane === 'validator') lastValidator?.calls.push(callOf(e));
         else turnFor(lane, e).calls.push(callOf(e));
         break;
@@ -815,6 +866,9 @@ export function conversationItems(
           body: str(d.body),
           asRole: str(d.asRole) || null,
           decided: null,
+          nonBlocking: d.blocking === false,
+          sentAt: null,
+          runEnded: false,
         };
         gate2Items.set(g.gate2Id, g);
         push(lane, g);
@@ -831,9 +885,11 @@ export function conversationItems(
         break;
       }
       default:
-        host(e, hostLine(e, { viewerName }));
+        host(e, hostLine(e, { viewerName, cases: e.kind === 'run.completed' ? caseTally(events) : null }));
     }
   }
+  const ended = events.some((e) => e.kind === 'run.completed' || e.kind === 'run.killed' || e.kind === 'run.failed');
+  for (const g of gate2Items.values()) g.runEnded = ended;
   return items;
 }
 
@@ -907,7 +963,7 @@ export function stages(
   const planTotal = num(events.findLast((e) => e.kind === 'plan.cases')?.data.total);
   const plan = testCases(events);
   const cands = candidates(events);
-  const proven = cands.filter((c) => c.status === 'confirmed' || c.status === 'released').length;
+  const proven = cands.filter((c) => c.proven).length;
   const tested = events.some(
     (e) =>
       (e.kind === 'http.sent' || isDelegation(e) || e.kind === 'agent.message') &&
@@ -1014,12 +1070,19 @@ export function teamNodes(
   terminal: boolean,
   /** The run was stopped (or failed) rather than finishing: open work reads "stopped", not "done". */
   stopped = false,
+  /** Paused: nothing is sent, so no ring spins. */
+  paused = false,
 ): Team {
   const agents = manifest(events);
   const tasks = delegations(events);
   const cands = candidates(events);
-  const proven = cands.filter((c) => c.status === 'confirmed' || c.status === 'released').length;
-  const waiting = new Set(gate2.filter((g) => isOpenGate2(g, nowMs)).map((g) => g.agent));
+  const proven = cands.filter((c) => c.proven).length;
+  const openAsks = gate2.filter((g) => isOpenGate2(g, nowMs));
+  const blocking = new Set(blockingAsks(events, openAsks).map((g) => g.id));
+  const waiting = new Set(openAsks.filter((g) => blocking.has(g.id)).map((g) => g.agent));
+  // An ask that does not block: the agent carries on with other cases, and its line says it asked.
+  const asked = new Set(openAsks.filter((g) => !blocking.has(g.id)).map((g) => g.agent));
+  const askedNote = (id: string, sub: string): string => (asked.has(id) ? `asked you · ${sub}` : sub);
   const lastAt = (id: string): number => {
     const e = events.findLast((x) => (str(x.data.agent) || x.stage) === id);
     return e === undefined ? 0 : Date.parse(e.at);
@@ -1029,7 +1092,7 @@ export function teamNodes(
     id,
     name: agentName(id),
     state,
-    spinning: state === 'working' && spins(id),
+    spinning: state === 'working' && !paused && spins(id),
     sub,
   });
   const started = agents.length > 0;
@@ -1041,11 +1104,10 @@ export function teamNodes(
         waiting.has('orchestrator') ? 'waiting' : terminal ? (stopped ? 'stopped' : 'done') : started ? 'working' : 'idle',
         waiting.has('orchestrator')
           ? 'waiting on you'
-          : tasks.length > 0
-            ? `${plural(tasks.length, 'task', 'tasks')} given`
-            : terminal
-              ? 'no tasks given'
-              : 'reading the plan',
+          : askedNote(
+              'orchestrator',
+              tasks.length > 0 ? `${plural(tasks.length, 'task', 'tasks')} given` : terminal ? 'no tasks given' : 'reading the plan',
+            ),
       )
     : null;
 
@@ -1059,7 +1121,8 @@ export function teamNodes(
       const open = mine.some((t) => !t.replied);
       const sent = plural(calls.length, 'request', 'requests');
       if (waiting.has(id)) return node(id, 'waiting', 'waiting on you');
-      if (open && !terminal) return node(id, 'working', lastPath === null ? 'task received' : `${id === 'recon' ? 'mapping' : 'testing'} ${where(lastPath)}`);
+      if (open && !terminal)
+        return node(id, 'working', askedNote(id, lastPath === null ? 'task received' : `${id === 'recon' ? 'mapping' : 'testing'} ${where(lastPath)}`));
       if (open && stopped) return node(id, 'stopped', `stopped mid-task, ${sent}`);
       if (mine.length > 0 || calls.length > 0) return node(id, 'done', id === 'recon' ? `mapped, ${sent}` : `${open ? 'finished' : 'reported back'}, ${sent}`);
       return node(id, 'idle', 'no task yet');
