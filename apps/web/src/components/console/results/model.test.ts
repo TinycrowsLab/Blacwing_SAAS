@@ -174,8 +174,17 @@ describe('duration and stopLine', () => {
         total: 9,
       }).text,
     ).toBe(
-      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 9 planned test cases; 2 were judged not relevant and 1 was not tried',
+      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 9 planned test cases; 2 were skipped by Claude and 1 was not tried',
     );
+    // Every case ran or was skipped with a reason: the plan is done, never "ended early", and still no green tick.
+    const done = stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, {
+      executed: 4,
+      skipped: 1,
+      blocked: 0,
+      total: 5,
+    });
+    expect(done.text).toBe('Finished in 18m 12s · Claude finished its plan: it ran 4 of 5 planned test cases and skipped 1');
+    expect(done.tone).not.toBe('ok');
     // A named limit is the reason; the cases say how far it got.
     expect(
       stopLine(

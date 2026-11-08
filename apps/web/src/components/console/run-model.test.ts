@@ -3,6 +3,7 @@ import { describe as suite, expect, it } from 'vitest';
 import {
   accountUse,
   blockingAsks,
+  caseList,
   caseTally,
   chipGroups,
   agentLanes,
@@ -545,9 +546,24 @@ suite('client-ready run view', () => {
     expect(teamNodes(handReleased, [], T0 + 40_000, true).proven).toBe(0);
   });
   it('counts the cases from the runner coverage, and the requests sent as each role', () => {
-    expect(caseTally(RUN)).toEqual({ executed: 1, total: 2 });
-    const cov = ev(30, 'coverage.summary', 'done', { cases: [{ status: 'executed' }, { status: 'not_run' }, { status: 'not_run' }] });
-    expect(caseTally([...RUN, cov])).toEqual({ executed: 1, total: 3 });
+    expect(caseTally(RUN)).toEqual({ executed: 1, skipped: 0, total: 2 });
+    const cov = ev(30, 'coverage.summary', 'done', {
+      cases: [{ id: 'sqli', status: 'executed' }, { id: 'idor', status: 'not_run' }, { id: 'xss', status: 'not_run' }],
+    });
+    expect(caseTally([...RUN, cov])).toEqual({ executed: 1, skipped: 0, total: 3 });
+    // The runner's word wins over the agents' own case statuses, so the plan tab, header and finish line agree.
+    const skip = ev(30, 'coverage.summary', 'done', {
+      cases: [{ id: 'sqli', status: 'executed' }, { id: 'idor', status: 'skipped', note: 'no second user' }],
+    });
+    expect(caseList([...RUN, skip]).map((c) => [c.id, c.status, c.note])).toEqual([
+      ['sqli', 'executed', ''],
+      ['idor', 'skipped', 'no second user'],
+    ]);
+    const planDone = conversationItems([...RUN, skip, ev(31, 'run.completed', 'done', {}, at(40))], []);
+    expect(planDone.at(-1)).toMatchObject({
+      type: 'host',
+      text: 'Finished: Claude finished its plan: it ran 1 of 2 planned test cases and skipped 1. Your results are ready.',
+    });
     expect([...accountUse(RUN)]).toEqual([['customer_a', 1]]);
     const done = conversationItems([...RUN, cov, ev(31, 'run.completed', 'done', {}, at(40))], []);
     expect(done.at(-1)).toMatchObject({ type: 'host', text: 'Finished: Claude ended the audit early: it ran 1 of 3 planned test cases. Your results are ready.' });

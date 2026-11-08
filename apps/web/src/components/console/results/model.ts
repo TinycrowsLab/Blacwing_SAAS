@@ -180,7 +180,7 @@ export function duration(ms: number): string {
  * Why cases did not run, in words. "Blocked" is the model's own status; when the audit had a request that was denied,
  * that is the plain reason (the agent needed it), otherwise the safety rules or "could not run".
  */
-function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[] {
+function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone: boolean): string[] {
   const denied = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
   const refused = run.events.some((e) => e.kind === 'policy.blocked');
   const b = cases.blocked;
@@ -196,7 +196,7 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[]
   const rest = cases.total - cases.executed - cases.skipped - cases.blocked;
   return [
     blocked,
-    cases.skipped > 0 ? `${cases.skipped} ${were(cases.skipped)} judged not relevant` : null,
+    cases.skipped > 0 && !planDone ? `${cases.skipped} ${were(cases.skipped)} skipped by Claude` : null,
     rest > 0 ? `${rest} ${were(rest)} not tried` : null,
   ].filter((x): x is string => x !== null);
 }
@@ -261,7 +261,8 @@ function completedWhy(
   run: Pick<Run, 'events' | 'gate2'>,
 ): { text: string; complete: boolean } {
   const why = finishedWhy(reason, cases ?? null);
-  const rest = cases === undefined || why.complete ? [] : notRun(cases, run);
+  // "finished its plan … and skipped N" already names the skips; the not-tested list gives Claude's reasons.
+  const rest = cases === undefined || why.complete ? [] : notRun(cases, run, why.text.startsWith('Claude finished its plan'));
   return { text: `${why.text}${rest.length === 0 ? '' : `; ${listWords(rest)}`}`, complete: why.complete };
 }
 

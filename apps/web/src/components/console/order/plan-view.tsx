@@ -3,7 +3,7 @@
 // The plan read-back and Gate 1 (experience spec §3.4): one paragraph from a template (lib/plan-text), every value
 // underlined and editable in place while the plan is pending; the limits as facts; what happens next; your approval.
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 
 import { DISCARDED, Gate1Card, type Person } from './gate1-card';
 import {
@@ -233,9 +233,12 @@ export function PlanView({
       return false;
     }
     refreshSidebar();
-    setField(null);
-    setUpdated(field);
-    router.refresh();
+    // One transition: the editor closes and "Plan updated" shows only with the refreshed plan text.
+    startTransition(() => {
+      setField(null);
+      setUpdated(field);
+      router.refresh();
+    });
     return true;
   };
 

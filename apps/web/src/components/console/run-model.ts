@@ -393,6 +393,14 @@ export function caseList(events: readonly RunEvent[]): TestCase[] {
       const id = str(e.data.caseId);
       const prev = byId.get(id) ?? { id, title: '', agent: '', target: '', status: 'proposed', note: '' };
       byId.set(id, { ...prev, status: str(e.data.status), note: str(e.data.note) || prev.note });
+    } else if (e.kind === 'coverage.summary' && Array.isArray(e.data.cases)) {
+      // The runner's final word on each case (derived from what was actually sent), so every count agrees with it.
+      for (const c of e.data.cases as Record<string, unknown>[]) {
+        const id = str(c.id);
+        const prev = byId.get(id) ?? { id, title: str(c.title), agent: str(c.agent), target: '', status: 'proposed', note: '' };
+        const status = str(c.status);
+        byId.set(id, { ...prev, status: status === 'not_run' ? 'proposed' : status, note: str(c.note) || prev.note });
+      }
     }
   }
   return [...byId.values()];
@@ -412,15 +420,9 @@ export function testCases(events: readonly RunEvent[]): {
  * How far the test plan got, for the finish line: the runner's own `coverage.summary` when it sent one, else the
  * case statuses the agents recorded.
  */
-export function caseTally(events: readonly RunEvent[]): { executed: number; total: number } {
-  const cov = events.findLast((e) => e.kind === 'coverage.summary')?.data.cases;
-  if (Array.isArray(cov))
-    return {
-      executed: cov.filter((c) => typeof c === 'object' && c !== null && (c as { status?: unknown }).status === 'executed').length,
-      total: cov.length,
-    };
+export function caseTally(events: readonly RunEvent[]): { executed: number; skipped: number; total: number } {
   const plan = testCases(events);
-  return { executed: plan.counts.executed, total: plan.total };
+  return { executed: plan.counts.executed, skipped: plan.counts.skipped, total: plan.total };
 }
 
 /** Requests sent as each test-account role (`http.sent.asRole`), for "Account use". */

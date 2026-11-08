@@ -21,6 +21,8 @@ export interface HostContext {
 
 export interface CaseTally {
   readonly executed: number;
+  /** Cases Claude skipped with a reason: the plan is done, but they did not run. */
+  readonly skipped?: number;
   readonly total: number;
 }
 
@@ -61,6 +63,9 @@ export function finishedWhy(reason: unknown, cases: CaseTally | null | undefined
       ? { text: `Claude finished its plan: it ran ${all}`, complete: true }
       : { text: `Claude ${limit} after it ran ${all}`, complete: false };
   const ran = `ran ${executed} of ${total} planned test cases`;
+  const skipped = Math.min(cases?.skipped ?? 0, total - executed);
+  if (limit === null && executed + skipped >= total)
+    return { text: `Claude finished its plan: it ${ran} and skipped ${skipped}`, complete: false };
   return { text: limit === null ? `Claude ended the audit early: it ${ran}` : `Claude ${limit} after it ${ran}`, complete: false };
 }
 
