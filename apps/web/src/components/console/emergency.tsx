@@ -197,7 +197,7 @@ export function EmergencyStop({
         </h1>
         <p className="m-0 text-[15px] leading-6 text-muted-foreground">
           {liveRuns === 0
-            ? 'No audit is running right now. Holding the button still stops any that start before you let go.'
+            ? 'No audit is running right now.'
             : `${audits(liveRuns)} ${liveRuns === 1 ? 'is' : 'are'} running right now. Every agent halts and nothing new is sent.`}
         </p>
       </div>

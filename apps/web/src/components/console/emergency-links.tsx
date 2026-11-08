@@ -83,7 +83,7 @@ export function EmergencyLinkCreator() {
               onClick={() => {
                 setValidity(v.key);
               }}
-              className={`inline-flex h-9 items-center justify-center rounded-[7px] px-4 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${validity === v.key ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(31,23,4,.08)]' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-[7px] px-2 text-[13px] sm:px-4 font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${validity === v.key ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(31,23,4,.08)]' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {v.label}
             </button>
