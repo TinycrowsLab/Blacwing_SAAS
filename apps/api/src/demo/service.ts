@@ -198,6 +198,7 @@ export function runDto(row: RunRow, concurrency: number = DEFAULT_HUNT_CONCURREN
     id: row.id,
     shortId: shortId(row.id),
     requestId: row.request_id,
+    assetId: row.asset_id,
     assetName: row.asset_name,
     state: row.state,
     paused: row.paused,
