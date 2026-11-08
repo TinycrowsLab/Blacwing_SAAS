@@ -746,7 +746,7 @@ const ActivityTable = memo(function ActivityTable({ rows }: { readonly rows: rea
   const matching = useMemo(() => (filter === 'All' ? rows : rows.filter((r) => passes(filter, r))), [rows, filter]);
   const shown = matching.slice(-limit).reverse();
   return (
-    <Card aria-labelledby="activity-h" as="section" className="self-start">
+    <Card aria-labelledby="activity-h" as="section">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 id="activity-h" className="text-sm font-semibold">
           Activity
