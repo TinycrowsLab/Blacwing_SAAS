@@ -369,19 +369,19 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
       });
     }
   }
-  // The store merges copies of one issue into a single finding: show it once (the proven copy, else the latest).
-  const byFinding = new Map<string, Candidate>();
+  // The store merges copies of one issue into a single finding: show it once (the proven copy, else the latest). Older
+  // runs did not record the id of a merged suspected copy, so a kept-back title stands for its copies too.
+  const keyOf = (c: Candidate): string =>
+    c.findingId ?? (c.status === 'suspected' || c.status === 'not_confirmed' ? `kept:${c.title}` : c.candidateId);
+  const byKey = new Map<string, Candidate>();
   const out: Candidate[] = [];
   for (const c of byId.values()) {
-    if (c.findingId === null) {
-      out.push(c);
-      continue;
-    }
-    const seen = byFinding.get(c.findingId);
+    const key = keyOf(c);
+    const seen = byKey.get(key);
     if (seen === undefined) out.push(c);
     else if (c.proven || !seen.proven) out.splice(out.indexOf(seen), 1, c);
     else continue;
-    byFinding.set(c.findingId, c);
+    byKey.set(key, c);
   }
   return out;
 }

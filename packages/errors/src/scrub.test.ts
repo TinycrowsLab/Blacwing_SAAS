@@ -85,7 +85,7 @@ describe('scrub', () => {
   });
 
   it('8. replaces prose, config and XML forms an agent writes (DVWA db password, api keys)', () => {
-    const cases: Array<[string, string]> = [
+    const cases: [string, string][] = [
       ['`db_password` `vulnerables`', '`db_password` `[redacted: password]`'],
       ['db_user `app` and db_password `vulnerables`', 'db_user `app` and db_password `[redacted: password]`'],
       ['db_password = vulnerables', 'db_password = [redacted: password]'],
