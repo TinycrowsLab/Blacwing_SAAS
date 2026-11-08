@@ -13,11 +13,11 @@ import {
   When,
 } from '../../../components/console/gate2-view';
 import { readApi } from '../../../components/console/results/load';
+import { bySeverity } from '../../../components/console/results/model';
 import { getViewer } from '../../../lib/auth';
 import { readDashboard } from '../../../lib/console-data';
 import { objectivePhrase } from '../../../lib/plan-text';
 import { findingSummarySchema, toSidebar } from '../../../lib/schemas';
-import { bySeverity } from '../../../components/console/results/model';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';

@@ -71,7 +71,16 @@ const PRIVATE_HOST =
 export type Care = 'passive' | 'active_safe';
 
 /** A loopback or private-network host ("localhost:3001", "10.0.0.5"): it can't be checked from outside. */
-const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
+export const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
+
+const FORBIDDEN_HOST = /^(169\.254(\.\d{1,3}){2}|metadata\.google\.internal|\[?fd00:ec2::254\]?)(:\d+)?$/i;
+/** Cloud metadata and link-local addresses: never testable, so never offered a way to verify. */
+export const isForbiddenHost = (host: string): boolean => FORBIDDEN_HOST.test(host);
+export const FORBIDDEN_MESSAGE = 'Cloud metadata and link-local addresses can never be tested.';
+
+/** A private or local address the operator has not listed as a lab: no proof can ever succeed for it. */
+export const unverifiableHost = (host: string, asset: Pick<Asset, 'verification'>): boolean =>
+  isPrivateHost(host) && !attestationAllowed(asset);
 
 /** Q4's recommendation from the host: gentle probing suits staging, local and lab hosts; a live site gets look-only. */
 export const recommendedCare = (host: string): Care =>

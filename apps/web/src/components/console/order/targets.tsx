@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { LocalTime } from './local-time';
-import { dayLabel, isVerified, originOf, recommendedProof, refreshSidebar } from './shared';
+import { dayLabel, FORBIDDEN_MESSAGE, isForbiddenHost, isVerified, originOf, recommendedProof, refreshSidebar, unverifiableHost } from './shared';
 import { type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { ensureTargetAction } from '../../../app/(console)/audits/actions';
-import { normalizeTarget } from '../../../lib/normalize';
+import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage, LinkButton } from '../design';
 import { ChipInput, PendingButton } from '../design-client';
 
@@ -58,6 +58,18 @@ function VerifyPanel({
       </div>
     );
   }
+  const host = new URL(originOf(asset)).host;
+  if (isForbiddenHost(host) || unverifiableHost(host, asset)) {
+    return (
+      <div className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5">
+        <InlineMessage tone="bad">
+          {isForbiddenHost(host)
+            ? FORBIDDEN_MESSAGE
+            : `${host} is a private or local address your Blackwing operator has not listed as a lab, so it cannot be verified or tested. Labs are matched on the exact spelling of the address, so ask your operator which one they listed.`}
+        </InlineMessage>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5">
       <p className="m-0 text-[13.5px] text-muted-foreground">
@@ -78,6 +90,13 @@ function VerifyPanel({
 }
 
 const MAX_ORIGINS = 50;
+const HTTP_BAD_REQUEST = 400;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_TOO_MANY = 429;
+const HTTP_SERVER_ERROR = 500;
+/** A client-side refusal of the address itself (not a signed-out session, a busy server or an outage). */
+const isRefusal = (status: number): boolean =>
+  status >= HTTP_BAD_REQUEST && status < HTTP_SERVER_ERROR && status !== HTTP_UNAUTHORIZED && status !== HTTP_TOO_MANY;
 
 /** Extra origins typed or pasted as a list, through the same forgiving normaliser as the site itself. */
 function addOrigins(raw: string, existing: readonly string[]): { values: readonly string[]; error: string | null } {
@@ -105,8 +124,13 @@ function AddTarget({
   const [text, setText] = useState('');
   const [showError, setShowError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The API refused this exact text: the preview must not claim it was understood. */
+  const [refusedFor, setRefusedFor] = useState<{ text: string; message: string } | null>(null);
   const [extra, setExtra] = useState<readonly string[] | null>(null);
-  const result = useNormalized(text);
+  const typed = useNormalized(text);
+  const refusal =
+    typed.ok && isForbiddenHost(typed.host) ? FORBIDDEN_MESSAGE : refusedFor?.text === text ? refusedFor.message : null;
+  const result: TargetResult = refusal === null ? typed : { ok: false, message: refusal };
   const add = async (): Promise<boolean> => {
     setError(null);
     const r = normalizeTarget(text);
@@ -125,7 +149,8 @@ function AddTarget({
       (extra ?? []).filter((o) => o !== r.origin),
     );
     if (!created.ok) {
-      setError(created.message);
+      if (isRefusal(created.status)) setRefusedFor({ text, message: created.message });
+      else setError(created.message);
       return false;
     }
     refreshSidebar();
@@ -147,7 +172,7 @@ function AddTarget({
         }}
         result={result}
         known={assets}
-        showError={showError || text.includes('://')}
+        showError={showError || refusal !== null || text.includes('://')}
         onBlur={() => {
           setShowError(text.trim() !== '');
         }}
@@ -185,7 +210,7 @@ function AddTarget({
       {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
       <div className="flex flex-wrap items-center gap-2.5">
         <span data-add-target className="contents">
-          <PendingButton onAction={add} disabled={text.trim() === ''} pendingLabel="Adding…">
+          <PendingButton onAction={add} disabled={text.trim() === '' || refusal !== null} pendingLabel="Adding…">
             Add target
           </PendingButton>
         </span>
@@ -326,6 +351,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
             const verified = isVerified(a);
             const origin = originOf(a);
             const expanded = open === a.id;
+            const blocked = isForbiddenHost(new URL(origin).host);
             return (
               <li
                 key={a.id}
@@ -363,6 +389,10 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                         <Icon name="check" size={12} />
                         Verified
                       </span>
+                    ) : blocked ? (
+                      <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-bad-soft px-2.5 text-[12px] font-medium text-bad">
+                        Blocked: can never be tested
+                      </span>
                     ) : (
                       <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 text-[12px] font-medium text-muted-foreground">
                         Not verified yet
@@ -389,6 +419,8 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     >
                       New audit
                     </LinkButton>
+                  ) : blocked ? (
+                    <span className={`hidden ${ACTION_WIDTH}`} aria-hidden="true" />
                   ) : (
                     <button
                       type="button"

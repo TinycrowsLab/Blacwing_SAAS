@@ -480,7 +480,16 @@ export function renderJson(
       ? (x as { id: string }).id
       : '';
   list.sort((a, b) => (order.get(idOf(a)) ?? 0) - (order.get(idOf(b)) ?? 0));
-  return JSON.stringify(scrubDeep({ ...raw, run, findings: list }), null, 2);
+  // One scope: the paths the run was pinned to leave out are the asset's excluded paths too.
+  const obj = (x: unknown): Record<string, unknown> =>
+    typeof x === 'object' && x !== null ? (x as Record<string, unknown>) : {};
+  const pinned = obj(obj(run.pins).asset).excludedPaths;
+  const asset = { ...obj(raw.asset) };
+  if (Array.isArray(pinned) && pinned.length > 0 && !(Array.isArray(asset.excludedPaths) && asset.excludedPaths.length > 0))
+    asset.excludedPaths = pinned;
+  // An empty list here means nothing was released, not that nothing was found.
+  const scope = { releasedFindingsOnly: true, releasedCount: list.length };
+  return JSON.stringify(scrubDeep({ ...raw, asset, run, scope, findings: list }), null, 2);
 }
 
 /** Released findings, most severe first (the order of the results page). */

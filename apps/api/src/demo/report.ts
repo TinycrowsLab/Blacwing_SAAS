@@ -21,6 +21,8 @@ export interface RunReportInput {
   readonly request: RequestRow;
   /** Released findings only. */
   readonly findings: readonly FindingRow[];
+  /** Proven findings of this run that no one has released yet (the list above is released only). */
+  readonly withheld?: number;
   /** The run's last `coverage.summary` data (null for old or unfinished runs). */
   readonly coverage?: Record<string, unknown> | null;
   /** How the run ended (`run.completed|failed|killed` event data), null while it runs. */
@@ -293,13 +295,22 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
 
   if (format === 'json') {
     // The verification token proves ownership of the asset; it does not belong in a shareable report.
-    const assetInfo = { ...assetDto(asset), verification: undefined };
+    // The scope the run actually used (asset plus plan exclusions, lab origins) is the one pinned at its start.
+    const pinned = (run.pins as { asset?: { labOrigins?: unknown; excludedPaths?: unknown } }).asset;
+    const labOrigins = Array.isArray(pinned?.labOrigins) ? pinned.labOrigins : [];
+    const assetInfo = {
+      ...assetDto(asset),
+      verification: undefined,
+      lab: asset.allowed_origins.length > 0 && labOrigins.length === asset.allowed_origins.length,
+      ...(Array.isArray(pinned?.excludedPaths) ? { excludedPaths: pinned.excludedPaths } : {}),
+    };
     const body = JSON.stringify(
       {
         run: { ...runDto(run), endReason: input.endReason ?? null },
         asset: assetInfo,
         request: requestDto(request),
         counts,
+        unreleasedProven: input.withheld ?? 0,
         coverage: input.coverage ?? null,
         findings: findings.map((f) => findingDto(f)),
       },

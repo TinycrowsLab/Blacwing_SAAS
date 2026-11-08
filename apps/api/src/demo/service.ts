@@ -1610,6 +1610,7 @@ export class DemoService {
     coverage: Record<string, unknown> | null;
     endReason: string | null;
     consoleOrigin: string;
+    withheld: number;
   }> {
     const run = await this.runRow(runId);
     const [rows, ends] = await Promise.all([
@@ -1621,6 +1622,7 @@ export class DemoService {
       run,
       ...(await this.runContext(run)),
       findings,
+      withheld: rows.filter((f) => f.status === 'confirmed').length,
       coverage: coverageOf(ends),
       endReason: endReasonOf(ends),
       consoleOrigin: this.webhook.consoleOrigin,

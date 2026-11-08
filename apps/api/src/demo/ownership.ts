@@ -154,7 +154,9 @@ export function refusalFor(origin: string, kind: OriginClass, policy: OriginPoli
     case 'private':
       return isLabOrigin(origin, policy)
         ? null
-        : `${origin} is a private or local address. It can be tested only when your Blackwing operator has listed it as a lab.`;
+        : `${origin} is a private or local address. It can be tested only when your Blackwing operator has listed it as a lab${
+            policy.labOrigins.length === 0 ? '.' : `, spelled exactly as listed: ${policy.labOrigins.join(', ')}.`
+          }`;
     case 'platform':
       return 'Blackwing cannot test its own console or API.';
     case 'forbidden':

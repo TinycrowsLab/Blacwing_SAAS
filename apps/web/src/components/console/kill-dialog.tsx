@@ -478,12 +478,14 @@ function KillDialog({
     .filter((g) => g.status === 'pending' || (g.decidedAt !== null && Date.parse(g.decidedAt) >= since));
   const measured = read.length === targets.length && read.every((h) => h.haltMs !== null);
   const slowest = Math.max(0, ...read.map((h) => h.haltMs ?? 0));
+  // Nothing had started (a queued audit): there was no agent to halt, so no halt time to claim.
+  const neverStarted = measured && slowest === 0;
   const ended = read.filter((h) => ENDED.includes(h.state)).length;
   const steps = [
     { label: 'Stop requested', detail: time(requestedAt), done: requestedAt !== null },
     {
       label: 'Agents halted',
-      detail: halted ? 'No new request is sent' : many ? `${ended} of ${targets.length} audits halted` : 'Waiting for the runner…',
+      detail: halted ? (neverStarted ? 'No agent had started, nothing was sent' : 'No new request is sent') : many ? `${ended} of ${targets.length} audits halted` : 'Waiting for the runner…',
       done: halted,
     },
     {
@@ -497,7 +499,7 @@ function KillDialog({
       done: halted && atStop.every((g) => g.status !== 'pending'),
     },
     {
-      label: measured ? `Halt measured in ${slowest.toLocaleString()} ms${many ? ' (the slowest)' : ''}` : 'Halt measured',
+      label: neverStarted ? 'Stopped before it started' : measured ? `Halt measured in ${slowest.toLocaleString()} ms${many ? ' (the slowest)' : ''}` : 'Halt measured',
       detail: '',
       done: halted && measured,
     },
@@ -519,7 +521,7 @@ function KillDialog({
           ? 'Pick the target to stop'
           : !live.loaded
         ? `${RING_LABEL[scope]} stops`
-        : `${plural(reachCount, 'audit')} of ${plural(live.runs.length, 'running audit')} ${reachCount === 1 ? 'stops' : 'stop'}`;
+        : `Stops ${reachCount} of ${plural(live.runs.length, 'running audit')}`;
   const choose = (s: Scope): void => {
     setScope(s);
     setTyped('');
@@ -667,7 +669,7 @@ function KillDialog({
                 {error}
               </p>
             )}
-            <div className="flex flex-col-reverse gap-2.5 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex flex-col-reverse gap-2.5 border-t border-border pt-4 max-sm:sticky max-sm:bottom-0 max-sm:bg-card max-sm:pb-2 sm:flex-row sm:items-center sm:justify-end">
               <span className="text-xs text-muted-foreground sm:mr-auto">Recorded in the ledger</span>
               <button type="button" onClick={onClose} className={buttonClass('secondary', 'h-11 px-5')}>
                 Keep running
@@ -754,6 +756,8 @@ function KillDialog({
                         ? 'Had already ended'
                         : h.haltMs === null
                           ? 'Halted'
+                          : h.haltMs === 0
+                            ? 'Stopped before it started'
                           : `Halted in ${h.haltMs.toLocaleString()} ms`}
                   </span>
                 </li>

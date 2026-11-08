@@ -474,11 +474,11 @@ export function useCountdown(
   };
 }
 
-/** The clock's colour by tone: gold, amber, then red with a slow pulse (reduced motion: no pulse). */
+/** The clock's colour by tone: gold, then bold amber, then bold red (never faded). */
 export const CLOCK_TONE = {
   normal: 'text-gold-ink',
-  warn: 'text-warn',
-  bad: 'text-bad motion-safe:animate-[bwpulse_1.2s_ease-in-out_infinite]',
+  warn: 'text-warn font-bold',
+  bad: 'text-bad font-bold',
 } as const;
 
 /**

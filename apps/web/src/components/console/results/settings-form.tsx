@@ -20,6 +20,9 @@ import { useSettledAction } from './triage';
 
 const HTTP_BAD_REQUEST = 400;
 
+/** Characters left at which the name counter appears. */
+const COUNTER_FROM = 10;
+
 export function WorkspaceNameForm({
   current,
   canEdit,
@@ -111,6 +114,13 @@ export function WorkspaceNameForm({
               <InlineMessage tone="ok">
                 Saved. Everyone in the workspace sees the new name.
               </InlineMessage>
+            ) : null}
+            {canEdit && name.trim().length > WORKSPACE_NAME_MAX - COUNTER_FROM ? (
+              <span
+                className={`text-[12px] ${name.trim().length > WORKSPACE_NAME_MAX ? 'text-bad' : 'text-muted-foreground'}`}
+              >
+                {name.trim().length} of {WORKSPACE_NAME_MAX} characters
+              </span>
             ) : null}
             {state.kind === 'idle' && !showError ? (
               <span className="text-[12.5px] text-muted-foreground">

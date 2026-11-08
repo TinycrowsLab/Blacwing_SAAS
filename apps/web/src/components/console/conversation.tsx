@@ -370,7 +370,13 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
       if (row !== undefined)
         return (
           <div data-gate2-row={row.id} data-gate2-pending={row.status === 'pending' ? row.id : undefined}>
-            <Gate2Card gate2={row} body={item.body} asRole={item.asRole} viewerName={p.viewerName} />
+            <Gate2Card
+              gate2={row}
+              body={item.body}
+              asRole={item.asRole}
+              viewerName={p.viewerName}
+              autoFocus={p.gate2.find((g) => g.status === 'pending')?.id === row.id}
+            />
             {/* The runner did not wait on this ask: say whether the allowed request was actually sent, and when. */}
             {item.nonBlocking && row.status === 'approved' ? (
               <p className="m-0 ml-8 mt-1.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">

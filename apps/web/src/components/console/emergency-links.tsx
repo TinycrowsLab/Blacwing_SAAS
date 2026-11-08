@@ -138,9 +138,13 @@ export function EmergencyLinkCreator() {
 }
 
 /** The links that still work, newest first, each with Revoke. */
-export function EmergencyLinkList({ links }: { readonly links: readonly EmergencyLink[] }) {
+export function EmergencyLinkList({ links: all }: { readonly links: readonly EmergencyLink[] }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // Revoking is one tap to arm and one to confirm; a revoked row leaves the list at once, before the refresh lands.
+  const [armed, setArmed] = useState<string | null>(null);
+  const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
+  const links = all.filter((l) => !gone.has(l.id));
   if (links.length === 0)
     return <p className="m-0 text-[13px] text-muted-foreground">No emergency link works right now.</p>;
   return (
@@ -159,16 +163,22 @@ export function EmergencyLinkList({ links }: { readonly links: readonly Emergenc
               </span>
             </span>
             <PendingButton
-              variant="secondary"
+              variant={armed === l.id ? 'primary' : 'secondary'}
               pendingLabel="Revoking…"
               className="h-9 px-3.5 text-[13px]"
               onAction={async () => {
+                if (armed !== l.id) {
+                  setArmed(l.id);
+                  return;
+                }
+                setArmed(null);
                 const r = await revokeEmergencyLinkAction(l.id);
-                setError(r.ok ? null : r.message);
+                setError(r.ok ? null : `${l.label ?? 'This link'}: ${r.message}`);
+                if (r.ok) setGone((g) => new Set(g).add(l.id));
                 router.refresh();
               }}
             >
-              Revoke
+              {armed === l.id ? 'Confirm revoke' : 'Revoke'}
             </PendingButton>
           </li>
         ))}
@@ -196,9 +206,13 @@ export function EmergencyContactForm({
   });
   const changed = name.trim() !== (saved?.name ?? '') || phone.trim() !== (saved?.phone ?? '');
   const invalid =
-    name.trim() === '' || phone.trim() === ''
+    name.trim() === '' && phone.trim() === ''
       ? 'Give a name and a phone number.'
-      : PHONE.test(phone.trim())
+      : phone.trim() === ''
+        ? 'Add a phone number too: Save stays off until both are filled.'
+        : name.trim() === ''
+          ? 'Add a contact name too: Save stays off until both are filled.'
+          : PHONE.test(phone.trim())
         ? null
         : 'Use digits, spaces and + ( ) - . only.';
 

@@ -389,6 +389,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     };
   }, [terminal, poll]);
 
+  // A run that just ended: the sidebar catches up now, not at its next poll.
+  const wasTerminal = useRef(terminal);
+  useEffect(() => {
+    if (terminal && !wasTerminal.current) window.dispatchEvent(new Event('bw:refresh'));
+    wasTerminal.current = terminal;
+  }, [terminal]);
+
   // The Stop dialog (and anything else that changes the run) asks for an immediate refresh, so the page behind the
   // halt view catches up at once instead of on the next poll.
   useEffect(() => {

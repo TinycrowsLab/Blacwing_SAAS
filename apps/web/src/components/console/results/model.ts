@@ -228,11 +228,18 @@ function claudeNotCovered(summary: string | null): string | null {
   if (at === -1) return null;
   const rest: string[] = [];
   for (const [i, line] of lines.slice(at).entries()) {
-    if (i > 0 && /^\s*#/.test(line)) break;
+    // The note ends at the next heading, however Claude marked it (#, a bold line, or a short "Title:" line): what
+    // follows is about confirmed, suspected or dismissed issues and must never reach a report.
+    if (i > 0 && (/^\s*#/.test(line) || /^\s*(\*\*|__)[^*_]+(\*\*|__):?\s*$/.test(line) || /^\s*[A-Z][^.:]{0,60}:\s*$/.test(line))) break;
     rest.push(line);
   }
   const text = scrub(rest.join('\n').trim());
-  return text === '' ? null : text.length > NOTE_MAX ? `${text.slice(0, NOTE_MAX)}…` : text;
+  if (text === '') return null;
+  if (text.length <= NOTE_MAX) return text;
+  // Clip at the end of a sentence or line, never mid-word.
+  const head = text.slice(0, NOTE_MAX);
+  const cut = Math.max(head.lastIndexOf('. '), head.lastIndexOf('\n'));
+  return cut > NOTE_MAX / 2 ? head.slice(0, cut + 1).trim() : `${head.slice(0, head.lastIndexOf(' '))}…`;
 }
 
 export interface NotTested {

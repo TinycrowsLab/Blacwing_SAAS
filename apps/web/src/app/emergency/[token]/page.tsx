@@ -1,6 +1,6 @@
 // Emergency stop (design 3b): opened from a link an administrator shared, with no login. Always dark, full screen. A
 // live link shows the workspace, how many audits run and the link's validity, and one hold-to-stop button. An expired,
-// revoked or unknown link reads the same ("This emergency link has expired") and shows only the workspace's own
+// revoked or unknown link reads the same ("This emergency link has expired or been revoked") and shows only the workspace's own
 // emergency contact, when an administrator set one.
 import { EmergencyFrame, EmergencyNotice, EmergencyStop } from '../../../components/console/emergency';
 import { ApiError, callEmergencyApi } from '../../../lib/api';
@@ -48,11 +48,11 @@ export default async function EmergencyPage({
       />
     );
   return (
-    <EmergencyFrame>
+    <EmergencyFrame badge>
       {view.status === 'expired' ? (
         <EmergencyNotice
-          eyebrow="Link expired"
-          title="This emergency link has expired"
+          eyebrow="Link expired or revoked"
+          title="This emergency link has expired or been revoked"
           contact={view.contact}
         >
           {view.contact === null
