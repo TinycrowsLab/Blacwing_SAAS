@@ -52,7 +52,8 @@ function blockList(
 }
 
 /** Link-local (cloud metadata 169.254.169.254) and unspecified addresses: never testable. */
-const FORBIDDEN = blockList(['169.254.0.0/16', '0.0.0.0/8'], ['fe80::/10'], ['::']);
+// NAT64 (64:ff9b::/96, 64:ff9b:1::/48) embeds an IPv4 address such as 169.254.169.254: refused the same way.
+const FORBIDDEN = blockList(['169.254.0.0/16', '0.0.0.0/8'], ['fe80::/10', '64:ff9b::/96', '64:ff9b:1::/48'], ['::']);
 
 /** Same ranges as apps/worker/src/run/preflight/address-guard.ts (copied: apps never import each other). */
 const PRIVATE = blockList(
@@ -69,7 +70,7 @@ const PRIVATE = blockList(
     '224.0.0.0/4',
     '240.0.0.0/4',
   ],
-  ['fc00::/7', 'fe80::/10', 'ff00::/8'],
+  ['fc00::/7', 'fe80::/10', 'ff00::/8', '64:ff9b::/96', '64:ff9b:1::/48'],
   ['::', '::1'],
 );
 

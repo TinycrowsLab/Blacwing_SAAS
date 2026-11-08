@@ -53,7 +53,7 @@ export function MobileBar({
           {children}
         </SheetContent>
       </Sheet>
-      <Link href="/" className="flex min-w-0 items-center gap-2 px-1 text-foreground no-underline">
+      <Link href="/" prefetch={false} className="flex min-w-0 items-center gap-2 px-1 text-foreground no-underline">
         <img src="/brand/crow-shield.png" alt="" width={20} height={20} className="object-contain" />
         <span className="text-[14.5px] font-semibold">Blackwing</span>
       </Link>
@@ -61,6 +61,7 @@ export function MobileBar({
       {pending > 0 ? (
         <Link
           href="/decisions"
+          prefetch={false}
           title="Decisions waiting for you, across your audits"
           // A 32 px pill with a 44 px hit area (spec §9).
           className="relative inline-flex h-8 items-center gap-1.5 rounded-full bg-gold px-3 text-[12.5px] font-semibold text-on-gold no-underline shadow-[inset_0_0_0_1px_rgba(138,99,16,.28)] before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-['']"

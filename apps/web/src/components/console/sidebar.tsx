@@ -363,7 +363,13 @@ function SidebarBody({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-1">
       <div className="flex items-center gap-2.5 px-2 pb-3.5 pr-10 md:pr-2">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5 text-foreground no-underline">
+        <Link
+          href="/"
+          prefetch={false}
+          onMouseEnter={() => {
+            router.prefetch('/');
+          }}
+          className="flex shrink-0 items-center gap-2.5 text-foreground no-underline">
           <img src="/brand/crow-shield.png" alt="" width={24} height={24} className="object-contain" />
           <span className="text-[16px] font-semibold tracking-[-0.01em]">Blackwing</span>
         </Link>
@@ -375,6 +381,10 @@ function SidebarBody({
       </div>
       <Link
         href="/audits/new"
+        prefetch={false}
+        onMouseEnter={() => {
+          router.prefetch('/audits/new');
+        }}
         className="mb-2 flex h-[42px] items-center gap-2.5 rounded-[10px] border border-border bg-card px-3 text-[13.5px] font-medium text-foreground no-underline hover:border-gold-line hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
       >
         <Icon name="plus" size={16} />

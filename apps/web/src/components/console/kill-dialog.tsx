@@ -641,7 +641,7 @@ function KillDialog({
             )}
             <p className="m-0 text-[13px] leading-5 text-muted-foreground">
               Every agent in scope halts now. Requests already on the wire may finish; nothing new is sent. Pending
-              decisions are denied. Findings so far are kept.
+              decisions close unanswered, so nothing they ask for is sent. Findings so far are kept.
             </p>
             {(scope === 'target' || scope === 'workspace') && word !== '' ? (
               <label className="flex flex-col gap-2 text-[13.5px] font-medium">

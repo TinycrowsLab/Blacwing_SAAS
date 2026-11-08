@@ -348,8 +348,10 @@ function DecisionReceipt({
   const human =
     gate2.status === 'approved' || (gate2.status === 'denied' && gate2.decidedBy !== null);
   const who = gate2.decidedBy === null || gate2.decidedBy === viewerName ? 'you' : gate2.decidedBy;
-  // `denied` without a person: the audit stopped. `expired`, or still `pending` past the deadline: nobody answered.
-  const stopped = gate2.status === 'denied';
+  // Closed by the run itself (it ended, was stopped, or the worker restarted): nobody answered, nobody denied it.
+  const stopped =
+    (gate2.status === 'denied' && gate2.decidedBy === null) ||
+    (gate2.closeReason !== null && gate2.closeReason !== 'deadline');
   const title = human ? (
     gate2.status === 'approved' ? (
       <>
@@ -362,9 +364,13 @@ function DecisionReceipt({
       </>
     )
   ) : (
-    <>
-      Denied automatically at {time} {stopped ? '(the audit stopped)' : '(no answer)'}
-    </>
+    stopped ? (
+      <>
+        Not sent: {gate2.closeReason === 'killed' ? 'the audit was stopped before anyone answered' : 'not answered before the audit ended'} ({time})
+      </>
+    ) : (
+      <>Denied automatically at {time} (no answer)</>
+    )
   );
   if (line)
     return (

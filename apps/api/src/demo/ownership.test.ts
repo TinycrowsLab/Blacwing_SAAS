@@ -34,6 +34,8 @@ describe('classifyOrigin', () => {
     ['https://169.254.169.254', 'forbidden'],
     ['http://metadata.google.internal', 'forbidden'],
     ['http://[fe80::1]', 'forbidden'],
+    ['http://[64:ff9b::a9fe:a9fe]', 'forbidden'],
+    ['http://[::ffff:a9fe:a9fe]', 'forbidden'],
     ['http://0.0.0.0:8080', 'forbidden'],
     ['http://rebind.example.com', 'forbidden'],
     ['http://127.0.0.1:3001', 'private'],

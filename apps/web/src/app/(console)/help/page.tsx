@@ -55,7 +55,7 @@ const GATES: readonly { name: string; term: string; body: string }[] = [
   {
     name: 'Stop testing',
     term: 'kill switch',
-    body: 'Stops every agent at once. Requests already on the wire may finish; nothing new is sent. Open decisions are denied and findings so far are kept.',
+    body: 'Stops every agent at once. Requests already on the wire may finish; nothing new is sent. Open decisions close unanswered (nothing they ask for is sent) and findings so far are kept.',
   },
 ];
 

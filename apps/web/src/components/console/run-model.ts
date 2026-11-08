@@ -679,6 +679,9 @@ function callOf(e: RunEvent): CallRow {
   };
 }
 
+/** What the Agent SDK returns to a delegation that was interrupted (the kill switch aborts the run). */
+const SDK_INTERRUPT = /doesn't want to (take this action|proceed)|STOP what you are doing|\[Request interrupted/i;
+
 /**
  * The run as a conversation (spec §5.2 item 5). A delegation opens a thread (Planner → specialist); the specialist's
  * messages, calls, tool chips, its candidates' validator turns and its Gate 2 requests nest under the newest open
@@ -793,7 +796,9 @@ export function conversationItems(
         const id = str(d.toolUseId);
         const thread =
           (id === '' ? undefined : threads.find((t) => t.toolUseId === id)) ?? threads.find((t) => t.to === lane && !t.replied);
-        const text = str(d.text);
+        // The SDK's interrupt text after Stop testing is not the agent's error: it stopped because you said so.
+        const interrupted = d.isError === true && SDK_INTERRUPT.test(str(d.text));
+        const text = interrupted ? 'Stopped by you.' : str(d.text);
         const segments = thread === undefined ? [] : threads.filter((t) => t.root === thread.root);
         const last = (segments.length === 0 ? items : segments.flatMap((t) => t.children)).findLast(
           (c): c is TurnItem => c.type === 'turn' && c.agent === lane,
@@ -802,9 +807,9 @@ export function conversationItems(
         if (last !== undefined && same !== null) {
           last.text = same;
           last.reply = true;
-          last.isError = d.isError === true;
+          last.isError = d.isError === true && !interrupted;
         } else {
-          appendTo(thread, { type: 'turn', key: `r${e.seq}`, seq: e.seq, at: e.at, agent: lane, text, reply: true, isError: d.isError === true, calls: [], tools: [] });
+          appendTo(thread, { type: 'turn', key: `r${e.seq}`, seq: e.seq, at: e.at, agent: lane, text, reply: true, isError: d.isError === true && !interrupted, calls: [], tools: [] });
         }
         for (const t of thread === undefined ? [] : threads.filter((x) => x.root === thread.root)) t.replied = true;
         turnOf.delete(lane);

@@ -16,7 +16,8 @@ const V4_CIDRS = [
   '224.0.0.0/4',
   '240.0.0.0/4',
 ] as const;
-const V6_CIDRS = ['fc00::/7', 'fe80::/10', 'ff00::/8'] as const;
+// NAT64 prefixes (well-known and local-use) embed an IPv4 address, such as the metadata one: never a public target.
+const V6_CIDRS = ['fc00::/7', 'fe80::/10', 'ff00::/8', '64:ff9b::/96', '64:ff9b:1::/48'] as const;
 
 const blocked = new BlockList();
 for (const cidr of V4_CIDRS) {

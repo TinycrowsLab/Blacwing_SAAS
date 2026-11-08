@@ -211,7 +211,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
       if (isHalted()) break;
       const next = nextRound(ctx, { round, spentUsd: router.totalCost, elapsedS: (deps.now() - startedAt) / MS_PER_S });
       if (next === null) break;
-      await log.emit('run.round', 'plan', next.message, { round: round + 1, cases: next.cases });
+      await log.emit('run.continued', 'plan', next.message, { round: round + 1, untried: next.cases, widen: next.widen, approved: next.approved });
       prompt = next.prompt;
     }
   } catch (error) {
@@ -267,7 +267,7 @@ export async function holdForAsks(ctx: HuntContext, halted: () => boolean): Prom
 export function nextRound(
   ctx: HuntContext,
   at: { round: number; spentUsd: number; elapsedS: number },
-): { prompt: string; message: string; cases: string[] } | null {
+): { prompt: string; message: string; cases: string[]; widen: boolean; approved: number } | null {
   const { run, state } = ctx;
   if (at.round >= MAX_ROUNDS) return null;
   if (run.budgetRequests - state.requestsUsed < run.budgetRequests * MIN_LEFT_FRACTION) return null;
@@ -290,7 +290,7 @@ export function nextRound(
   ].filter((part) => part !== '').join('\n\n');
   const n = untried.length + approved.length;
   const message = n === 0 ? 'Blackwing asked the team to widen the plan before finishing' : `Blackwing handed ${n} untried item${n === 1 ? '' : 's'} back to the team`;
-  return { prompt, message, cases: untried.map(([id]) => id) };
+  return { prompt, message, cases: untried.map(([id]) => id), widen, approved: approved.length };
 }
 
 /** Decides how a run that was not killed ended. */

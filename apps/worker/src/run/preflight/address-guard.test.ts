@@ -22,6 +22,8 @@ describe('isDisallowedAddress', () => {
     'ff02::1',
     '::ffff:127.0.0.1',
     '::ffff:7f00:1',
+    '64:ff9b::a9fe:a9fe',
+    '64:ff9b:1::a00:1',
     'not-an-ip',
     '',
   ])('blocks %s', (address) => {

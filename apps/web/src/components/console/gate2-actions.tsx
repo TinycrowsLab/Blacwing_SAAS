@@ -272,7 +272,9 @@ export function Gate2Actions({
     return true;
   };
 
-  // The confirm button (and a failure under it) is always on screen, even when the card sits low on the page.
+  // The confirm button (and a failure under it) is always on screen, even when the card sits low on the page, and
+  // again whenever the reason (a chip, a long scope note) grows the card. Its scroll margin clears the floating
+  // "more decisions" strip at the bottom of the conversation.
   useEffect(() => {
     if (sheet || (!allowing && failed === null)) return;
     const frame = window.requestAnimationFrame(() => {
@@ -281,7 +283,7 @@ export function Gate2Actions({
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [allowing, failed, sheet]);
+  }, [allowing, failed, sheet, reason]);
 
   // Read once: a prop change (a list refresh) must never move the focus onto another request's Deny.
   const focusOnMount = useRef(autoFocus);
@@ -420,7 +422,7 @@ export function Gate2Actions({
               title={enough ? undefined : 'Write a reason of at least 8 characters first'}
               stayPending
               onAction={() => decide('approve')}
-              className={sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-10 w-full'}
+              className={sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-10 w-full scroll-mb-16'}
             >
               Allow for this run
             </PendingButton>

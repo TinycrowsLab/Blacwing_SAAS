@@ -104,6 +104,9 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
       const status = str(d.status);
       const what = requestLabel(ctx.request);
       if (status === 'approved') return `You allowed ${what} for this run.`;
+      const closedBy = str(d.reason);
+      if (closedBy === 'run_ended' || closedBy === 'killed')
+        return `${what} was not sent: nobody answered before the audit ${closedBy === 'killed' ? 'was stopped' : 'ended'}.`;
       if (status === 'expired') {
         const s = ctx.gate2TimeoutS;
         return s === undefined
@@ -135,7 +138,17 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
     }
     case 'run.continued': {
       const n = Array.isArray(d.untried) ? d.untried.length : 0;
-      return `Claude went back for ${n} untried test ${n === 1 ? 'case' : 'cases'}.`;
+      const allowed = num(d.approved) ?? 0;
+      const parts = [
+        n === 0 ? null : `${n} untried test ${n === 1 ? 'case' : 'cases'}`,
+        allowed === 0 ? null : `${allowed} ${allowed === 1 ? 'request' : 'requests'} you allowed`,
+      ].filter((p): p is string => p !== null);
+      if (parts.length > 0) return `Blackwing sent the team back for ${parts.join(' and ')}.`;
+      return d.widen === true ? 'Blackwing asked the team to widen a narrow plan before finishing.' : null;
+    }
+    case 'run.holding': {
+      const n = Array.isArray(d.gate2Ids) ? d.gate2Ids.length : 0;
+      return `The team is done for now. Blackwing keeps the audit open for your answer on ${n === 1 ? 'the request above' : `${n} requests`}; what you allow is sent before it ends.`;
     }
     case 'run.failed':
       return `The run stopped with an error: ${str(d.reason) ?? 'unknown'}. Findings so far are kept.`;
