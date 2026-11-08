@@ -512,7 +512,11 @@ function KillDialog({
   const caption =
     scope === null
       ? 'Choose how far the stop reaches'
-      : !live.loaded
+      : scope === 'run' && chosen === undefined
+        ? 'Pick the audit to stop'
+        : scope === 'target' && anchorAsset === null
+          ? 'Pick the target to stop'
+          : !live.loaded
         ? `${RING_LABEL[scope]} stops`
         : `${plural(reachCount, 'audit')} of ${plural(live.runs.length, 'running audit')} ${reachCount === 1 ? 'stops' : 'stop'}`;
   const choose = (s: Scope): void => {
@@ -638,11 +642,11 @@ function KillDialog({
               Every agent in scope halts now. Requests already on the wire may finish; nothing new is sent. Pending
               decisions are denied. Findings so far are kept.
             </p>
-            {scope === 'target' || scope === 'workspace' ? (
+            {(scope === 'target' || scope === 'workspace') && word !== '' ? (
               <label className="flex flex-col gap-2 text-[13.5px] font-medium">
                 <span>
                   Type{' '}
-                  <code className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[12.5px]">{word === '' ? '…' : word}</code>{' '}
+                  <code className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[12.5px]">{word}</code>{' '}
                   to confirm
                 </span>
                 <input
