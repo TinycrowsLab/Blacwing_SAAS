@@ -51,21 +51,15 @@ export class FakeStore implements HuntStore {
       entry.closeReason = reason;
       if (status === 'expired') {
         const { row } = entry;
-        this.ledger.push({ action: 'gate2.expired', targetId: id, payload: { method: row.method, url: row.url, deadlineAt: row.deadlineAt.toISOString() } });
+        this.ledger.push({ action: 'gate2.expired', targetId: id, payload: { method: row.method, url: row.url.split(/[?#]/, 1)[0] ?? '', reason, deadlineAt: row.deadlineAt.toISOString() } });
       }
     }
     return Promise.resolve(entry?.status ?? status);
   }
-  denyPendingGate2(_runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
+  async closePendingGate2(_runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
     const ids: string[] = [];
-    for (const [id, entry] of this.gate2) {
-      if (entry.status === 'pending') {
-        entry.status = 'denied';
-        entry.closeReason = reason;
-        ids.push(id);
-      }
-    }
-    return Promise.resolve(ids);
+    for (const [id, entry] of this.gate2) if (entry.status === 'pending' && (await this.closeGate2(id, 'expired', reason)) === 'expired') ids.push(id);
+    return ids;
   }
   insertFinding(_run: HuntRun, row: FindingRow): Promise<string | null> {
     const existing = this.findings.findIndex((f) => f.fingerprint === row.fingerprint);

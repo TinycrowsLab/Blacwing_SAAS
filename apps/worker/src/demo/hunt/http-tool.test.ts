@@ -242,8 +242,9 @@ describe('non-blocking Gate 2', () => {
     const { ctx, store } = setup();
     await sendRequest(ctx, 'authz-specialist', { method: 'POST', url: 'https://t.example/api/x' }, opts);
     await closePendingAsks(ctx, 'killed');
-    expect([...store.gate2.values()].map((g) => g.status)).toEqual(['denied']);
-    expect(store.events.at(-1)).toMatchObject({ kind: 'gate2.decided', data: { status: 'denied', reason: 'killed' } });
+    expect([...store.gate2.values()].map((g) => g.status)).toEqual(['expired']);
+    expect(store.ledger.at(-1)).toMatchObject({ action: 'gate2.expired', payload: { reason: 'killed', url: 'https://t.example/api/x' } });
+    expect(store.events.at(-1)).toMatchObject({ kind: 'gate2.decided', data: { status: 'expired', reason: 'killed' } });
     expect([...ctx.state.asks.values()][0]?.closedUnanswered).toBe(true);
     await closePendingAsks(ctx, 'run_ended');
     expect(kinds(store).filter((k) => k === 'gate2.decided')).toHaveLength(1);

@@ -59,7 +59,7 @@ export interface Gate2Row {
 }
 
 export type Gate2Status = 'pending' | 'approved' | 'denied' | 'expired';
-export type Gate2CloseReason = 'deadline' | 'run_ended' | 'killed';
+export type Gate2CloseReason = 'deadline' | 'run_ended' | 'killed' | 'worker_restarted';
 
 export interface FindingRow {
   readonly id: string;
@@ -136,8 +136,8 @@ export interface HuntStore {
   readGate2(id: string): Promise<{ status: Gate2Status; decidedBy: string | null }>;
   /** Moves a still-pending request to `status` with `reason`; returns the status it ends with. An expiry is ledgered. */
   closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status>;
-  /** Denies every pending request of the run (`close_reason` = reason); returns their ids. */
-  denyPendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]>;
+  /** Closes every pending request of the run as `expired` (no person answered; `close_reason` = reason), each ledgered; returns their ids. */
+  closePendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]>;
   /** Returns the id of the inserted row (a proven row also upgrades a suspected one), or null for a duplicate. */
   insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
   /** Records the result of the webhook POST for a released finding. */

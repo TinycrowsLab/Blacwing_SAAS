@@ -71,7 +71,7 @@ describe('pgHuntStore request status (single-use Gate 1 approvals)', () => {
     const stale = await pgHuntStore({ query } as unknown as pg.Pool).failStaleRuns();
     expect(stale).toEqual([{ id: 'run-1', requestsUsed: 3, costUsd: 0.5, findings: 1 }]);
     const sql = query.mock.calls.map((c) => String(c[0])).join('\n');
-    expect(sql).toContain("close_reason = 'worker_restarted'");
+    expect(sql).toContain("SELECT id FROM demo.gate2_requests WHERE run_id = ANY($1) AND status = 'pending'");
     expect(sql).toContain("UPDATE demo.assessment_requests SET status = 'failed'");
     expect(sql).not.toContain("'approved'");
   });
@@ -95,8 +95,7 @@ describe('pgHuntStore Gate 2 and findings columns', () => {
     await store.insertGate2(run, { id: 'g1', agent: 'a', method: 'POST', url: 'u', pathKey: 'k', reason: 'r', whyOutside: 'w', deadlineAt: new Date(0), body: '{"a":1}', asRole: 'alice' });
     expect(String(query.mock.calls[0]?.[0])).toContain('request_body, as_role');
     expect((query.mock.calls[0]?.[1] as unknown[]).slice(-2)).toEqual(['{"a":1}', 'alice']);
-    await expect(store.denyPendingGate2('run-1', 'killed')).resolves.toEqual(['g1']);
-    expect(query.mock.calls[1]?.[1]).toEqual(['run-1', 'killed']);
+    expect(query.mock.calls.length).toBe(1);
   });
 
   it('records an expiry on the ledger in the same transaction, chained after the last entry', async () => {
@@ -119,7 +118,7 @@ describe('pgHuntStore Gate 2 and findings columns', () => {
     const [, tenant, seq, actorName, action, targetType, targetId, payload, prevHash, hash, at] = insert[1];
     expect([tenant, seq, actorName, action, targetType, targetId, prevHash]).toEqual(['t', 42, 'Blackwing', 'gate2.expired', 'gate2', 'g1', prev]);
     const fields = { seq: 42, at: at as Date, actorId: null, actorName: 'Blackwing', action: 'gate2.expired', targetType: 'gate2', targetId: 'g1', payload: JSON.parse(payload as string) as DemoAuditPayload };
-    expect(JSON.parse(payload as string)).toEqual({ runId: 'run-1', method: 'POST', url: 'http://127.0.0.1:3001/api/Users', deadlineAt: deadline.toISOString() });
+    expect(JSON.parse(payload as string)).toEqual({ runId: 'run-1', method: 'POST', url: 'http://127.0.0.1:3001/api/Users', reason: 'deadline', deadlineAt: deadline.toISOString() });
     expect(hash).toBe(demoAuditHash(prev, fields));
     expect(release).toHaveBeenCalledOnce();
   });

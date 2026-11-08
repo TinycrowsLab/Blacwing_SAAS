@@ -121,6 +121,36 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
     const row = r.rows[0];
     return { status: row?.status ?? 'denied', decidedBy: row?.decided_by ?? null };
   };
+  /** The close and its `gate2.expired` ledger entry commit together: an expiry is never unrecorded. */
+  const closeGate2 = async (id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status> => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const moved = await client.query<{ tenant_id: string; run_id: string; method: string; url: string; deadline_at: Date }>(
+        `UPDATE demo.gate2_requests SET status = $2, decided_at = now(), close_reason = $3 WHERE id = $1 AND status = 'pending'
+         RETURNING tenant_id, run_id, method, url, deadline_at`,
+        [id, status, reason],
+      );
+      const row = moved.rows[0];
+      if (row !== undefined && status === 'expired') {
+        await appendLedger(client, row.tenant_id, 'gate2.expired', 'gate2', id, {
+          runId: row.run_id,
+          method: row.method,
+          // Origin and path only: the immutable ledger never keeps a query value the agent typed (a password).
+          url: row.url.split(/[?#]/, 1)[0] ?? '',
+          reason,
+          deadlineAt: row.deadline_at.toISOString(),
+        });
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+    return (await gate2Status(id)).status;
+  };
 
   return {
     async claimQueuedRun(): Promise<HuntRun | null> {
@@ -154,10 +184,8 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         `UPDATE demo.finding_retests SET status = 'failed', finished_at = now(),
            detail = jsonb_build_object('reason', 'The worker restarted during the retest.') WHERE status = 'running'`,
       );
-      await pool.query(
-        "UPDATE demo.gate2_requests SET status = 'denied', decided_at = now(), close_reason = 'worker_restarted' WHERE run_id = ANY($1) AND status = 'pending'",
-        [ids],
-      );
+      const asks = await pool.query<{ id: string }>("SELECT id FROM demo.gate2_requests WHERE run_id = ANY($1) AND status = 'pending'", [ids]);
+      for (const ask of asks.rows) await closeGate2(ask.id, 'expired', 'worker_restarted');
       // Terminal: the approval was used by this run; another run needs a new Gate 1 decision.
       await pool.query("UPDATE demo.assessment_requests SET status = 'failed' WHERE id = ANY($1)", [r.rows.map((row) => row.request_id)]);
       return r.rows.map((row) => ({ id: row.id, requestsUsed: row.requests_used, costUsd: Number(row.cost_usd), findings: row.findings }));
@@ -214,40 +242,13 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       );
     },
     readGate2: gate2Status,
-    /** The close and its `gate2.expired` ledger entry commit together: an expiry is never unrecorded. */
-    async closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status> {
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        const moved = await client.query<{ tenant_id: string; run_id: string; method: string; url: string; deadline_at: Date }>(
-          `UPDATE demo.gate2_requests SET status = $2, decided_at = now(), close_reason = $3 WHERE id = $1 AND status = 'pending'
-           RETURNING tenant_id, run_id, method, url, deadline_at`,
-          [id, status, reason],
-        );
-        const row = moved.rows[0];
-        if (row !== undefined && status === 'expired') {
-          await appendLedger(client, row.tenant_id, 'gate2.expired', 'gate2', id, {
-            runId: row.run_id,
-            method: row.method,
-            url: row.url,
-            deadlineAt: row.deadline_at.toISOString(),
-          });
-        }
-        await client.query('COMMIT');
-      } catch (error) {
-        await client.query('ROLLBACK').catch(() => undefined);
-        throw error;
-      } finally {
-        client.release();
-      }
-      return (await gate2Status(id)).status;
-    },
-    async denyPendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
-      const r = await pool.query<{ id: string }>(
-        "UPDATE demo.gate2_requests SET status = 'denied', decided_at = now(), close_reason = $2 WHERE run_id = $1 AND status = 'pending' RETURNING id",
-        [runId, reason],
-      );
-      return r.rows.map((row) => row.id);
+    closeGate2,
+    /** Asks the run closes itself (run end, kill): `expired`, not `denied` (no person said no), each on the ledger. */
+    async closePendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
+      const r = await pool.query<{ id: string }>("SELECT id FROM demo.gate2_requests WHERE run_id = $1 AND status = 'pending'", [runId]);
+      const closed: string[] = [];
+      for (const { id } of r.rows) if ((await closeGate2(id, 'expired', reason)) === 'expired') closed.push(id);
+      return closed;
     },
     async insertFinding(run: HuntRun, row: FindingRow): Promise<string | null> {
       const proven = row.status !== 'suspected';

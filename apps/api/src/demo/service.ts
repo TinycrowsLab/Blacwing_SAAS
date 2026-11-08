@@ -1440,7 +1440,8 @@ export class DemoService {
       decision,
       reason,
       method: row.method,
-      url: row.url,
+      // The immutable ledger keeps origin and path only: a query can carry a value the agent typed (a password).
+      url: row.url.split(/[?#]/, 1)[0] ?? '',
       runId: row.run_id,
       selfApproved,
       override: selfApproved ? 'admin' : null,

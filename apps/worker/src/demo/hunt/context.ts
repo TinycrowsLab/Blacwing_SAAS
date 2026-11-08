@@ -42,6 +42,8 @@ export interface HuntDeps {
 export interface CaseState {
   readonly title: string;
   readonly agent: string;
+  /** The endpoint the planner named for it. */
+  readonly target?: string;
   status: string;
   note: string | null;
   /** Requests actually sent with this case_id, and candidates submitted for it. */
@@ -63,6 +65,14 @@ export interface Gate2Ask {
   status: Gate2Status;
   /** Set when the run closed the ask itself (no person answered before it ended). */
   closedUnanswered?: boolean;
+  /** Set once the approved request went out. */
+  sent?: boolean;
+}
+
+/** Runner-owned case status: the model's skip or block stands (with its note); otherwise only sent requests or candidates count. */
+export function caseOutcome(testCase: CaseState): 'executed' | 'skipped' | 'blocked' | 'not_run' {
+  if (testCase.status === 'skipped' || testCase.status === 'blocked') return testCase.status;
+  return testCase.requests > 0 || testCase.candidates > 0 ? 'executed' : 'not_run';
 }
 
 export interface HuntState {

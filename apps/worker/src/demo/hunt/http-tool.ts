@@ -268,12 +268,12 @@ export async function watchGate2(ctx: HuntContext): Promise<void> {
   }
 }
 
-/** Run end: every ask still pending is denied in the store and closed here, one `gate2.decided` each. */
+/** Run end: every ask still pending is closed unanswered (`expired`, ledgered) in the store, one `gate2.decided` each. */
 export async function closePendingAsks(ctx: HuntContext, reason: 'run_ended' | 'killed'): Promise<void> {
-  for (const id of await ctx.store.denyPendingGate2(ctx.run.id, reason)) {
+  for (const id of await ctx.store.closePendingGate2(ctx.run.id, reason)) {
     const ask = ctx.state.asks.get(id);
-    if (ask === undefined) await ctx.log.emit('gate2.decided', 'gate2', 'Gate 2 denied: the run ended', { gate2Id: id, status: 'denied', reason });
-    else await settleAsk(ctx, ask, 'denied', { reason });
+    if (ask === undefined) await ctx.log.emit('gate2.decided', 'gate2', 'Gate 2 not answered before the audit ended', { gate2Id: id, status: 'expired', reason });
+    else await settleAsk(ctx, ask, 'expired', { reason });
   }
 }
 
@@ -396,6 +396,8 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
       ...(gate2Id === undefined ? {} : { gate2Id }),
     });
     await countSent(ctx, agent, account?.role, options.caseId);
+    const approvedAsk = gate2Id === undefined ? undefined : ctx.state.asks.get(gate2Id);
+    if (approvedAsk !== undefined && agent !== 'validator') approvedAsk.sent = true;
     return { ok: true, exchangeId, status: response.status, headers: responseHeaders, body, bodyBytes: bytes, request };
   } catch (error) {
     const reason = error instanceof Error ? error.name : 'unknown';

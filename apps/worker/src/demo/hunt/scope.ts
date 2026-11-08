@@ -31,7 +31,7 @@ export function stateChangeHint(method: string, url: URL): string | null {
   const segments = (decodeForms(url.pathname).at(-1) ?? url.pathname).split('/');
   const word = STATE_CHANGE_WORDS.exec([...segments, ...keys].join('/'))?.[1];
   if (word !== undefined) return word.toLowerCase();
-  const action = [...words(segments.findLast((s) => s !== '') ?? ''), ...keys.flatMap(words)].find((w) => ACTION_WORDS.has(w));
+  const action = [...words(segments.findLast((s) => s !== '') ?? ''), ...keys.flatMap((key) => words(key))].find((w) => ACTION_WORDS.has(w));
   return action ?? null;
 }
 
@@ -82,13 +82,9 @@ function decodeOnce(path: string): string | null {
   try {
     return decodeURIComponent(path);
   } catch {
-    let invalid = false;
-    const out = path.replace(ESCAPE, (_, hex: string) => {
-      const code = Number.parseInt(hex, 16);
-      if (code >= FIRST_NON_ASCII) invalid = true;
-      return String.fromCharCode(code);
-    });
-    return invalid ? null : out;
+    const byte = (hex: string): number => Number.parseInt(hex, 16);
+    if ([...path.matchAll(ESCAPE)].some((m) => byte(m[1] ?? '') >= FIRST_NON_ASCII)) return null;
+    return path.replace(ESCAPE, (_, hex: string) => String.fromCharCode(byte(hex)));
   }
 }
 

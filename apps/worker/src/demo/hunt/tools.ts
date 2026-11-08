@@ -8,7 +8,7 @@ import { SUBAGENT_NAMES } from './prompts.js';
 import { buildFindingRow, candidateSchema, validateCandidate } from './validator.js';
 import { deliverRelease } from './webhook.js';
 
-import type { HuntContext } from './context.js';
+import { caseOutcome, type HuntContext } from './context.js';
 import type { FindingRow } from './types.js';
 
 const LIST_LIMIT = 100;
@@ -86,7 +86,7 @@ export function huntTools(ctx: HuntContext) {
     },
     async (args) => {
       for (const c of args.cases) {
-        if (!ctx.state.cases.has(c.id)) ctx.state.cases.set(c.id, { title: c.title, agent: c.agent, status: 'proposed', note: null, requests: 0, candidates: 0 });
+        if (!ctx.state.cases.has(c.id)) ctx.state.cases.set(c.id, { title: c.title, agent: c.agent, target: c.target, status: 'proposed', note: null, requests: 0, candidates: 0 });
       }
       const total = ctx.state.cases.size;
       const by = args.agent ?? DEFAULT_AGENT;
@@ -185,6 +185,12 @@ export function huntTools(ctx: HuntContext) {
     },
     async (args) => {
       const agent = args.agent ?? DEFAULT_AGENT;
+      // A wait while this agent still has cases to run stalls the whole run: refuse it and name them.
+      const waitingFor = ctx.state.asks.get(args.gate2Id)?.caseId ?? null;
+      const open = [...ctx.state.cases].filter(([id, c]) => c.agent === agent && id !== waitingFor && caseOutcome(c) === 'not_run').map(([id]) => id);
+      if (open.length > 0) {
+        return text(`Not waiting: you still have test cases to run (${open.join(', ')}). Run them first; the decision arrives as a notice. Call await_decision only when nothing else is left.`, takeNotices(ctx, agent, args.gate2Id));
+      }
       const status = await awaitDecision(ctx, args.gate2Id, (args.max_seconds ?? DEFAULT_AWAIT_S) * MS_PER_S);
       const notices = takeNotices(ctx, agent, args.gate2Id);
       if (status === 'unknown') return text(`Unknown Gate 2 id ${args.gate2Id}.`, notices);

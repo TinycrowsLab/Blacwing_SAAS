@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { query, type HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 
-import { EventLog, newHuntState, type CaseState, type Gate2Ask, type HuntContext, type HuntDeps, type Logger } from './context.js';
+import { caseOutcome, EventLog, newHuntState, type CaseState, type Gate2Ask, type HuntContext, type HuntDeps, type Logger } from './context.js';
 import { closePendingAsks, GATE2_POLL_MS, watchGate2 } from './http-tool.js';
 import { MessageRouter } from './messages.js';
 import { subagents, SUBAGENT_NAMES, systemPrompt } from './prompts.js';
@@ -22,6 +22,13 @@ const PAUSE_POLL_MS = 500;
 const HOOK_TIMEOUT_SLACK_S = 60;
 const PROGRESS_POLL_MS = 5000;
 const MAX_TURNS = 200;
+/** Runner-owned coverage: after the team says it is done, up to this many follow-up rounds run untried cases. */
+const MAX_ROUNDS = 3;
+/** A follow-up round needs this much of each budget left (requests, time, cost) to be worth starting. */
+const MIN_LEFT_FRACTION = 0.1;
+const MIN_LEFT_S = 60;
+/** The first follow-up widens the plan when the team used less than this share of the request budget. */
+const WIDEN_BELOW_FRACTION = 0.25;
 const BUILT_IN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'NotebookEdit', 'BashOutput', 'KillShell'];
 const AGENT_LANES = ['orchestrator', ...SUBAGENT_NAMES, 'validator'];
 const hookInput = z.object({ tool_name: z.string(), tool_input: z.record(z.string(), z.unknown()), agent_type: z.string().optional() });
@@ -34,6 +41,8 @@ export interface HuntConfig {
   /** The host Claude login may power a run only in the local dev environment. */
   readonly allowHostLogin: boolean;
 }
+
+export { caseOutcome };
 
 export type HaltReason = 'killed' | 'duration_budget';
 
@@ -63,11 +72,13 @@ export function toolGate(ctx: HuntContext): HookCallbackMatcher {
 }
 
 /** Streams the agent team's messages until it ends. Returns how the model run ended, or null when it threw or was aborted. */
-async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortController, router: MessageRouter): Promise<AgentEnd | null> {
+async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortController, router: MessageRouter, prompt: string): Promise<AgentEnd | null> {
   const cwd = await mkdtemp(join(tmpdir(), 'bw-hunt-'));
+  // Each round is its own model session: its cost adds to what the earlier rounds spent.
+  const spent = router.totalCost;
   try {
     const conversation = query({
-      prompt: 'Begin the assessment now.',
+      prompt,
       options: {
         model: config.model,
         systemPrompt: systemPrompt(ctx.run),
@@ -82,7 +93,7 @@ async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortCo
         strictMcpConfig: true,
         persistSession: false,
         maxTurns: MAX_TURNS,
-        maxBudgetUsd: ctx.run.costCapUsd,
+        maxBudgetUsd: Math.max(ctx.run.costCapUsd - spent, 0),
         abortController: abort,
         cwd,
         env: config.modelEnv,
@@ -92,7 +103,7 @@ async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortCo
       conversation
         .usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET({ skipBehaviors: true })
         .then((usage) => {
-          router.setTotalCost(usage.session.total_cost_usd);
+          router.setTotalCost(spent + usage.session.total_cost_usd);
         })
         .catch(() => undefined); // the cost keeps its last value; the final result carries the total
     }, PROGRESS_POLL_MS);
@@ -101,7 +112,7 @@ async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortCo
       for await (const message of conversation) {
         await router.handle(message);
         if (message.type === 'result') {
-          router.setTotalCost(message.total_cost_usd);
+          router.setTotalCost(spent + message.total_cost_usd);
           end = { subtype: message.subtype, summary: message.subtype === 'success' ? message.result : null };
         }
       }
@@ -186,9 +197,23 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
 
   let end: AgentEnd | null = null;
   let failure: string | null = null;
+  const summaries: string[] = [];
+  const startedAt = deps.now();
   try {
     await log.emit('run.started', 'plan', `Run started with ${config.model}`, { model: config.model, agents: AGENT_LANES });
-    end = await streamAgents(ctx, config, abort, router);
+    let prompt = 'Begin the assessment now.';
+    for (let round = 1; ; round += 1) {
+      end = await streamAgents(ctx, config, abort, router, prompt);
+      if (end?.summary !== null && end?.summary !== undefined) summaries.push(end.summary);
+      if (halted.reason !== null || end?.subtype !== 'success') break;
+      const isHalted = (): boolean => halted.reason !== null;
+      await holdForAsks(ctx, isHalted);
+      if (isHalted()) break;
+      const next = nextRound(ctx, { round, spentUsd: router.totalCost, elapsedS: (deps.now() - startedAt) / MS_PER_S });
+      if (next === null) break;
+      await log.emit('run.round', 'plan', next.message, { round: round + 1, cases: next.cases });
+      prompt = next.prompt;
+    }
   } catch (error) {
     failure = error instanceof Error ? error.name : 'model_error';
     logger.error({ event: 'demo.hunt.agent_failed', runId: run.id, reason: failure }, 'agent run failed');
@@ -216,7 +241,56 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
   }
   await emitCoverage(ctx, settled.reason ?? (ctx.state.requestsUsed >= run.budgetRequests ? 'request_budget' : null));
   await log.emit('run.completed', 'done', 'Run completed', { ...used, findings: ctx.state.findings, ...(settled.reason === null ? {} : { reason: settled.reason }) });
-  await store.finishRun(run, { state: 'completed', ...used, summary: end?.summary ?? null });
+  await store.finishRun(run, { state: 'completed', ...used, summary: summaries.length === 0 ? null : summaries.join('\n\n') });
+}
+
+/**
+ * The team said it is done, but an ask still waits for a person: the run stays open until each is decided or reaches
+ * its deadline (the duration budget and kill still end it), so an answer given in time is never thrown away.
+ */
+export async function holdForAsks(ctx: HuntContext, halted: () => boolean): Promise<void> {
+  const pending = (): Gate2Ask[] => [...ctx.state.asks.values()].filter((a) => a.status === 'pending');
+  if (pending().length === 0) return;
+  const count = pending().length;
+  await ctx.log.emit('run.holding', 'gate2', `Waiting for your answer on ${count} request${count === 1 ? '' : 's'} before finishing`, { gate2Ids: pending().map((a) => a.id) });
+  while (pending().length > 0 && !halted() && !ctx.signal.aborted) {
+    await ctx.deps.sleep(GATE2_POLL_MS);
+    await watchGate2(ctx);
+  }
+}
+
+/**
+ * Runner-owned coverage: the model does not decide alone when testing is done. After a round, every case that has not
+ * run (including one whose Gate 2 was just approved) goes back to the team, while budget is left; the first follow-up
+ * also widens a plan that used little of the request budget. Null when the run should end.
+ */
+export function nextRound(
+  ctx: HuntContext,
+  at: { round: number; spentUsd: number; elapsedS: number },
+): { prompt: string; message: string; cases: string[] } | null {
+  const { run, state } = ctx;
+  if (at.round >= MAX_ROUNDS) return null;
+  if (run.budgetRequests - state.requestsUsed < run.budgetRequests * MIN_LEFT_FRACTION) return null;
+  if (run.costCapUsd - at.spentUsd < run.costCapUsd * MIN_LEFT_FRACTION) return null;
+  if (run.budgetSeconds - at.elapsedS < Math.max(MIN_LEFT_S, run.budgetSeconds * MIN_LEFT_FRACTION)) return null;
+  const untried = [...state.cases].filter(([id, c]) => caseResult(ctx, id, c).status === 'not_run');
+  const approved = [...state.asks.values()].filter((a) => a.status === 'approved' && a.sent !== true);
+  const widen = at.round === 1 && state.requestsUsed < run.budgetRequests * WIDEN_BELOW_FRACTION;
+  if (untried.length === 0 && approved.length === 0 && !widen) return null;
+  const lines = untried.map(([id, c]) => `- ${id} (${c.agent}): ${c.title}${c.target === undefined || c.target === '' ? '' : ` at ${c.target}`}`);
+  const asks = approved.map((a) => `- ${a.label}${a.caseId === null ? '' : ` (case ${a.caseId})`}: approved by a person; ${a.agent} should send it now`);
+  const prompt = [
+    'Follow-up round of the same assessment (Blackwing, not the model, decides when testing is done). Recon has already run: do not delegate to recon again; use list_exchanges to recall what was sent.',
+    untried.length === 0 ? '' : `These recorded test cases have not been run yet. Delegate each to its specialist now:\n${lines.join('\n')}`,
+    asks.length === 0 ? '' : `These Gate 2 asks were approved after their agent finished. Have that specialist send each request again now:\n${asks.join('\n')}`,
+    widen
+      ? `The team used ${state.requestsUsed} of ${run.budgetRequests} requests. Review the plan against the classes the objective asks for and the endpoints recon found (every input, form, write endpoint and object id). Record test cases for what is still missing with record_test_cases, then delegate them. If nothing applicable is missing, say so in one line and finish.`
+      : '',
+    'When the specialists are done, write a short summary of this round (what was tested, what was not covered).',
+  ].filter((part) => part !== '').join('\n\n');
+  const n = untried.length + approved.length;
+  const message = n === 0 ? 'Blackwing asked the team to widen the plan before finishing' : `Blackwing handed ${n} untried item${n === 1 ? '' : 's'} back to the team`;
+  return { prompt, message, cases: untried.map(([id]) => id) };
 }
 
 /** Decides how a run that was not killed ended. */
@@ -236,11 +310,6 @@ export function settle(halt: HaltReason | null, failure: string | null, end: Age
   }
 }
 
-/** Runner-owned case status: the model's skip or block stands (with its note); otherwise only sent requests or candidates count. */
-export function caseOutcome(testCase: CaseState): 'executed' | 'skipped' | 'blocked' | 'not_run' {
-  if (testCase.status === 'skipped' || testCase.status === 'blocked') return testCase.status;
-  return testCase.requests > 0 || testCase.candidates > 0 ? 'executed' : 'not_run';
-}
 
 /** A case that never ran because a human denied (or did not answer) the request it needed is `blocked`, saying which. */
 function caseResult(ctx: HuntContext, id: string, testCase: CaseState): { status: ReturnType<typeof caseOutcome>; note: string | null } {
