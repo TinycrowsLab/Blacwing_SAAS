@@ -280,8 +280,8 @@ function Rings({
   const reach = scope === null ? -1 : order.indexOf(scope);
   const size = ['size-full', 'size-[68%]', 'size-[36%]'];
   return (
-    <div className="order-first flex flex-col items-center justify-center gap-4 border-border bg-surface-2 p-6 max-sm:border-b max-sm:py-5 sm:border-r">
-      <div aria-hidden="true" className="relative size-[132px] sm:size-[236px]">
+    <div className="order-first flex items-center justify-center gap-4 border-border bg-surface-2 p-6 max-sm:border-b max-sm:px-5 max-sm:py-3 sm:flex-col sm:border-r">
+      <div aria-hidden="true" className="relative size-[76px] shrink-0 sm:size-[236px]">
         {order.map((s, i) => {
           const inScope = reach !== -1 && i >= reach;
           return (
@@ -304,7 +304,7 @@ function Rings({
           );
         })}
       </div>
-      <p className="m-0 text-center text-[12.5px] leading-[18px] text-muted-foreground">{caption}</p>
+      <p className="m-0 text-[12.5px] leading-[18px] text-muted-foreground max-sm:flex-1 sm:text-center">{caption}</p>
     </div>
   );
 }
