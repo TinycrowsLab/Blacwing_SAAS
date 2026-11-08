@@ -18,7 +18,7 @@ describe('ledger words', () => {
     expect(ledgerWords('gate1.amend', { version: 3, changed: 'objective,excludedPaths,budgetRequests,budgetSeconds' }, 'r')).toBe(
       'Edited the plan (version 3): what to look for, paths to avoid, limits',
     );
-    expect(ledgerWords('run.started', { requestId: 'r' }, run)).toBe('Started audit 01A1B919');
+    expect(ledgerWords('run.started', { requestId: 'r' }, run)).toBe('Started audit 00000000');
     expect(ledgerWords('run.pause', {}, run)).toBe('Paused the audit');
     expect(ledgerWords('run.resume', {}, run)).toBe('Resumed the audit');
     expect(ledgerWords('finding.retest', {}, 'f')).toBe('Asked Blackwing to retest a finding');
