@@ -215,6 +215,21 @@ describe('duration and stopLine', () => {
     ).toBe(
       'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was denied',
     );
+    // Nobody answered (the run closed the ask at its end): never worded as a person's denial.
+    expect(
+      stopLine(
+        {
+          ...base,
+          state: 'completed',
+          events: [ev(1, 'run.completed')],
+          gate2: [{ ...gate2('a', 'denied'), closeReason: 'run_ended' }],
+        },
+        0,
+        { executed: 6, skipped: 0, blocked: 2, total: 8 },
+      ).text,
+    ).toBe(
+      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed got no answer in time',
+    );
     expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe(
       'Stopped after 18m 12s · you stopped testing',
     );

@@ -244,6 +244,7 @@ describe('non-blocking Gate 2', () => {
     await closePendingAsks(ctx, 'killed');
     expect([...store.gate2.values()].map((g) => g.status)).toEqual(['denied']);
     expect(store.events.at(-1)).toMatchObject({ kind: 'gate2.decided', data: { status: 'denied', reason: 'killed' } });
+    expect([...ctx.state.asks.values()][0]?.closedUnanswered).toBe(true);
     await closePendingAsks(ctx, 'run_ended');
     expect(kinds(store).filter((k) => k === 'gate2.decided')).toHaveLength(1);
   });

@@ -87,6 +87,13 @@ describe('coverage', () => {
       { id: 'email', title: 't', agent: 'web-api-specialist', status: 'blocked', note: 'Gate 2 denied: PUT /users/v1/name2/email as reader1', requests: 0, candidates: 0 },
     ]);
   });
+
+  it('never calls an ask the run closed at its end a denial: nobody answered it', () => {
+    const ctx = context();
+    ctx.state.cases.set('email', { ...base, status: 'executing' });
+    ctx.state.asks.set('g1', { id: 'g1', key: 'k', label: 'PUT /x as reader1', agent: 'authz-specialist', caseId: 'email', deadlineAt: 0, status: 'denied', closedUnanswered: true });
+    expect(coverageOf(ctx, null).cases).toMatchObject([{ status: 'blocked', note: 'Gate 2 got no answer before the audit ended: PUT /x as reader1' }]);
+  });
 });
 
 describe('toolGate (PreToolUse)', () => {
