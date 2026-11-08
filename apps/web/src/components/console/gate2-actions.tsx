@@ -275,14 +275,10 @@ export function Gate2Actions({
   // The confirm button (and a failure under it) is always on screen, even when the card sits low on the page, and
   // again whenever the reason (a chip, a long scope note) grows the card. Its scroll margin clears the floating
   // "more decisions" strip at the bottom of the conversation.
+  // After commit, directly: a frame callback never runs in a tab the browser treats as hidden.
   useEffect(() => {
     if (sheet || (!allowing && failed === null)) return;
-    const frame = window.requestAnimationFrame(() => {
-      (failed === null ? button(allowWrap) : root.current)?.scrollIntoView({ block: 'nearest' });
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
+    (failed === null ? button(allowWrap) : root.current)?.scrollIntoView({ block: 'nearest' });
   }, [allowing, failed, sheet, reason]);
 
   // Read once: a prop change (a list refresh) must never move the focus onto another request's Deny.

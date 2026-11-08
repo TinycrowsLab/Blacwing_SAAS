@@ -227,7 +227,7 @@ async function postKill(url: string, body: unknown, runs: readonly StoppableRun[
 }
 
 const time = (iso: string | null | undefined): string =>
-  iso === null || iso === undefined ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
+  iso === null || iso === undefined ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(new Date(iso));
 
 /** "Run 01A1B9 · started 10:31:05 by Avery": what tells two audits of one target apart. */
 function runLine(run: StoppableRun): string {

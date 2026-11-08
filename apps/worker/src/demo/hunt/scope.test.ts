@@ -46,7 +46,7 @@ describe('state-changing GET ask-list', () => {
   });
 
   it('leaves ordinary reads, OPTIONS and calls without a URL alone', () => {
-    for (const path of ['/rest/products/search?q=apple', '/api/Users/1', '/robots.txt', '/vulnerabilities/fi/?page=../../../../etc/passwd', '/search?q=change+update', '/api/address', '/rest/order-history/x']) expect(classifyMethod('GET', u(path))).toBe('active_safe');
+    for (const path of ['/rest/products/search?q=apple', '/api/Users/1', '/robots.txt', '/vulnerabilities/fi/?page=../../../../etc/passwd', '/search?q=change+update', '/api/address', '/rest/order-history/x', '/vulnerabilities/sqli/?id=1&Submit=Submit', '/api/products?order=asc']) expect(classifyMethod('GET', u(path))).toBe('active_safe');
     expect(classifyMethod('OPTIONS', u('/logout'))).toBe('active_safe');
     expect(classifyMethod('GET')).toBe('active_safe');
     expect(stateChangeHint('POST', u('/logout'))).toBeNull();

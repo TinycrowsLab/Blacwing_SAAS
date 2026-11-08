@@ -12,8 +12,13 @@ export type ScopeVerdict =
 
 /** Words in a GET/HEAD path segment or query key that suggest the request changes state (logout links, password resets, ...). */
 const STATE_CHANGE_WORDS = /(password|passwd|delete|remove|destroy|logout|signout|sign-out|change|reset|update|transfer|unsubscribe|deactivate)/i;
-/** Action verbs, matched as whole words in the last path segment or a query key only (`/basket/1/checkout`, `?add=1`). */
-const ACTION_WORDS = new Set(['approve', 'promote', 'checkout', 'order', 'erase', 'erasure', 'create', 'add', 'submit']);
+/** Action verbs, matched as whole words in the last path segment (`/basket/1/checkout`, `/feedbacks/1/approve`). */
+const PATH_ACTION_WORDS = new Set(['approve', 'promote', 'checkout', 'order', 'erase', 'erasure', 'create', 'add', 'submit']);
+/**
+ * The same as query keys (`?add=100`, `?create_db=1`), minus words GET forms and lists use for reads: `Submit` is the
+ * button of every GET search form, `order` sorts a list.
+ */
+const KEY_ACTION_WORDS = new Set(['approve', 'promote', 'checkout', 'erase', 'erasure', 'create', 'add']);
 /** Query keys that usually pick a server-side action; `_method` overrides the HTTP method on many frameworks. */
 const ACTION_KEYS = new Set(['action', 'do', 'cmd', 'op', '_method']);
 
@@ -31,7 +36,9 @@ export function stateChangeHint(method: string, url: URL): string | null {
   const segments = (decodeForms(url.pathname).at(-1) ?? url.pathname).split('/');
   const word = STATE_CHANGE_WORDS.exec([...segments, ...keys].join('/'))?.[1];
   if (word !== undefined) return word.toLowerCase();
-  const action = [...words(segments.findLast((s) => s !== '') ?? ''), ...keys.flatMap((key) => words(key))].find((w) => ACTION_WORDS.has(w));
+  const action =
+    words(segments.findLast((s) => s !== '') ?? '').find((w) => PATH_ACTION_WORDS.has(w)) ??
+    keys.flatMap((key) => words(key)).find((w) => KEY_ACTION_WORDS.has(w));
   return action ?? null;
 }
 

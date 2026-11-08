@@ -221,7 +221,7 @@ const NOTE_MAX = 1200;
  * Claude's own "what was not covered" from its run summary (the part after a line that says so), scrubbed and clipped.
  * The rest of the summary never goes in: it is written about suspected and dismissed issues too.
  */
-export function claudeNotCovered(summary: string | null): string | null {
+function claudeNotCovered(summary: string | null): string | null {
   if (summary === null) return null;
   const lines = summary.split('\n');
   const at = lines.findIndex((l) => /\bnot (covered|tested)\b/i.test(l));
