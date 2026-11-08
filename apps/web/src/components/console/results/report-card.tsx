@@ -241,7 +241,8 @@ export function ReportCard(props: {
           {props.untried === 0 ? null : (
             <>
               <p className="m-0 border-t border-dashed border-border-strong pt-3 text-[13px] leading-5 text-muted-foreground">
-                {props.untried === 1 ? '1 planned test case was' : `${props.untried} planned test cases were`} not tried. A new
+                {props.untried === 1 ? '1 planned test case was' : `${props.untried} planned test cases were`} not run or were
+                blocked. A new
                 plan can pick them up; it goes to your approval first.
               </p>
               <div className="pt-1.5">

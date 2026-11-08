@@ -228,7 +228,7 @@ describe('duration and stopLine', () => {
         { executed: 6, skipped: 0, blocked: 2, total: 8 },
       ).text,
     ).toBe(
-      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed got no answer in time',
+      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was not answered before the audit ended',
     );
     expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe(
       'Stopped after 18m 12s · you stopped testing',
@@ -250,10 +250,14 @@ describe('duration and stopLine', () => {
 describe('gate2Outcome', () => {
   it('summarises the decisions asked', () => {
     expect(gate2Outcome([])).toEqual({ asked: 0, label: 'none' });
-    expect(gate2Outcome([gate2('a', 'denied'), gate2('b', 'expired')])).toEqual({
+    expect(gate2Outcome([gate2('a', 'denied'), gate2('b', 'denied')])).toEqual({
       asked: 2,
       label: 'both denied',
     });
+    // Nobody answered: an expiry or an ask the run closed is never counted as a denial.
+    expect(gate2Outcome([gate2('a', 'denied'), gate2('b', 'expired'), { ...gate2('c', 'denied'), closeReason: 'run_ended' }]).label).toBe(
+      '1 denied, 2 not answered',
+    );
     expect(gate2Outcome([gate2('a', 'approved')])).toEqual({ asked: 1, label: 'allowed' });
     expect(
       gate2Outcome([gate2('a', 'approved'), gate2('b', 'denied'), gate2('c', 'denied')]).label,

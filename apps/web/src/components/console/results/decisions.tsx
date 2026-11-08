@@ -2,7 +2,8 @@
 // chain state. Rows come from `decisions()` (model.ts); nothing here is invented.
 import { Fragment } from 'react';
 
-import { Icon } from '../design';
+import { Icon, VoiceTag } from '../design';
+import { Markdown } from '../markdown';
 import { LocalTime } from './local-time';
 import { NavLink } from './nav-link';
 
@@ -126,7 +127,7 @@ export function YourDecisions({
 
 /** "What was not tested and why" (results/model `notTested`): every case that did not run, and what the plan left out. */
 export function NotTestedList({ data }: { readonly data: NotTested }) {
-  if (data.rows.length === 0) return null;
+  if (data.rows.length === 0 && data.note === null) return null;
   return (
     <section aria-labelledby="not-tested-h" className="flex flex-col gap-1">
       <h2 id="not-tested-h" className="m-0 mb-1 text-[17px] font-semibold text-foreground">
@@ -143,6 +144,17 @@ export function NotTestedList({ data }: { readonly data: NotTested }) {
           </li>
         ))}
       </ul>
+      {data.note === null ? null : (
+        <div className="mt-2 flex flex-col gap-1.5">
+          <p className="m-0 flex flex-wrap items-center gap-2 text-[11.5px] font-medium text-muted-foreground">
+            <VoiceTag voice="claude" />
+            What Claude says it did not cover · its own words, not verified
+          </p>
+          <div className="rounded-xl border border-dashed border-border-strong bg-code px-4 py-3 text-[13.5px] leading-[21px] text-foreground">
+            <Markdown text={data.note} />
+          </div>
+        </div>
+      )}
       <p className="m-0 mt-1.5 text-[12.5px] leading-5 text-muted-foreground">
         No browser is used, so DOM-based XSS is not tested. The downloaded report lists the same.
       </p>

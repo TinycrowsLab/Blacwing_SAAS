@@ -15,6 +15,7 @@ import type { FindingRow, HuntRun, RetestJob, RetestResult } from './types.js';
 
 export const REPLAYS = 3;
 const EXCERPT_CHARS = 2000;
+const EXCERPT_CONTEXT_CHARS = 300;
 const MAX_ORACLE_VALUE_CHARS = 500;
 const MAX_TITLE_CHARS = 200;
 const MAX_VULN_CLASS_CHARS = 100;
@@ -288,12 +289,29 @@ export function reproCurl(request: SentRequest): string {
   return scrub(parts.join(' '));
 }
 
-/** One side of the proof: the request as sent and the response, the excerpt scrubbed, the hash over the raw body. */
-export function sideEvidence(response: Sent): Record<string, unknown> {
+/** Where the excerpt starts: some context before the first oracle match, so the evidence is visible, not page chrome. */
+function excerptStart(body: string, oracle: Oracle | undefined): number {
+  if (oracle === undefined || oracle.type === 'status_equals' || oracle.type === 'header_contains') return 0;
+  let at = -1;
+  if (oracle.type === 'body_contains') at = body.indexOf(oracle.value);
+  else {
+    try {
+      at = new RegExp(oracle.value).exec(body)?.index ?? -1;
+    } catch {
+      at = -1;
+    }
+  }
+  return at < 0 ? 0 : Math.max(0, at - EXCERPT_CONTEXT_CHARS);
+}
+
+/** One side of the proof: the request as sent and the response, the excerpt scrubbed (around the oracle match), the hash over the raw body. */
+export function sideEvidence(response: Sent, oracle?: Oracle): Record<string, unknown> {
+  const body = scrub(response.body);
+  const start = excerptStart(body, oracle);
   return {
     exchangeId: response.exchangeId,
     request: scrubDeep(response.request),
-    response: { status: response.status, bodyExcerpt: scrub(response.body).slice(0, EXCERPT_CHARS), bodySha256: sha256(response.body) },
+    response: { status: response.status, bodyExcerpt: `${start > 0 ? '…' : ''}${body.slice(start, start + EXCERPT_CHARS)}`, bodySha256: sha256(response.body) },
   };
 }
 
@@ -325,8 +343,8 @@ export function buildFindingRow(input: FindingRowInput): { proven: boolean; row:
   const description = scrub(candidate.description);
   // A probe refused before it was sent still shows what Claude asked for (request only, no response).
   const sides = {
-    probe: probe === null ? { request: scrubDeep(trigger) } : sideEvidence(probe),
-    ...(control === null ? {} : { control: sideEvidence(control) }),
+    probe: probe === null ? { request: scrubDeep(trigger) } : sideEvidence(probe, candidate.oracle),
+    ...(control === null ? {} : { control: sideEvidence(control, candidate.oracle) }),
   };
   const evidence: Record<string, unknown> = proven
     ? {

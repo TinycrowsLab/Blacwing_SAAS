@@ -138,7 +138,7 @@ export interface HuntStore {
   closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status>;
   /** Closes every pending request of the run as `expired` (no person answered; `close_reason` = reason), each ledgered; returns their ids. */
   closePendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]>;
-  /** Returns the id of the inserted row (a proven row also upgrades a suspected one), or null for a duplicate. */
+  /** Returns the id of the inserted row (a proven row also upgrades a suspected one); a suspected copy returns the stored row's id; null for a proven duplicate. */
   insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
   /** Records the result of the webhook POST for a released finding. */
   recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void>;

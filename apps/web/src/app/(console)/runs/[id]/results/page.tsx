@@ -144,7 +144,7 @@ export default async function ResultsPage({
     endReason: run.coverage?.endReason ?? null,
     excludedPaths: request?.excludedPaths ?? [],
   });
-  const untried = run.coverage?.cases.filter((c) => c.status === 'not_run').length ?? 0;
+  const untried = run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
 
   return (
     <div className="mx-auto grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
@@ -207,7 +207,7 @@ export default async function ResultsPage({
           <p className="m-0 text-[15px] leading-6 text-muted-foreground [&_b]:font-semibold [&_b]:text-foreground">
             {proven.length > 0 ? (
               <>
-                {did} Each issue below was replayed by the validator with a control.
+                {did} Each issue below was replayed by the validator.
                 {releaseMode === 'auto'
                   ? ' Proven issues were released automatically, as you chose on the plan.'
                   : allDecided || releaseMode === null

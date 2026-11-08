@@ -263,7 +263,8 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
              ? `ON CONFLICT (tenant_id, fingerprint) DO UPDATE SET status = EXCLUDED.status, triaged_at = EXCLUDED.triaged_at, triage_reason = EXCLUDED.triage_reason,
                   evidence = EXCLUDED.evidence, replay = EXCLUDED.replay, oracle = EXCLUDED.oracle, location = EXCLUDED.location,
                   repro_curl = EXCLUDED.repro_curl WHERE demo.findings.status = 'suspected'`
-             : 'ON CONFLICT (tenant_id, fingerprint) DO NOTHING'
+             : // A copy of an issue already stored: no change, but its id comes back so the console shows the issue once.
+               'ON CONFLICT (tenant_id, fingerprint) DO UPDATE SET fingerprint = demo.findings.fingerprint'
          }
          RETURNING id`,
         [

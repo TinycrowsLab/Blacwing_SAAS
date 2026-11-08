@@ -44,8 +44,21 @@ export function oracleWords(oracle: FindingDetail['oracle']): string | null {
 }
 
 /** The validator's reason in plain words ("oracle" is the engine's word for the expected result). */
+const REASON_WORDS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^control_not_single_delta: (.+) differ$/i, 'the control changed more than one thing ($1), so it cannot isolate the cause'],
+  [/^access_control_signed_out_control\b/i, 'the control was sent signed out, which shows only that a sign-in is needed, not that this role should be refused'],
+  [/^control_page_missing\b/i, 'the control asked for a page that does not exist, which proves nothing'],
+  [/^no_control_signed_in\b/i, 'without a control, only data open to everyone can be proven, and the probe was signed in'],
+  [/^no_control_status_only\b/i, 'without a control, a status code alone does not show exposed data'],
+  [/^no_control:/i, 'there was no control, and this kind of issue needs one'],
+  [/^probe replay (\d+) not sent: (.+)$/i, 'replay $1 was not sent ($2)'],
+  [/^negative control not sent: (.+)$/i, 'the control was not sent ($1)'],
+];
+
 export function plainReason(reason: string): string {
-  const replay = /^probe replay (\d+) did not match the oracle$/i.exec(reason.trim());
+  const trimmed = reason.trim();
+  for (const [pattern, words] of REASON_WORDS) if (pattern.test(trimmed)) return trimmed.replace(pattern, words).replace(/\.$/, '');
+  const replay = /^probe replay (\d+) did not match the oracle$/i.exec(trimmed);
   if (replay !== null) return `replay ${replay[1]} did not show the issue again`;
   if (/^the negative control also matched the oracle$/i.test(reason.trim()))
     return 'the control showed the same result, so the probe proves nothing';
@@ -66,6 +79,9 @@ const DELTA_WORDS: Readonly<Record<string, string>> = {
   path_segment: 'one path segment',
 };
 
+/** Proven without a control: data anyone can read, replayed signed out (`evidence.proof.delta` 'none'). */
+const isExposureProof = (f: FindingDetail): boolean => f.evidence.proof?.delta === 'none';
+
 /** "as alice" or "signed out" for a side the runner recorded with its identity; null for older evidence. */
 export function identityOf(side: Side): string | null {
   const role = side.request?.asRole;
@@ -82,6 +98,12 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
     };
   const n = f.evidence.replays.length;
   const matched = f.evidence.replays.filter((r) => r.matched).length;
+  const times = n === 1 && matched === 1 ? 'replayed once' : `replayed ${matched} of ${n} times`;
+  if (isExposureProof(f))
+    return {
+      proven: true,
+      text: `Proven: ${times}, signed out. No control is possible for data open to everyone. Blackwing replayed it deterministically; Claude proposed the check.`,
+    };
   const control = f.replay?.control;
   const controlText =
     control === null || control === undefined
@@ -91,7 +113,7 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
         : ', the control behaved as expected';
   return {
     proven: true,
-    text: `Proven: replayed ${matched} of ${n} times${controlText}. Blackwing replayed it deterministically; Claude proposed the check and the control.`,
+    text: `Proven: ${times}${controlText}. Blackwing replayed it deterministically; Claude proposed the check and the control.`,
   };
 }
 
@@ -118,6 +140,7 @@ function ProofSide({
   side,
   verdict,
   delta = null,
+  empty = 'Not recorded',
 }: {
   readonly title: string;
   readonly note: string;
@@ -125,6 +148,8 @@ function ProofSide({
   readonly verdict: { text: string; tone: 'ok' | 'neutral'; title?: string } | null;
   /** What this side changes against the other (`evidence.proof.delta`), when the validator recorded it. */
   readonly delta?: string | null;
+  /** Shown when the side has no request (a control the exposure template leaves out). */
+  readonly empty?: string;
 }) {
   const line = requestLine(side);
   const identity = identityOf(side);
@@ -142,7 +167,7 @@ function ProofSide({
         )}
       </div>
       <pre className="m-0 whitespace-pre-wrap px-3.5 pt-3 font-mono text-[12px] leading-5 text-foreground">
-        {line === null ? 'Not recorded' : <Path text={line} />}
+        {line === null ? empty : <Path text={line} />}
       </pre>
       {identity === null && delta === null ? null : (
         <div className="flex flex-wrap gap-1.5 px-3.5 pt-2">
@@ -178,7 +203,8 @@ export function IssueBody({
   const controlMatched = finding.replay?.control?.matched;
   const remediation = finding.evidence.remediation?.trim() ?? '';
   const rawDelta = finding.evidence.proof?.delta;
-  const delta = rawDelta === undefined || rawDelta === null ? null : (DELTA_WORDS[rawDelta] ?? rawDelta.replace(/_/g, ' '));
+  const exposure = isExposureProof(finding);
+  const delta = rawDelta === undefined || rawDelta === null || exposure ? null : (DELTA_WORDS[rawDelta] ?? rawDelta.replace(/_/g, ' '));
   return (
     <div className="flex flex-col gap-3.5">
       {finding.description === null || finding.description.trim() === '' ? null : (
@@ -224,9 +250,14 @@ export function IssueBody({
           />
           <ProofSide
             title="Control"
-            note="A similar request that should not show it."
+            note={
+              exposure
+                ? 'None: the data is open to anyone signed out, so there is no request that should not show it.'
+                : 'A similar request that should not show it.'
+            }
             side={control}
             delta={delta}
+            {...(exposure ? { empty: 'No control' } : {})}
             verdict={
               controlStatus === undefined
                 ? null
@@ -242,7 +273,8 @@ export function IssueBody({
         </div>
         {check === null ? null : (
           <p className="m-0 text-[12.5px] text-muted-foreground">
-            Blackwing checked that {check}: the probe should show it, the control should not.
+            Blackwing checked that {check}
+            {exposure ? ' on every replay.' : ': the probe should show it, the control should not.'}
           </p>
         )}
         <p

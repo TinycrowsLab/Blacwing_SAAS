@@ -183,6 +183,7 @@ export function duration(ms: number): string {
 function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone: boolean): string[] {
   // A person's "deny" has no close reason; an expiry or an ask the run closed at its end was simply not answered.
   const denied = run.gate2.some((g) => g.status === 'denied' && g.closeReason === null);
+  const runClosed = run.gate2.some((g) => g.closeReason === 'run_ended' || g.closeReason === 'killed');
   const unanswered = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
   const refused = run.events.some((e) => e.kind === 'policy.blocked');
   const b = cases.blocked;
@@ -194,7 +195,7 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone:
       : denied
         ? `${b} ${were(b)} skipped because the request ${it} needed was denied`
         : unanswered
-          ? `${b} ${were(b)} skipped because the request ${it} needed got no answer in time`
+          ? `${b} ${were(b)} skipped because the request ${it} needed ${runClosed ? 'was not answered before the audit ended' : 'got no answer in time'}`
           : refused
           ? `${b} ${were(b)} stopped by the safety rules`
           : `${b} could not run`;
@@ -214,10 +215,32 @@ const NOT_RUN_BECAUSE: Readonly<Record<string, string>> = {
   max_turns: 'Claude reached its turn limit first',
 };
 
+const NOTE_MAX = 1200;
+
+/**
+ * Claude's own "what was not covered" from its run summary (the part after a line that says so), scrubbed and clipped.
+ * The rest of the summary never goes in: it is written about suspected and dismissed issues too.
+ */
+export function claudeNotCovered(summary: string | null): string | null {
+  if (summary === null) return null;
+  const lines = summary.split('\n');
+  const at = lines.findIndex((l) => /\bnot (covered|tested)\b/i.test(l));
+  if (at === -1) return null;
+  const rest: string[] = [];
+  for (const [i, line] of lines.slice(at).entries()) {
+    if (i > 0 && /^\s*#/.test(line)) break;
+    rest.push(line);
+  }
+  const text = scrub(rest.join('\n').trim());
+  return text === '' ? null : text.length > NOTE_MAX ? `${text.slice(0, NOTE_MAX)}…` : text;
+}
+
 export interface NotTested {
   /** False when the runner recorded no coverage for this run (older runs): the rows then hold only what the plan says. */
   readonly recorded: boolean;
   readonly rows: readonly { readonly what: string; readonly why: string }[];
+  /** Claude's own "not covered" from its run summary (not verified), or null. */
+  readonly note: string | null;
 }
 
 /**
@@ -228,6 +251,7 @@ export function notTested(input: {
   readonly coverage: Coverage | null;
   readonly endReason: unknown;
   readonly excludedPaths: readonly string[];
+  readonly summary?: string | null;
 }): NotTested {
   const { coverage, endReason } = input;
   const ended =
@@ -247,7 +271,7 @@ export function notTested(input: {
   });
   if (input.excludedPaths.length > 0)
     rows.push({ what: input.excludedPaths.join(', '), why: 'Left out on purpose: the plan excluded these paths' });
-  return { recorded: coverage !== null, rows };
+  return { recorded: coverage !== null, rows, note: claudeNotCovered(input.summary ?? null) };
 }
 
 /** "a, b and c". */
@@ -263,9 +287,12 @@ const listWords = (parts: readonly string[]): string =>
 function completedWhy(
   reason: unknown,
   cases: CaseCounts | undefined,
-  run: Pick<Run, 'events' | 'gate2'>,
+  run: Pick<Run, 'events' | 'gate2'> & Partial<Pick<Run, 'summary'>>,
 ): { text: string; complete: boolean } {
   const why = finishedWhy(reason, cases ?? null);
+  // A plan that ran in full is still not "complete" when Claude itself names what it did not cover: no green tick.
+  if (why.complete && claudeNotCovered(run.summary ?? null) !== null)
+    return { text: `${why.text}; Claude names what it did not cover below`, complete: false };
   // "finished its plan … and skipped N" already names the skips; the not-tested list gives Claude's reasons.
   const rest = cases === undefined || why.complete ? [] : notRun(cases, run, why.text.startsWith('Claude finished its plan'));
   return { text: `${why.text}${rest.length === 0 ? '' : `; ${listWords(rest)}`}`, complete: why.complete };
@@ -273,7 +300,7 @@ function completedWhy(
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
 export function stopLine(
-  run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events' | 'gate2'>,
+  run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events' | 'gate2'> & Partial<Pick<Run, 'summary'>>,
   now: number,
   cases?: CaseCounts,
 ): { tone: 'ok' | 'warn' | 'muted' | 'bad'; text: string } {
@@ -312,15 +339,20 @@ export function stopLine(
   }
 }
 
-/** "both denied", "allowed", "1 allowed, 2 denied" for the report card's "Decisions asked" (after the count). */
+/**
+ * "both denied", "allowed", "1 allowed, 2 denied" for the report card's "Decisions asked" (after the count). An ask
+ * nobody answered (an expiry, or one the run closed when it ended) is "not answered", never "denied".
+ */
 export function gate2Outcome(gate2: Run['gate2']): { asked: number; label: string } {
   const decided = gate2.filter((g) => g.status !== 'pending');
   const allowed = decided.filter((g) => g.status === 'approved').length;
-  const denied = decided.length - allowed;
+  const denied = decided.filter((g) => g.status === 'denied' && g.closeReason === null).length;
+  const unanswered = decided.length - allowed - denied;
   const pending = gate2.length - decided.length;
   const parts: string[] = [];
   if (allowed > 0) parts.push(`${allowed} allowed`);
   if (denied > 0) parts.push(`${denied} denied`);
+  if (unanswered > 0) parts.push(`${unanswered} not answered`);
   if (pending > 0) parts.push(`${pending} open`);
   // The card puts " · " between the count and this label ("2 · both denied", "3 · 1 allowed, 2 denied").
   let label = parts.join(', ');

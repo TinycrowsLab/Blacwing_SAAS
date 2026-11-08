@@ -365,7 +365,21 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
       });
     }
   }
-  return [...byId.values()];
+  // The store merges copies of one issue into a single finding: show it once (the proven copy, else the latest).
+  const byFinding = new Map<string, Candidate>();
+  const out: Candidate[] = [];
+  for (const c of byId.values()) {
+    if (c.findingId === null) {
+      out.push(c);
+      continue;
+    }
+    const seen = byFinding.get(c.findingId);
+    if (seen === undefined) out.push(c);
+    else if (c.proven || !seen.proven) out.splice(out.indexOf(seen), 1, c);
+    else continue;
+    byFinding.set(c.findingId, c);
+  }
+  return out;
 }
 
 export type CaseStatus = 'executed' | 'executing' | 'proposed' | 'skipped' | 'blocked';

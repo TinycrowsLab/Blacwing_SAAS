@@ -227,6 +227,15 @@ function releaseLine(f: FindingDetail): string | null {
     .join(' ');
 }
 
+/** Exposure proofs (no control possible) say so; the rest describe the probe/control pair. */
+const isExposure = (f: FindingDetail): boolean => f.evidence.proof?.delta === 'none';
+const checkedLine = (f: FindingDetail, check: string): string =>
+  isExposure(f)
+    ? `Blackwing checked that ${check} on every replay.`
+    : `Blackwing checked that ${check}: the probe should show it, the control should not.`;
+const controlNote = (f: FindingDetail): string =>
+  isExposure(f) ? 'none: the data is open to anyone signed out' : 'a similar request that should not show it';
+
 function sideWords(side: FindingDetail['evidence']['probe']): string {
   const line = requestLine(side);
   if (line === null) return 'Not recorded';
@@ -259,30 +268,10 @@ function meta(f: FindingDetail): string {
 
 const title = (src: ReportSource): string => `Security audit of ${src.asset.name}`;
 
-const NOTE_MAX = 1200;
-
-/**
- * Claude's own "what was not covered" from its run summary (the part after a line that says so), scrubbed and clipped.
- * The rest of the summary never goes in: it is written about suspected and dismissed issues too.
- */
-export function claudeNotCovered(summary: string | null): string | null {
-  if (summary === null) return null;
-  const lines = summary.split('\n');
-  const at = lines.findIndex((l) => /\bnot (covered|tested)\b/i.test(l));
-  if (at === -1) return null;
-  const rest: string[] = [];
-  for (const [i, line] of lines.slice(at).entries()) {
-    if (i > 0 && /^\s*#/.test(line)) break;
-    rest.push(line);
-  }
-  const text = scrub(rest.join('\n').trim());
-  return text === '' ? null : text.length > NOTE_MAX ? `${text.slice(0, NOTE_MAX)}…` : text;
-}
-
 /** "What was not tested and why": the runner's case record, the plan's exclusions, and the fixed limits. */
 function notTestedOf(src: ReportSource): { rows: { what: string; why: string }[]; note: string | null; recorded: boolean } {
-  const n = notTested({ coverage: src.coverage, endReason: src.run.endReason, excludedPaths: src.request.excludedPaths });
-  return { rows: [...n.rows], note: claudeNotCovered(src.run.summary), recorded: n.recorded };
+  const n = notTested({ coverage: src.coverage, endReason: src.run.endReason, excludedPaths: src.request.excludedPaths, summary: src.run.summary });
+  return { rows: [...n.rows], note: n.note, recorded: n.recorded };
 }
 
 const NOT_RECORDED =
@@ -310,17 +299,13 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
       '',
       `### ${proof.heading} (${PROOF_BY})`,
       '',
-      proof.text.replace(/^Proven: /, 'Proven: '),
+      proof.text,
     );
-    if (check !== null)
-      out.push(
-        '',
-        `Blackwing checked that ${check}: the probe should show it, the control should not.`,
-      );
+    if (check !== null) out.push('', checkedLine(f, check));
     out.push(
       '',
       `- **Probe** (the request that shows the issue): \`${sideWords(f.evidence.probe)}\``,
-      `- **Control** (a similar request that should not show it): \`${sideWords(f.evidence.control)}\``,
+      `- **Control** (${controlNote(f)}): \`${sideWords(f.evidence.control)}\``,
       '',
     );
     const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
@@ -420,10 +405,10 @@ export function renderHtml(
 <h3><span class="chip" style="${SEV_STYLE[f.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(f.severity))}</span>${i + 1}. ${esc(f.title)}</h3>
 <p class="meta">${esc(meta(f))}</p>${released === null ? '' : `\n<p class="meta">${esc(released)}</p>`}
 <h4>${esc(proof.heading)} <span>· ${esc(PROOF_BY)}</span></h4>
-<p class="${proof.proven ? 'proof' : 'meta'}">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">Blackwing checked that ${esc(check)}: the probe should show it, the control should not.</p>`}
+<p class="${proof.proven ? 'proof' : 'meta'}">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">${esc(checkedLine(f, check))}</p>`}
 <table>
 <tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
-<tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">A similar request that should not show it.</span></td></tr>
+<tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">${esc(cap(controlNote(f)))}.</span></td></tr>
 </table>${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${f.reproCurl === '' ? '' : `\n<p class="meta">Reproduce it (run it only against a copy you own):</p>\n<pre>${esc(f.reproCurl)}</pre>`}${
         f.description === null || f.description.trim() === ''
           ? ''

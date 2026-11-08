@@ -808,7 +808,7 @@ export class DemoService {
     const titles = (Array.isArray(cases) ? cases : [])
       .filter((c): c is { status: string; title: string } => {
         const value = c as { status?: unknown; title?: unknown } | null;
-        return value?.status === 'not_run' && typeof value.title === 'string';
+        return (value?.status === 'not_run' || value?.status === 'blocked') && typeof value.title === 'string';
       })
       .map((c) => c.title);
     if (titles.length === 0) {
