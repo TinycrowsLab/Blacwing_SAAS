@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { buttonClass, Icon, INPUT_CLASS, Kbd, OptionCard } from './design';
+import { EmergencyLinkCreator } from './emergency-links';
 import { Modal } from './modal';
 import { shortId } from './run-model';
 import { auditRefSchema, sidebarSchema, type SidebarData } from '../../lib/schemas';
@@ -693,6 +694,17 @@ function KillDialog({
                 {ready ? <Kbd>Enter</Kbd> : null}
               </button>
             </div>
+            {/* Design 3b: a link someone without a login can use to stop everything (also in Settings). */}
+            <details className="group border-t border-border pt-4">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md text-[13px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
+                <Icon name="key" size={14} className="shrink-0" />
+                <span className="min-w-0 flex-1">Send an emergency stop link to someone without a login</span>
+                <Icon name="chevron" size={14} className="shrink-0 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="pt-3">
+                <EmergencyLinkCreator />
+              </div>
+            </details>
           </div>
           {/* After the controls in the DOM (focus lands on them first), drawn first. */}
           <Rings scope={scope} onPick={choose} caption={caption} />

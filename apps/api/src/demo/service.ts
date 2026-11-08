@@ -1,6 +1,6 @@
 // DEMO-STORY business rules: assets and ownership proof, assessment requests, Gate 1 (separation of duties),
 // run start and control (pause, kill), Gate 2 decisions and finding reads. The hunt itself runs in the worker.
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 
@@ -16,6 +16,8 @@ import {
   type AssetRow,
   type AuditEntry,
   type DemoStore,
+  type EmergencyContact,
+  type EmergencyLinkRow,
   type ExchangeRow,
   type FindingRow,
   type Gate2Row,
@@ -23,6 +25,7 @@ import {
   type RunEventRow,
   type RunRow,
 } from './store.js';
+import { InProcessRateLimiter } from '../rate-limit/limiter.js';
 
 /** Identity forwarded by the web server from the signed-in Google session (internal hop only). */
 export interface DemoActor {
@@ -455,11 +458,45 @@ const entryOf = (
   payload: AuditPayload,
 ): AuditEntry => ({ actorId: actor.id, actorName: actor.name, action, targetType, targetId, payload });
 
+/** How long an emergency stop link works, in seconds. */
+export const EMERGENCY_VALIDITY_S = { '1h': 3600, '24h': 86_400, '7d': 604_800 } as const;
+export type EmergencyValidity = keyof typeof EMERGENCY_VALIDITY_S;
+export const EMERGENCY_VALIDITIES = Object.keys(EMERGENCY_VALIDITY_S) as [EmergencyValidity, ...EmergencyValidity[]];
+const EMERGENCY_TOKEN_BYTES = 32;
+/** 32 bytes in base64url, unpadded. */
+export const EMERGENCY_TOKEN = /^[A-Za-z0-9_-]{43}$/;
+/** Per client: 30 attempts at once, then one a second. The token has 256 bits; this only slows a scan. */
+const EMERGENCY_RATE = { rps: 1, burst: 30 } as const;
+
+const sha256 = (value: string): Buffer => createHash('sha256').update(value).digest();
+
+const emergencyExpired = (): DemoRefusal =>
+  new DemoRefusal(HttpStatus.NOT_FOUND, 'emergency_link_expired', 'This emergency link has expired.');
+
+export const emergencyLinkDto = (row: EmergencyLinkRow): Record<string, unknown> => ({
+  id: row.id,
+  label: row.label,
+  createdBy: { id: row.created_by, name: row.created_by_name },
+  createdAt: row.created_at.toISOString(),
+  expiresAt: row.expires_at.toISOString(),
+  lastUsedAt: iso(row.last_used_at),
+});
+
+/** A run as the no-login emergency page sees it: the target's name and the halt, nothing more. */
+const emergencyRunDto = (row: RunRow): Record<string, unknown> => ({
+  id: row.id,
+  shortId: shortId(row.id),
+  assetName: row.asset_name,
+  state: row.state,
+  haltMs: row.halt_ms,
+});
+
 const planChanged = (): DemoRefusal =>
   new DemoRefusal(HttpStatus.CONFLICT, 'plan_changed', 'The plan changed in another tab. Reload to see it.');
 
 export class DemoService {
   private readonly logger = new Logger('DemoService');
+  private readonly emergencyLimiter = new InProcessRateLimiter();
 
   constructor(
     private readonly store: DemoStore,
@@ -501,6 +538,7 @@ export class DemoService {
         presets: BUDGET_PRESETS,
         // The host only: the webhook URL itself can carry a secret token.
         webhook: { configured: webhookUrl !== null, host: webhookUrl === null ? null : new URL(webhookUrl).host },
+        emergencyContact: await this.store.getEmergencyContact(this.tenantId),
       },
     };
   }
@@ -1110,40 +1148,43 @@ export class DemoService {
         `Type the run id ${shortId(run.id)} to confirm.`,
       );
     }
-    const halt = await this.halt(actor, runId);
-    if (halt === null) {
+    const halted = await this.haltRun(runId, actor);
+    if (halted === null) {
       throw new DemoRefusal(
         HttpStatus.CONFLICT,
         'run_not_running',
         'The run is not queued or running.',
       );
     }
-    const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: halt.queued });
-    return { killRequestedAt: halt.at.toISOString(), audit };
+    const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: halted.queued });
+    return { killRequestedAt: halted.at.toISOString(), audit };
   }
 
   /**
-   * The per-run kill path, shared by every scope: a queued run is killed here, a running or paused one is flagged for
-   * the worker (which halts it and measures `halt_ms`). Null when the run is no longer live.
+   * Stops one run (the caller writes the ledger): a queued run is killed here, a running or paused one is flagged and
+   * the worker halts it. Null when the run is no longer live. `by.id` is null for an emergency link (no login).
    */
-  private async halt(actor: DemoActor, runId: string): Promise<{ at: Date; queued: boolean } | null> {
-    const killedQueued = await this.store.killQueuedRun(this.tenantId, runId, actor.id);
+  private async haltRun(
+    runId: string,
+    by: { readonly id: string | null; readonly name: string },
+  ): Promise<{ at: Date; queued: boolean } | null> {
+    const killedQueued = await this.store.killQueuedRun(this.tenantId, runId, by.id);
     if (killedQueued !== null) {
       await this.store.appendEvent(runId, {
         kind: 'run.killed',
         stage: 'control',
-        message: `Run killed by ${actor.name} before it started.`,
-        data: { by: actor.id, haltMs: 0 },
+        message: `Run killed by ${by.name} before it started.`,
+        data: { by: by.id, haltMs: 0 },
       });
       return { at: killedQueued, queued: true };
     }
-    const requestedAt = await this.store.requestKill(this.tenantId, runId, actor.id);
+    const requestedAt = await this.store.requestKill(this.tenantId, runId, by.id);
     if (requestedAt === null) return null;
     await this.store.appendEvent(runId, {
       kind: 'kill.requested',
       stage: 'control',
-      message: `Kill requested by ${actor.name}.`,
-      data: { by: actor.id },
+      message: `Kill requested by ${by.name}.`,
+      data: { by: by.id },
     });
     return { at: requestedAt, queued: false };
   }
@@ -1179,7 +1220,7 @@ export class DemoService {
       );
     }
     // Flag every run first, all at once: the halt clock starts for each before any bookkeeping.
-    const halted = await Promise.all(runs.map(async (run) => ({ run, halt: await this.halt(actor, run.id) })));
+    const halted = await Promise.all(runs.map(async (run) => ({ run, halt: await this.haltRun(run.id, actor) })));
     const stopped = halted.flatMap(({ run, halt }) => (halt === null ? [] : [{ run, halt }]));
     if (stopped.length === 0) {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'run_not_running', 'Nothing in that scope is queued or running.');
@@ -1209,6 +1250,133 @@ export class DemoService {
       })),
       audit,
     };
+  }
+
+  private requireAdmin(actor: DemoActor, detail: string): void {
+    if (actor.admin !== true) throw new DemoRefusal(HttpStatus.FORBIDDEN, 'admin_required', detail);
+  }
+
+  /** The emergency stop links that still work (administrators only). */
+  async emergencyLinks(actor: DemoActor): Promise<{ items: Record<string, unknown>[] }> {
+    this.requireAdmin(actor, 'Only an administrator can see emergency stop links.');
+    return { items: (await this.store.listActiveEmergencyLinks(this.tenantId)).map((row) => emergencyLinkDto(row)) };
+  }
+
+  /**
+   * Creates an emergency stop link. The token (32 random bytes) is returned once and never stored: only its SHA-256
+   * is kept. Recorded in the ledger without the token.
+   */
+  async createEmergencyLink(
+    actor: DemoActor,
+    validity: EmergencyValidity,
+    label: string | null,
+  ): Promise<{ link: Record<string, unknown>; token: string; audit: AuditRef }> {
+    this.requireAdmin(actor, 'Only an administrator can create an emergency stop link.');
+    const token = randomBytes(EMERGENCY_TOKEN_BYTES).toString('base64url');
+    const row = await this.store.insertEmergencyLink({
+      id: newId(),
+      tenant_id: this.tenantId,
+      token_hash: sha256(token),
+      label,
+      created_by: actor.id,
+      created_by_name: actor.name,
+      expires_at: new Date(Date.now() + EMERGENCY_VALIDITY_S[validity] * MS_PER_SECOND),
+    });
+    const audit = await this.audit(actor, 'emergency_link.created', 'emergency_link', row.id, {
+      label,
+      validity,
+      expiresAt: row.expires_at.toISOString(),
+    });
+    return { link: emergencyLinkDto(row), token, audit };
+  }
+
+  async revokeEmergencyLink(actor: DemoActor, id: string): Promise<{ audit: AuditRef }> {
+    this.requireAdmin(actor, 'Only an administrator can revoke an emergency stop link.');
+    const row = await this.store.revokeEmergencyLink(this.tenantId, id, actor.id);
+    if (row === null)
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'This link has already expired or been revoked.');
+    const audit = await this.audit(actor, 'emergency_link.revoked', 'emergency_link', id, { label: row.label });
+    return { audit };
+  }
+
+  /** Sets or clears the contact the expired-link page shows. Administrators only; recorded in the ledger. */
+  async setEmergencyContact(actor: DemoActor, contact: EmergencyContact | null): Promise<Record<string, unknown>> {
+    this.requireAdmin(actor, 'Only an administrator can set the emergency contact.');
+    await this.store.setEmergencyContact(this.tenantId, contact);
+    await this.audit(actor, 'workspace.emergency_contact', 'tenant', this.tenantId, {
+      name: contact?.name ?? null,
+    });
+    return this.workspace(actor);
+  }
+
+  /**
+   * The link behind a token when it still works; null for an unknown, expired or revoked token alike (nothing tells
+   * them apart). Every attempt is charged to the client's bucket. The token is looked up by its hash, then the hashes
+   * are compared in constant time.
+   */
+  private async liveEmergencyLink(token: string, client: string): Promise<EmergencyLinkRow | null> {
+    const decision = await this.emergencyLimiter.consume([
+      { key: `emergency:${client}`, scope: 'ip', ...EMERGENCY_RATE },
+    ]);
+    if (!decision.allowed)
+      throw new DemoRefusal(HttpStatus.TOO_MANY_REQUESTS, 'rate_limited', 'Too many attempts. Wait a minute and try again.');
+    if (!EMERGENCY_TOKEN.test(token)) return null;
+    const hash = sha256(token);
+    const row = await this.store.findEmergencyLink(this.tenantId, hash);
+    if (row === null || !timingSafeEqual(row.token_hash, hash)) return null;
+    return row.revoked_at === null && row.expires_at.getTime() > Date.now() ? row : null;
+  }
+
+  /** What the no-login emergency page shows. A dead link learns only the workspace's emergency contact, if one is set. */
+  async emergencyView(token: string, client: string): Promise<Record<string, unknown>> {
+    const link = await this.liveEmergencyLink(token, client);
+    if (link === null) return { status: 'expired', contact: await this.store.getEmergencyContact(this.tenantId) };
+    const tenant = await this.store.getTenant(this.tenantId);
+    const live = await this.store.listLiveRuns(this.tenantId);
+    return {
+      status: 'active',
+      workspace: tenant === null || tenant.name === '' ? null : tenant.name,
+      liveRuns: live.length,
+      link: { label: link.label, expiresAt: link.expires_at.toISOString() },
+    };
+  }
+
+  /**
+   * Stops every live run of the workspace through an emergency link: the same halt as Stop, one ledger entry for the
+   * use and one `run.kill` per run, all in one append.
+   */
+  async emergencyStop(token: string, client: string): Promise<Record<string, unknown>> {
+    const link = await this.liveEmergencyLink(token, client);
+    if (link === null) throw emergencyExpired();
+    const by = { id: null, name: link.label === null ? 'Emergency stop link' : `Emergency stop link (${link.label})` };
+    const runs: Record<string, unknown>[] = [];
+    for (const run of await this.store.listLiveRuns(this.tenantId)) {
+      const halted = await this.haltRun(run.id, by);
+      if (halted !== null) runs.push({ ...emergencyRunDto(run), queued: halted.queued });
+    }
+    await this.store.touchEmergencyLink(this.tenantId, link.id);
+    const entry = (action: string, targetType: string, targetId: string, payload: AuditPayload): AuditEntry => ({
+      actorId: null,
+      actorName: by.name,
+      action,
+      targetType,
+      targetId,
+      payload,
+    });
+    const [audit] = await this.store.appendAudits(this.tenantId, [
+      entry('emergency_link.used', 'emergency_link', link.id, { label: link.label, runs: runs.length }),
+      ...runs.map((r) =>
+        entry('run.kill', 'run', String(r.id), { via: 'emergency_link', linkId: link.id, queued: r.queued === true }),
+      ),
+    ]);
+    return { stoppedAt: new Date().toISOString(), runs, audit };
+  }
+
+  /** The halt of the runs an emergency stop reached, while the link still works. */
+  async emergencyRuns(token: string, client: string, ids: readonly string[]): Promise<Record<string, unknown>> {
+    if ((await this.liveEmergencyLink(token, client)) === null) throw emergencyExpired();
+    const rows = await Promise.all(ids.map((id) => this.store.getRun(this.tenantId, id)));
+    return { runs: rows.flatMap((row) => (row === null ? [] : [emergencyRunDto(row)])) };
   }
 
   /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */

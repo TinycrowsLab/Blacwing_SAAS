@@ -437,6 +437,7 @@ describe('workspace (B1)', () => {
     const store = {
       getTenant: vi.fn().mockResolvedValue({ id: 't1', name }),
       renameTenant: vi.fn().mockResolvedValue(true),
+      getEmergencyContact: vi.fn().mockResolvedValue(null),
       appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
     };
     const service = new DemoService(

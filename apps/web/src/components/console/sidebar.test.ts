@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { SidebarData } from '../../lib/schemas';
 
 vi.mock('../../lib/auth-actions', () => ({ signOutAction: vi.fn() }));
+vi.mock('../../app/(console)/settings/emergency-actions', () => ({}));
 
 const { outcomeDot, stopTarget, waitingCount, waitingRows } = await import('./sidebar');
 

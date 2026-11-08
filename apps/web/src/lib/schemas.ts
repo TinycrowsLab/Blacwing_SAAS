@@ -383,6 +383,9 @@ export const dashboardSchema = z.object({
 export type Dashboard = z.infer<typeof dashboardSchema>;
 
 const rangeSchema = z.object({ min: z.number(), max: z.number() });
+/** The workspace's optional emergency contact, shown on an expired emergency link's page. */
+export const emergencyContactSchema = z.object({ name: z.string(), phone: z.string() });
+export type EmergencyContact = z.infer<typeof emergencyContactSchema>;
 
 /** GET /workspace: the name (null until named) and the settings the console needs. */
 export const workspaceSchema = z.object({
@@ -397,9 +400,43 @@ export const workspaceSchema = z.object({
     ),
     webhook: z.object({ configured: z.boolean(), host: z.string().nullable() }),
     huntConcurrency: z.number().optional(),
+    emergencyContact: emergencyContactSchema.nullable().default(null),
   }),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
+
+/** An emergency stop link that still works (Settings). The token is never sent back after it is created. */
+export const emergencyLinkSchema = z.object({
+  id: z.string(),
+  label: z.string().nullable(),
+  createdBy: z.object({ id: z.string(), name: z.string() }),
+  createdAt: iso,
+  expiresAt: iso,
+  lastUsedAt: iso.nullable(),
+});
+export type EmergencyLink = z.infer<typeof emergencyLinkSchema>;
+
+/** What the no-login emergency page shows: a live link, or the expired page with the workspace's contact. */
+export const emergencyViewSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('active'),
+    workspace: z.string().nullable(),
+    liveRuns: z.number(),
+    link: z.object({ label: z.string().nullable(), expiresAt: iso }),
+  }),
+  z.object({ status: z.literal('expired'), contact: emergencyContactSchema.nullable() }),
+]);
+export type EmergencyView = z.infer<typeof emergencyViewSchema>;
+
+/** A run an emergency stop reached, and its halt. */
+export const emergencyRunSchema = z.object({
+  id: z.string(),
+  shortId: z.string(),
+  assetName: z.string(),
+  state: z.string(),
+  haltMs: z.number().nullable(),
+});
+export type EmergencyRun = z.infer<typeof emergencyRunSchema>;
 
 /** Run states that can still be paused or stopped. */
 export const LIVE_RUN_STATES: readonly string[] = ['queued', 'running', 'paused'];

@@ -68,6 +68,22 @@ export function ledgerWords(action: string, payload: Payload, targetId: string):
       const audits = `${n} ${n === 1 ? 'audit' : 'audits'}`;
       return payload.scope === 'target' ? `Stopped ${audits} on one target` : `Stopped ${audits} across the workspace`;
     }
+    case 'emergency_link.created': {
+      const label = text(payload.label);
+      return `Created an emergency stop link${label === null ? '' : ` for ${label}`}`;
+    }
+    case 'emergency_link.revoked': {
+      const label = text(payload.label);
+      return `Revoked the emergency stop link${label === null ? '' : ` for ${label}`}`;
+    }
+    case 'emergency_link.used': {
+      const runs = typeof payload.runs === 'number' ? payload.runs : 0;
+      return `Stopped all testing from an emergency link (${runs === 1 ? '1 audit' : `${runs} audits`})`;
+    }
+    case 'workspace.emergency_contact': {
+      const name = text(payload.name);
+      return name === null ? 'Removed the emergency contact' : `Set the emergency contact to ${name}`;
+    }
     default:
       return null;
   }

@@ -11,6 +11,25 @@ export interface TenantRow {
   readonly name: string;
 }
 
+/** An emergency stop link (demo.emergency_links). Only the SHA-256 of its token is stored. */
+export interface EmergencyLinkRow {
+  readonly id: string;
+  readonly token_hash: Buffer;
+  readonly label: string | null;
+  readonly created_by: string;
+  readonly created_by_name: string;
+  readonly created_at: Date;
+  readonly expires_at: Date;
+  readonly revoked_at: Date | null;
+  readonly last_used_at: Date | null;
+}
+
+/** The workspace's optional emergency contact (shown on the expired-link page). */
+export interface EmergencyContact {
+  readonly name: string;
+  readonly phone: string;
+}
+
 export interface UserRow {
   readonly id: string;
   readonly email: string;
@@ -660,7 +679,7 @@ export class DemoStore {
    * A queued run has no worker to halt it: it is killed right here, and its request closes as `killed` (the approval
    * is single-use). Null when it is no longer queued.
    */
-  async killQueuedRun(tenantId: string, id: string, by: string): Promise<Date | null> {
+  async killQueuedRun(tenantId: string, id: string, by: string | null): Promise<Date | null> {
     const r = await this.pool.query<{ killed_at: Date }>(
       `WITH killed AS (
          UPDATE demo.runs SET state = 'killed', kill_requested_at = now(), kill_requested_by = $3,
@@ -677,7 +696,7 @@ export class DemoStore {
   }
 
   /** Flags a running run for the worker, which polls the flag. Keeps the first request time. */
-  async requestKill(tenantId: string, id: string, by: string): Promise<Date | null> {
+  async requestKill(tenantId: string, id: string, by: string | null): Promise<Date | null> {
     const r = await this.pool.query<{ kill_requested_at: Date }>(
       `UPDATE demo.runs SET kill_requested_at = coalesce(kill_requested_at, now()),
          kill_requested_by = coalesce(kill_requested_by, $3)
@@ -1032,5 +1051,81 @@ export class DemoStore {
       runsRunning: Number(row?.runsRunning ?? 0),
       confirmedFindings: Number(row?.confirmedFindings ?? 0),
     };
+  }
+
+  async insertEmergencyLink(row: {
+    id: string;
+    tenant_id: string;
+    token_hash: Buffer;
+    label: string | null;
+    created_by: string;
+    created_by_name: string;
+    expires_at: Date;
+  }): Promise<EmergencyLinkRow> {
+    const r = await this.pool.query<EmergencyLinkRow>(
+      `INSERT INTO demo.emergency_links (id, tenant_id, token_hash, label, created_by, created_by_name, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [row.id, row.tenant_id, row.token_hash, row.label, row.created_by, row.created_by_name, row.expires_at],
+    );
+    const inserted = r.rows[0];
+    if (inserted === undefined) throw new Error('emergency link insert returned nothing');
+    return inserted;
+  }
+
+  /** Links that still work: not revoked and not expired, newest first. */
+  async listActiveEmergencyLinks(tenantId: string): Promise<EmergencyLinkRow[]> {
+    const r = await this.pool.query<EmergencyLinkRow>(
+      `SELECT * FROM demo.emergency_links
+       WHERE tenant_id = $1 AND revoked_at IS NULL AND expires_at > now() ORDER BY created_at DESC`,
+      [tenantId],
+    );
+    return r.rows;
+  }
+
+  /** The link with this token hash, whatever its state (the service decides whether it still works). */
+  async findEmergencyLink(tenantId: string, tokenHash: Buffer): Promise<EmergencyLinkRow | null> {
+    const r = await this.pool.query<EmergencyLinkRow>(
+      'SELECT * FROM demo.emergency_links WHERE tenant_id = $1 AND token_hash = $2',
+      [tenantId, tokenHash],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  /** Revokes a link that still works. Null when it is unknown, expired or already revoked. */
+  async revokeEmergencyLink(tenantId: string, id: string, by: string): Promise<EmergencyLinkRow | null> {
+    const r = await this.pool.query<EmergencyLinkRow>(
+      `UPDATE demo.emergency_links SET revoked_at = now(), revoked_by = $3
+       WHERE tenant_id = $1 AND id = $2 AND revoked_at IS NULL AND expires_at > now() RETURNING *`,
+      [tenantId, id, by],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async touchEmergencyLink(tenantId: string, id: string): Promise<void> {
+    await this.pool.query(
+      'UPDATE demo.emergency_links SET last_used_at = now() WHERE tenant_id = $1 AND id = $2',
+      [tenantId, id],
+    );
+  }
+
+  async getEmergencyContact(tenantId: string): Promise<EmergencyContact | null> {
+    const r = await this.pool.query<{ name: string | null; phone: string | null }>(
+      `SELECT emergency_contact_name AS name, emergency_contact_phone AS phone
+       FROM demo.workspace_settings WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    const { name = null, phone = null } = r.rows[0] ?? {};
+    return name === null || phone === null ? null : { name, phone };
+  }
+
+  /** Sets (or, with null, clears) the emergency contact. */
+  async setEmergencyContact(tenantId: string, contact: EmergencyContact | null): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO demo.workspace_settings (tenant_id, emergency_contact_name, emergency_contact_phone)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (tenant_id) DO UPDATE SET emergency_contact_name = $2, emergency_contact_phone = $3,
+         updated_at = now()`,
+      [tenantId, contact?.name ?? null, contact?.phone ?? null],
+    );
   }
 }
