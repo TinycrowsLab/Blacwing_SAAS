@@ -32,7 +32,7 @@ const config = {
   reactStrictMode: true,
   poweredByHeader: false,
   devIndicators: false,
-  transpilePackages: ['@blackwing/ui'],
+  transpilePackages: ['@blackwing/ui', '@blackwing/errors'],
   // Revisits and back/forward render from the client router cache at once (bug 15).
   experimental: { staleTimes: { dynamic: 30, static: 180 } },
   redirects() {

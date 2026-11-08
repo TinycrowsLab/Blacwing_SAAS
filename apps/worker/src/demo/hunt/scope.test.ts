@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkScope, classifyMethod, gateKey } from './scope.js';
+import { checkScope, classifyMethod, gateKey, stateChangeHint } from './scope.js';
 
 const scope = { allowedOrigins: ['https://shop.example.com', 'http://api.example.com:8080/ignored/path'], excludedPaths: ['/admin', '/Billing/'] };
 
@@ -19,6 +19,30 @@ describe('classifyMethod', () => {
     ['', 'destructive'],
   ])('%s is %s', (method, expected) => {
     expect(classifyMethod(method)).toBe(expected);
+  });
+});
+
+describe('state-changing GET ask-list', () => {
+  const u = (path: string): URL => new URL(`https://shop.example.com${path}`);
+
+  it.each([
+    ['/rest/user/change-password?new=x', 'change'],
+    ['/logout', 'logout'],
+    ['/vulnerabilities/csrf/?password_new=a&Change=Change', 'password'],
+    ['/api/items/7?action=archive', 'action='],
+    ['/index.php?DO=x', 'do='],
+    ['/account/Sign-Out', 'sign-out'],
+  ])('GET %s needs Gate 2 (%s)', (path, word) => {
+    expect(stateChangeHint('GET', u(path))).toBe(word);
+    expect(classifyMethod('GET', u(path))).toBe('state_changing');
+    expect(classifyMethod('head', u(path))).toBe('state_changing');
+  });
+
+  it('leaves ordinary reads, OPTIONS and calls without a URL alone', () => {
+    for (const path of ['/rest/products/search?q=apple', '/api/Users/1', '/robots.txt']) expect(classifyMethod('GET', u(path))).toBe('active_safe');
+    expect(classifyMethod('OPTIONS', u('/logout'))).toBe('active_safe');
+    expect(classifyMethod('GET')).toBe('active_safe');
+    expect(stateChangeHint('POST', u('/logout'))).toBeNull();
   });
 });
 
@@ -47,6 +71,19 @@ describe('checkScope', () => {
       expect(checkScope(`https://shop.example.com${path}`, scope)).toEqual({ ok: false, rule: 'excluded_path' });
     }
     expect(checkScope('https://shop.example.com/administrator', scope).ok).toBe(true);
+  });
+
+  it('refuses canonicalisation bypasses of an exclusion (double encoding, //, ;params, backslash)', () => {
+    for (const path of ['//admin', '/x/..//admin', '/admin;x', '/admin;jsessionid=1/users', '/%2561dmin', '/%252561dmin', '/%5Cadmin', '/public%2F..%2Fadmin', '/./admin/']) {
+      expect(checkScope(`https://shop.example.com${path}`, scope), path).toEqual({ ok: false, rule: 'excluded_path' });
+    }
+    expect(checkScope('https://shop.example.com/public;v=1/admin-guide', scope).ok).toBe(true);
+  });
+
+  it('refuses control bytes in any decoded form of the path', () => {
+    for (const path of ['/admin%00', '/internal%00.json', '/a%0d%0aX-Injected:1', '/a%2500', '/a%7f']) {
+      expect(checkScope(`https://shop.example.com${path}`, scope), path).toEqual({ ok: false, rule: 'invalid_path' });
+    }
   });
 
   it('keys Gate 2 approvals on method, origin, path without the query, and the test account role', () => {

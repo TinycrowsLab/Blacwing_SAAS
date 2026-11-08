@@ -10,11 +10,30 @@ export type ScopeVerdict =
   | { readonly ok: true; readonly url: URL }
   | { readonly ok: false; readonly rule: string };
 
-/** GET/HEAD/OPTIONS are active_safe, POST/PUT/PATCH need Gate 2, everything else (DELETE, TRACE, CONNECT, unknown) is refused. */
-export function classifyMethod(method: string): MethodClass {
+/** Words in a GET/HEAD path or query that suggest the request changes state (logout links, password resets, ...). */
+const STATE_CHANGE_WORDS = /(password|passwd|delete|remove|destroy|logout|signout|sign-out|change|reset|update|transfer|unsubscribe|deactivate)/i;
+/** Query keys that usually pick a server-side action. */
+const ACTION_KEYS = new Set(['action', 'do', 'cmd', 'op']);
+
+/** The word that makes a GET/HEAD look state-changing, or null. Other methods are classified by method alone. */
+export function stateChangeHint(method: string, url: URL): string | null {
+  const upper = method.toUpperCase();
+  if (upper !== 'GET' && upper !== 'HEAD') return null;
+  const word = STATE_CHANGE_WORDS.exec(safeDecode(`${url.pathname}${url.search}`))?.[1];
+  if (word !== undefined) return word.toLowerCase();
+  for (const key of url.searchParams.keys()) if (ACTION_KEYS.has(key.toLowerCase())) return `${key.toLowerCase()}=`;
+  return null;
+}
+
+/**
+ * GET/HEAD/OPTIONS are active_safe, POST/PUT/PATCH need Gate 2, everything else (DELETE, TRACE, CONNECT, unknown) is
+ * refused. With a URL, a GET/HEAD that looks state-changing (see stateChangeHint) also needs Gate 2.
+ */
+export function classifyMethod(method: string, url?: URL): MethodClass {
   switch (method.toUpperCase()) {
     case 'GET':
     case 'HEAD':
+      return url !== undefined && stateChangeHint(method, url) !== null ? 'state_changing' : 'active_safe';
     case 'OPTIONS':
       return 'active_safe';
     case 'POST':
@@ -48,7 +67,38 @@ function safeDecode(path: string): string {
   }
 }
 
-/** Scheme+host+port must be an allowed origin and the (dot-segment-normalised) path must not sit under an excluded path. */
+const DECODE_ROUNDS = 3;
+// eslint-disable-next-line no-control-regex -- matching control bytes is the point
+const CONTROL_BYTES = /[\u0000-\u001f\u007f]|%(?:[01][0-9a-f]|7f)/i;
+
+/** Lower-case, `\` as `/`, `//` collapsed, `;params` stripped per segment, dot segments resolved. */
+function canonicalPath(path: string): string {
+  const out: string[] = [];
+  for (const raw of path.replaceAll('\\', '/').split('/')) {
+    const segment = raw.split(';', 1)[0] ?? '';
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') out.pop();
+    else out.push(segment);
+  }
+  return `/${out.join('/')}`.toLowerCase();
+}
+
+/**
+ * Every form a server might see the path as: raw, each decode round (up to 3, until stable) and the canonical form of
+ * each. Null when any form carries a control byte (a NUL or CR/LF can cut a path differently on the server).
+ */
+function pathForms(pathname: string): string[] | null {
+  const decoded = [pathname];
+  for (let round = 0; round < DECODE_ROUNDS; round += 1) {
+    const next = safeDecode(decoded.at(-1) ?? pathname);
+    if (next === decoded.at(-1)) break;
+    decoded.push(next);
+  }
+  if (decoded.some((form) => CONTROL_BYTES.test(form))) return null;
+  return [...decoded, ...decoded.map(canonicalPath)];
+}
+
+/** Scheme+host+port must be an allowed origin and no form of the path (see pathForms) may sit under an excluded path. */
 export function checkScope(rawUrl: string, scope: Scope): ScopeVerdict {
   let url: URL;
   try {
@@ -59,8 +109,9 @@ export function checkScope(rawUrl: string, scope: Scope): ScopeVerdict {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return { ok: false, rule: 'scheme_not_allowed' };
   if (url.username !== '' || url.password !== '') return { ok: false, rule: 'credentials_in_url' };
   if (!scope.allowedOrigins.some((o) => originOf(o) === url.origin)) return { ok: false, rule: 'out_of_scope_origin' };
-  // Check the decoded path too: many servers decode %2F, so /api%2Fadmin must not slip past an /api/admin exclusion.
-  const paths = [url.pathname, safeDecode(url.pathname)];
+  const paths = pathForms(url.pathname);
+  if (paths === null) return { ok: false, rule: 'invalid_path' };
+  // Fail closed: many servers decode %2F, collapse // or drop ;params, so any form under an exclusion is refused.
   if (scope.excludedPaths.some((p) => paths.some((path) => isUnder(path, p)))) return { ok: false, rule: 'excluded_path' };
   return { ok: true, url };
 }

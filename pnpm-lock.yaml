@@ -716,6 +716,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@blackwing/ui':
         specifier: workspace:*
         version: link:../../packages/ui

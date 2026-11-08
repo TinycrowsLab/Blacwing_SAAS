@@ -155,7 +155,6 @@ export function RunDetailsSheet({
           <Row label="Approved by">{auth?.signedBy ?? 'Not recorded'}</Row>
           <Row label="Approved at">{fmt(request?.decidedAt)}</Row>
           <Row label="Authorisation id">{auth === undefined ? 'Not recorded' : mono(auth.saId)}</Row>
-          <Row label="Signing key">{auth === undefined ? 'Not recorded' : mono(auth.keyId)}</Row>
         </Section>
         <Section title="Runner">
           <Row label="Runner">{runner.success ? mono(`${runner.data.name} ${runner.data.version}`) : 'Not recorded'}</Row>

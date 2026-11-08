@@ -30,6 +30,9 @@
       "path": "e2e"
     },
     {
+      "path": "../../packages/errors"
+    },
+    {
       "path": "../../packages/testing"
     },
     {
