@@ -87,11 +87,24 @@ function Host({ text, after = '' }: { readonly text: string; readonly after?: st
   );
 }
 
-function Receipt({ label, value, onChange }: { readonly label: string; readonly value: ReactNode; readonly onChange: () => void }) {
+function Receipt({
+  label,
+  value,
+  onChange,
+  warn = false,
+}: {
+  readonly label: string;
+  readonly value: ReactNode;
+  readonly onChange: () => void;
+  /** The answer cannot be used (a refused address): a warning mark instead of the green check. */
+  readonly warn?: boolean;
+}) {
   return (
     <div className="hidden min-h-11 items-center gap-3 rounded-[12px] border border-border bg-card px-4 py-2 md:flex">
-      <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok">
-        <Icon name="check" size={11} />
+      <span
+        className={`flex size-[18px] shrink-0 items-center justify-center rounded-full ${warn ? 'bg-warn-soft text-warn' : 'bg-ok-soft text-ok'}`}
+      >
+        <Icon name={warn ? 'warn' : 'check'} size={11} />
       </span>
       <span className="shrink-0 text-[12.5px] text-muted-foreground">{label}</span>
       <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-foreground">{value}</span>
@@ -229,9 +242,15 @@ export function Order({
   // Draft kept on this device, 300 ms after the last change, once there is a site. A change still waiting when the
   // order unmounts (browser Back straight after Continue) is written then, so Forward comes back to the same question.
   const unsavedDraft = useRef<(() => void) | null>(null);
+  const refusedTarget = refused !== null && refused.origin === target?.origin;
   useEffect(() => {
     if (target === null || submitted.current) return;
     setSaved(false);
+    // An address Blackwing refuses can never go further: it is not kept as a draft (and an earlier one goes).
+    if (refusedTarget) {
+      removeDraft(draftId);
+      return;
+    }
     const write = (): void => {
       unsavedDraft.current = null;
       if (submitted.current) return;
@@ -252,7 +271,7 @@ export function Order({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [draftId, target, step, focus, focusText, care, method]);
+  }, [draftId, target, step, focus, focusText, care, method, refusedTarget]);
   useEffect(
     () => () => {
       unsavedDraft.current?.();
@@ -416,7 +435,7 @@ export function Order({
   /** What to look for, with the person's own note, as the ticket and the receipt read it. */
   const lookFor = `${focusPhrase.charAt(0).toUpperCase()}${focusPhrase.slice(1)}${note === '' ? '' : ` \u00b7 \u201c${note}\u201d`}`;
   const lines: TicketLine[] = [
-    { label: 'Site', value: target === null ? null : target.host },
+    { label: 'Site', value: target === null ? null : target.host, warn: refusedHere !== null },
     {
       label: "Proof it's yours",
       value: verified ? (asset.ownership.method === 'http_token' ? 'File found on the site' : 'Confirmed by you') : null,
@@ -454,7 +473,9 @@ export function Order({
       ),
       lede: verified
         ? 'Nothing to do here: the site is already verified as yours.'
-        : 'We only test sites you can show you control. Pick the way that suits you.',
+        : refusedHere !== null
+          ? 'Blackwing cannot test this address, whoever owns it. Change the site to go on.'
+          : 'We only test sites you can show you control. Pick the way that suits you.',
     },
     3: {
       h1: 'What should Claude look for?',
@@ -506,6 +527,7 @@ export function Order({
         {step > 1 && target !== null ? (
           <Receipt
             label="Site"
+            warn={refusedHere !== null}
             value={target.display}
             onChange={() => {
               setText(target.display);

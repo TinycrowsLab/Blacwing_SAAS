@@ -8,6 +8,7 @@ import {
   findingDetailSchema,
   gate2Outcome,
   headline,
+  notTested,
   splitFindings,
   stopLine,
   testCases,
@@ -406,5 +407,46 @@ describe('headline and plain reasons', () => {
     );
     expect(plainReason('the negative control also matched the oracle')).not.toContain('oracle');
     expect(plainReason('timeout')).toBe('timeout');
+    expect(plainReason('control_not_single_delta: path differ')).toBe('the control changed more than one thing (path), so it cannot isolate the cause');
+    expect(plainReason('access_control_signed_out_control: a signed-out control shows only that a sign-in is needed')).toContain('signed out');
+    expect(plainReason('control_page_missing: the control asked for a page that does not exist')).toBe(
+      'the control asked for a page that does not exist, which proves nothing',
+    );
+  });
+});
+
+describe('honest finish and not-tested', () => {
+  const summary = 'Tested SQLi.\n\n## Not covered\n- register and login\n- JWT';
+  it('never gives a green tick when Claude itself names what it did not cover', () => {
+    const run = {
+      createdAt: '2026-11-06T10:00:00.000Z',
+      startedAt: '2026-11-06T10:00:00.000Z',
+      finishedAt: '2026-11-06T10:01:14.000Z',
+      state: 'completed',
+      events: [ev(1, 'run.completed')],
+      gate2: [],
+    };
+    const cases = { executed: 7, skipped: 0, blocked: 0, total: 7 };
+    expect(stopLine(run, 0, cases).tone).toBe('ok');
+    expect(stopLine({ ...run, summary }, 0, cases)).toEqual({
+      tone: 'warn',
+      text: 'Finished in 1m 14s · Claude finished its plan: it ran all 7 planned test cases; Claude names what it did not cover below',
+    });
+  });
+  it('lists Claude\'s own not-covered note next to the runner\'s rows', () => {
+    const gaps = notTested({ coverage: null, endReason: null, excludedPaths: ['/createdb'], summary });
+    expect(gaps.rows).toEqual([{ what: '/createdb', why: 'Left out on purpose: the plan excluded these paths' }]);
+    expect(gaps.note).toBe('## Not covered\n- register and login\n- JWT');
+  });
+  it('words an exposure proof without a control and a single replay as once', () => {
+    const exposure = findingDetailSchema.parse({
+      id: 'f',
+      title: 't',
+      oracle: { type: 'body_contains', value: '"username"' },
+      evidence: { probe: { request: { method: 'GET', url: 'http://h/users/v1/_debug' } }, control: {}, replays: [{ n: 1, status: 200, matched: true }], proof: { kind: 'exposure_replay', replays: 1, delta: 'none', proposedBy: 'claude' } },
+    });
+    expect(proofSentence(exposure).text).toBe(
+      'Proven: replayed once, signed out. No control is possible for data open to everyone. Blackwing replayed it deterministically; Claude proposed the check.',
+    );
   });
 });

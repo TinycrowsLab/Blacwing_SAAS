@@ -6,7 +6,7 @@
 // suspected issue, dismissed and unreleased ones too) never goes in. Pure functions, no IO; all text is escaped.
 import { z } from 'zod';
 
-import { scrub, scrubDeep } from '@blackwing/errors/scrub';
+import { scrubDeep } from '@blackwing/errors/scrub';
 
 import { agentName } from '../../../lib/agents';
 import { coverageSchema } from '../../../lib/schemas';
@@ -76,6 +76,8 @@ const LIMITS = [
   'Only issues a person released are listed. Issues still awaiting release, kept back or dismissed are left out.',
 ];
 
+const laterThanStart = (at: string | null | undefined, start: string | null): boolean =>
+  at !== null && at !== undefined && start !== null && Date.parse(at) > Date.parse(start);
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
 const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
 const usd = (n: number): string => `$${n.toFixed(2)}`;
@@ -168,7 +170,11 @@ function facts(src: ReportSource): [string, string][] {
           owner.verifiedBy === null || owner.verifiedBy === undefined
             ? null
             : `by ${owner.verifiedBy}`,
-          when(owner.verifiedAt) === null ? null : `on ${when(owner.verifiedAt)}`,
+          // The proof in force for this audit: a re-verification after the start says nothing about this audit.
+          when(owner.verifiedAt) === null || laterThanStart(owner.verifiedAt, run.startedAt)
+            ? null
+            : `on ${when(owner.verifiedAt)}`,
+          when(run.startedAt) === null ? null : `and re-checked when the audit started, ${when(run.startedAt)}`,
         ]
           .filter(Boolean)
           .join(' ')

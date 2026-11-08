@@ -44,7 +44,7 @@ export function oracleWords(oracle: FindingDetail['oracle']): string | null {
 }
 
 /** The validator's reason in plain words ("oracle" is the engine's word for the expected result). */
-const REASON_WORDS: ReadonlyArray<readonly [RegExp, string]> = [
+const REASON_WORDS: readonly (readonly [RegExp, string])[] = [
   [/^control_not_single_delta: (.+) differ$/i, 'the control changed more than one thing ($1), so it cannot isolate the cause'],
   [/^access_control_signed_out_control\b/i, 'the control was sent signed out, which shows only that a sign-in is needed, not that this role should be refused'],
   [/^control_page_missing\b/i, 'the control asked for a page that does not exist, which proves nothing'],

@@ -7,7 +7,7 @@ import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { finishedWhy } from '../../../lib/host-lines';
 import { resultsHeadline } from '../../../lib/plan-text';
 import { findingSchema, type AssessmentRequest, type Coverage, type Run } from '../../../lib/schemas';
-import { shortId } from '../run-model';
+import { pathOf, shortId } from '../run-model';
 
 export type FindingSummary = Run['findings'][number];
 type RunEvent = Run['events'][number];
@@ -377,14 +377,6 @@ export interface DecisionRow {
   readonly at: string | null;
 }
 
-const pathOf = (url: string): string => {
-  try {
-    const u = new URL(url);
-    return `${u.pathname}${u.search}`;
-  } catch {
-    return url;
-  }
-};
 
 /**
  * "Your decisions" for one run: Gate 1 (the request), Gate 2 (the run's decisions, with expiries), Gate 3 and stop

@@ -1,6 +1,6 @@
-// Server-only reads for the results, findings, ledger and settings pages. The API limits each workspace to a few
-// requests a second (10/s, burst 20), and one render plus a refresh can come close: a 429 is retried after a short
-// back-off instead of replacing the page with an error, and a page asks for each path once per render (React cache).
+// Server-only reads for the results, findings, ledger and settings pages. The API limits each user to a steady rate
+// (20/s, burst 60); should a burst still hit it, a 429 is retried after a short back-off instead of replacing the page
+// with an error, and a page asks for each path once per render (React cache).
 // Never import this from a client component (it carries the internal token through lib/api).
 import { cache } from 'react';
 
@@ -10,7 +10,7 @@ import { getViewer } from '../../../lib/auth';
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_TOO_MANY = 429;
 const RETRIES = 3;
-/** The bucket refills a token every 100 ms; these waits (300, 600, 900 ms) leave room for a whole burst to drain. */
+/** These waits (300, 600, 900 ms) leave the per-user bucket time to refill before the next try. */
 const BACKOFF_MS = 300;
 
 const wait = (ms: number): Promise<void> =>

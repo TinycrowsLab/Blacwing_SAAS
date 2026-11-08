@@ -53,12 +53,16 @@ export function mergeEvents(
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
 const num = (value: unknown): number => (typeof value === 'number' ? value : 0);
 
+/** `[redacted: secret]` as Blackwing wrote it: a URL parser turns its space into `%20`, which reads as broken. */
+const readablePlaceholders = (text: string): string => text.replace(/\[redacted:(?:%20)+([a-z ]+)\]/gi, '[redacted: $1]');
+
+/** Path and query of a URL for display, placeholders kept readable. */
 export function pathOf(url: string): string {
   try {
     const u = new URL(url);
-    return `${u.pathname}${u.search}`;
+    return readablePlaceholders(`${u.pathname}${u.search}`);
   } catch {
-    return url;
+    return readablePlaceholders(url);
   }
 }
 

@@ -269,7 +269,7 @@ export function IssueList({
   );
 }
 
-/** "Release all proven": one triage call per awaiting finding with the shared reason (one ledger event each). */
+/** "Release all proven": one batch triage call with the shared reason (still one ledger event per finding). */
 export function ReleaseAll({ ids, runId = null }: { readonly ids: readonly string[]; readonly runId?: string | null }) {
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState(PROVEN_REASON);

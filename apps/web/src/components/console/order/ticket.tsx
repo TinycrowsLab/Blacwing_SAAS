@@ -12,6 +12,8 @@ export interface TicketLine {
   readonly label: string;
   /** Null while unanswered: the line then says when it is asked. */
   readonly value: string | null;
+  /** The answer cannot be used (a refused address): a warning dot, never the green "done" one. */
+  readonly warn?: boolean;
 }
 
 export interface TicketDetail {
@@ -49,7 +51,7 @@ function TicketBody({
       </div>
       <ol className="m-0 flex list-none flex-col p-0">
         {lines.map((l, i) => {
-          const state = i < current ? 'done' : i === current ? 'current' : 'next';
+          const state = l.warn === true ? 'warn' : i < current ? 'done' : i === current ? 'current' : 'next';
           return (
             <li
               key={l.label}
@@ -58,7 +60,7 @@ function TicketBody({
             >
               <span
                 aria-hidden="true"
-                className={`mt-[5px] size-2.5 shrink-0 rounded-full ${state === 'done' ? 'bg-ok' : state === 'current' ? 'bg-gold shadow-[inset_0_0_0_1px_rgba(138,99,16,.4)]' : 'border border-border-strong'}`}
+                className={`mt-[5px] size-2.5 shrink-0 rounded-full ${state === 'warn' ? 'bg-warn' : state === 'done' ? 'bg-ok' : state === 'current' ? 'bg-gold shadow-[inset_0_0_0_1px_rgba(138,99,16,.4)]' : 'border border-border-strong'}`}
               />
               <span className="flex min-w-0 flex-col">
                 <span className="text-[12.5px] text-muted-foreground">{l.label}</span>
