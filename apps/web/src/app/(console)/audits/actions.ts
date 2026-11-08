@@ -44,7 +44,13 @@ function plainOwnership<T>(result: ActionResult<T>): ActionResult<T> {
       return {
         ...result,
         // The API's detail already says what changed; only the way forward is the console's.
-        message: result.message.replace(/\s*Prove ownership again to go ahead\.?$/, ' Show it is yours again on Targets, then try again.'),
+        // An address the rules now refuse cannot be proven again, so it gets no "show it again".
+        message: result.message.replace(
+          /\s*Prove ownership again to go ahead\.?$/,
+          /can never be tested|cannot test its own|listed it as a lab/.test(result.message)
+            ? ''
+            : ' Show it is yours again on Targets, then try again.',
+        ),
       };
     default:
       return result;

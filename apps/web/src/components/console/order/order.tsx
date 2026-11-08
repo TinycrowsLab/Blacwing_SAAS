@@ -190,11 +190,15 @@ export function Order({
 
   // Question 2 registers the site (the API reuses an existing one): the file needs its token, and only the API knows
   // whether the owner's word is accepted for it (a lab the operator listed) or the address is refused outright.
+  // A known but unverified site is registered again too: the API re-applies its rules, so an address it now refuses
+  // (an old metadata or console target) is refused here instead of offered a proof.
+  const registered = useRef<string | null>(null);
   useEffect(() => {
-    if (target === null || asset !== null || step < 2) return;
+    if (target === null || step < 2 || registered.current === target.origin || (asset !== null && isVerified(asset))) return;
     let active = true;
     void ensureTargetAction(target.origin, target.host).then((r) => {
       if (!active) return;
+      if (r.ok || r.code === 'target_not_allowed') registered.current = target.origin;
       if (r.ok) setAsset(r.data);
       else if (r.code === 'target_not_allowed') setRefused({ origin: target.origin, message: r.message });
       else setError(r.message);
