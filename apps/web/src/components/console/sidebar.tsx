@@ -437,7 +437,7 @@ function SidebarBody({
                 title={decisionTitle(g.method, g.url)}
                 sub={
                   <>
-                    {hostOf(g.url)} · <Countdown deadlineAt={g.deadlineAt} />
+                    {hostOf(g.url)} · <Countdown deadlineAt={g.deadlineAt} {...(g.createdAt === undefined ? {} : { createdAt: g.createdAt })} />
                   </>
                 }
               />

@@ -239,6 +239,33 @@ export const runSchema = z.object({
 });
 export type Run = z.infer<typeof runSchema>;
 
+/** The care levels by the names people chose them by. */
+export const CARE_LABEL: Readonly<Record<string, string>> = { passive: "Look, don't touch", active_safe: 'Probe gently' };
+
+/** The authorisation a run was pinned to (run.pins), as the run and the Gate 2 screens show it. */
+export interface PinnedAuthorisation {
+  readonly saId: string;
+  readonly signedBy: string | null;
+  /** The care level's label ("Probe gently"); null when the run did not pin it. */
+  readonly care: string | null;
+  readonly origins: readonly string[];
+  readonly excludedPaths: readonly string[];
+}
+
+/** Null when the run pinned no authorisation (nothing is shown rather than guessed). */
+export function pinnedAuthorisation(pins: Run['pins']): PinnedAuthorisation | null {
+  const auth = pins.authorisation;
+  if (auth === undefined) return null;
+  const care = pins.request?.intrusiveness;
+  return {
+    saId: auth.saId,
+    signedBy: auth.signedBy,
+    care: care === undefined || care === '' ? null : (CARE_LABEL[care] ?? care),
+    origins: pins.asset?.allowedOrigins ?? [],
+    excludedPaths: pins.asset?.excludedPaths ?? [],
+  };
+}
+
 /** Gate 2 as the decision page needs it: the DTO plus the audit event of the decision. */
 export const gate2DetailSchema = gate2Schema.extend({ audit: auditRefSchema });
 

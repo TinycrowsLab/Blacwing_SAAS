@@ -17,6 +17,8 @@ export interface HostContext {
   readonly viewerName?: string | null | undefined;
   /** How far the test plan got, for the finish line (run-model `caseTally`). */
   readonly cases?: CaseTally | null | undefined;
+  /** False when the run ended before its team started (no `run.started`): a stop then names no halt time. */
+  readonly started?: boolean | undefined;
 }
 
 export interface CaseTally {
@@ -121,6 +123,7 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
     case 'kill.requested':
       return 'Stopping: halting every agent…';
     case 'run.killed': {
+      if (ctx.started === false) return 'Stopped before testing began.';
       const ms = num(d.haltMs);
       return ms === null ? 'Stopped. Every agent halted.' : `Stopped. Every agent halted in ${ms.toLocaleString('en-US')} ms.`;
     }

@@ -4,6 +4,7 @@
 // tokens in packages/ui (CSS variables, never hex). Server-safe: no hooks in this file.
 import Link from 'next/link';
 
+import type { PinnedAuthorisation } from '../../lib/schemas';
 import type { CSSProperties, ReactNode } from 'react';
 
 /** Line icon paths from the design system (stroke 1.5 to 2, 24 grid). */
@@ -701,5 +702,98 @@ export function Skeleton({ className = '' }: { readonly className?: string }) {
     <div aria-hidden="true" className={`bw-delayed ${className}`}>
       <div className="size-full rounded-[10px] bg-surface-2 motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]" />
     </div>
+  );
+}
+
+// A redaction marker as the runner writes it, raw or URL-encoded: "[REDACTED]", "[redacted: secret]", "%5Bredacted%3A%20secret%5D".
+const REDACTION = /\[(?:redacted|REDACTED)(?::[^\]]*)?\]|%5B(?:redacted|REDACTED)(?:%3A|:)?[^%\s]*(?:%20[^%\s]*)*%5D/g;
+
+/** `text` with every redaction marker shown as one muted "•••" token, so a hidden value never reads as raw markup. */
+export function withRedactions(text: string): ReactNode {
+  const parts = text.split(REDACTION);
+  if (parts.length === 1) return text;
+  return parts.flatMap((part, i) =>
+    i === 0
+      ? [part]
+      : [
+          <span
+            key={i}
+            title="Hidden by Blackwing"
+            className="mx-px inline-flex h-[16px] items-center rounded-[4px] bg-surface-2 px-1 align-[-2px] font-sans text-[10.5px] tracking-[0.12em] text-muted-foreground"
+          >
+            •••
+            <span className="sr-only"> (hidden)</span>
+          </span>,
+          part,
+        ],
+  );
+}
+
+/**
+ * "Authorised under SA-01A1BA1B": the authorisation the run was pinned to, from run.pins only. `strip` is the run page's
+ * one line under the stepper; `card` is the Gate 2 screens' block. Rows without pinned data are left out.
+ */
+export function AuthorisedUnder({
+  auth,
+  variant,
+  action,
+}: {
+  readonly auth: PinnedAuthorisation;
+  readonly variant: 'strip' | 'card';
+  readonly action?: ReactNode;
+}) {
+  const id = <span className="font-mono text-[12px] font-medium text-foreground">{auth.saId}</span>;
+  if (variant === 'strip')
+    return (
+      <p className="m-0 flex min-w-0 items-center gap-2 border-b border-border px-4 py-1.5 text-[12px] leading-5 text-muted-foreground md:px-6">
+        <Icon name="shield" size={14} className="shrink-0 text-gold-ink" />
+        <span className="min-w-0 flex-1 truncate">
+          Authorised under {id}
+          {auth.signedBy === null ? null : <> · approved by {auth.signedBy}</>}
+          {auth.care === null ? null : <> · up to {auth.care}</>}
+          {auth.origins.length === 0 ? null : (
+            <span className="max-md:hidden">
+              {' · '}scope{' '}
+              <span className="font-mono text-[11.5px]">{auth.origins.join(', ')}</span>
+            </span>
+          )}
+          {auth.excludedPaths.length === 0 ? null : (
+            <span className="max-md:hidden">
+              {' · '}avoids <span className="font-mono text-[11.5px]">{auth.excludedPaths.join(', ')}</span>
+            </span>
+          )}
+        </span>
+        {action}
+      </p>
+    );
+  const row = (label: string, value: ReactNode) => (
+    <>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="m-0 min-w-0 text-right text-foreground">{value}</dd>
+    </>
+  );
+  return (
+    <section aria-label="Authorisation" className="w-full">
+      <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground">
+        <Icon name="shield" size={13} className="text-gold-ink" />
+        Authorised under {id}
+      </span>
+      <dl className="m-0 mt-1.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-[12.5px]">
+        {auth.signedBy === null ? null : row('Approved by', auth.signedBy)}
+        {auth.care === null ? null : row('Most allowed', auth.care)}
+        {auth.excludedPaths.length === 0
+          ? null
+          : row(
+              'Paths to avoid',
+              <span className="inline-flex flex-wrap justify-end gap-1">
+                {auth.excludedPaths.map((p) => (
+                  <span key={p} className="rounded-[4px] bg-surface-2 px-1 font-mono text-[11.5px]">
+                    {p}
+                  </span>
+                ))}
+              </span>,
+            )}
+      </dl>
+    </section>
   );
 }

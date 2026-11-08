@@ -8,7 +8,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Card, Icon, KindTag, SeverityChip, VerdictMark, gaugeTone } from './design';
+import { Card, Icon, KindTag, SeverityChip, VerdictMark, gaugeTone, withRedactions } from './design';
 import { Markdown, stripMarkdown } from './markdown';
 import {
   type Activity,
@@ -137,9 +137,13 @@ const PLAN_PARTS = [
 ] as const;
 type PlanPart = (typeof PLAN_PARTS)[number]['key'];
 
-/** A running case is "held for a decision" while its agent has a Gate 2 request open (it counts cases, not decisions); once the run ended, an open case is "not finished". */
+/**
+ * An open case is "held for a decision" while a Gate 2 request open for it names it (`case:<id>`), or while its agent
+ * has a blocking request open (it counts cases, not decisions); once the run ended, an open case is "not finished".
+ */
 function planPart(c: TestCase, waiting: ReadonlySet<string>, ended: boolean): PlanPart {
   if (ended && (c.status === 'executing' || c.status === 'proposed')) return 'unfinished';
+  if ((c.status === 'executing' || c.status === 'proposed') && waiting.has(`case:${c.id}`)) return 'waiting';
   switch (c.status) {
     case 'executed':
       return 'done';
@@ -391,7 +395,7 @@ export function RequestsTab({
               </time>
               <span className="hidden truncate md:inline">{agentName(x.agent)}</span>
               <span className="min-w-0 truncate font-mono text-[12px]">
-                <span className="font-medium text-slate">{x.method}</span> {pathOf(x.url)}
+                <span className="font-medium text-slate">{x.method}</span> {withRedactions(pathOf(x.url))}
               </span>
               {x.outcome === 'sent' && x.status !== null ? (
                 <span className={`justify-self-end rounded-[5px] px-1.5 py-px text-[10.5px] font-medium tabular-nums ${statusTone(x.status)}`}>{x.status}</span>
