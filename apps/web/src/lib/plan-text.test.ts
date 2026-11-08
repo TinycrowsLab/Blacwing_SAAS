@@ -58,13 +58,11 @@ describe('plan read-back', () => {
     expect(resultsHeadline(['low'])).toBe('Claude proved 1 issue.');
   });
 
-  it('names a decision from the last path segment that is not an id', () => {
-    expect(decisionTitle('POST', 'https://s.example.com/rest/basket/7/checkout')).toBe('Allow a request to checkout?');
-    expect(decisionTitle('PUT', 'https://s.example.com/api/orders/42')).toBe('Allow a request to orders?');
+  it('names a decision by its method and path, without the query', () => {
+    expect(decisionTitle('POST', 'https://s.example.com/rest/basket/7/checkout')).toBe('Allow POST /rest/basket/7/checkout?');
+    expect(decisionTitle('get', 'https://s.example.com/vulnerabilities/xss_s/?name=x')).toBe('Allow GET /vulnerabilities/xss_s/?');
     expect(decisionTitle('POST', 'https://s.example.com/')).toBe('Allow a POST request?');
-    expect(decisionTitle('POST', 'https://s.example.com/api/Users')).toBe('Allow a request to users?');
-    expect(decisionTitle('POST', 'https://s.example.com/file-upload')).toBe('Allow a request to file upload?');
-    expect(decisionTitle('POST', 'https://s.example.com/upload')).toBe('Allow a request to upload?');
+    expect(decisionTitle('PUT', '/api/orders/42?x=1')).toBe('Allow PUT /api/orders/42?');
   });
 
   it('reads back the whole note, and names what an approver should notice', () => {

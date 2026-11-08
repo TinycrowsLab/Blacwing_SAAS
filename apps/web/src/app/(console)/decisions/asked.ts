@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import { callApi } from '../../../lib/api';
 import { objectivePhrase } from '../../../lib/plan-text';
-import { LIVE_RUN_STATES, requestSchema, runSchema, type Gate2 } from '../../../lib/schemas';
+import { LIVE_RUN_STATES, pinnedAuthorisation, requestSchema, runSchema, type Gate2 } from '../../../lib/schemas';
 
 import type { AuditContext } from '../../../components/console/gate2-view';
 import type { Viewer } from '../../../lib/auth';
@@ -100,6 +100,7 @@ export async function askedInRun(session: Viewer, gate2: Gate2, actorId: string 
             objective: objective === '' ? null : objectivePhrase(objective),
             // A request still waiting means the audit is live, whatever the run read said.
             live: run.success ? LIVE_RUN_STATES.includes(run.data.state) : gate2.status === 'pending',
+            authorisation: run.success ? pinnedAuthorisation(run.data.pins) : null,
           },
     history: run.success ? run.data.gate2 : [],
     complete: run.success && who !== null,
