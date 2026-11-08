@@ -372,12 +372,20 @@ export function KeptBack({
 }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
-  const waiting = items.filter((f) => f.status === 'suspected').length;
+  const suspected = items.filter((f) => f.status === 'suspected');
+  const waiting = suspected.length;
+  // The worst ones by name, so a critical suspicion is never hidden behind a collapsed row.
+  const serious = (['critical', 'high'] as const)
+    .map((sev) => ({ sev, n: suspected.filter((f) => f.severity === sev).length }))
+    .filter((x) => x.n > 0)
+    .map((x) => `${x.n} ${x.sev}`)
+    .join(', ');
   const text =
     waiting > 0 ? (
       <>
         <b className="font-semibold text-foreground">
-          {waiting} more {waiting === 1 ? 'was' : 'were'} suspected but not proven.
+          {waiting} more {waiting === 1 ? 'was' : 'were'} suspected but not proven
+          {serious === '' ? '' : ` (${serious})`}.
         </b>{' '}
         They stay off the report unless you review them and release with a reason.
       </>

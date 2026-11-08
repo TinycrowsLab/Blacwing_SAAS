@@ -46,11 +46,11 @@ export function oracleWords(oracle: FindingDetail['oracle']): string | null {
 /** The validator's reason in plain words ("oracle" is the engine's word for the expected result). */
 const REASON_WORDS: readonly (readonly [RegExp, string])[] = [
   [/^control_not_single_delta: (.+) differ$/i, 'the control changed more than one thing ($1), so it cannot isolate the cause'],
-  [/^access_control_signed_out_control\b/i, 'the control was sent signed out, which shows only that a sign-in is needed, not that this role should be refused'],
-  [/^control_page_missing\b/i, 'the control asked for a page that does not exist, which proves nothing'],
-  [/^no_control_signed_in\b/i, 'without a control, only data open to everyone can be proven, and the probe was signed in'],
-  [/^no_control_status_only\b/i, 'without a control, a status code alone does not show exposed data'],
-  [/^no_control:/i, 'there was no control, and this kind of issue needs one'],
+  [/^access_control_signed_out_control\b.*$/is, 'the control was sent signed out, which shows only that a sign-in is needed, not that this role should be refused'],
+  [/^control_page_missing\b.*$/is, 'the control asked for a page that does not exist, which proves nothing'],
+  [/^no_control_signed_in\b.*$/is, 'without a control, only data open to everyone can be proven, and the probe was signed in'],
+  [/^no_control_status_only\b.*$/is, 'without a control, a status code alone does not show exposed data'],
+  [/^no_control:.*$/is, 'there was no control, and this kind of issue needs one'],
   [/^probe replay (\d+) not sent: (.+)$/i, 'replay $1 was not sent ($2)'],
   [/^negative control not sent: (.+)$/i, 'the control was not sent ($1)'],
 ];
