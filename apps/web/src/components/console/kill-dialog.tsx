@@ -487,7 +487,7 @@ function KillDialog({
       done: halted,
     },
     {
-      label: 'Pending decisions denied',
+      label: 'Pending decisions closed unanswered',
       detail:
         read.length === 0
           ? ''
