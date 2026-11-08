@@ -20,7 +20,7 @@ import {
 
 import { Icon, type IconName, Kbd } from './design';
 import { Countdown } from './design-client';
-import { KillButton, type StoppableRun } from './kill-dialog';
+import { KillButton, type StoppableRun, toStoppable } from './kill-dialog';
 import { MobileBar } from './mobile-bar';
 import { useDarkTheme } from './theme-toggle';
 import { useNow } from './use-now';
@@ -62,16 +62,6 @@ const typing = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-type LiveRun = SidebarData['live'][number];
-
-const stoppable = (r: LiveRun, actorId: string | null): StoppableRun => ({
-  id: r.id,
-  assetName: r.assetName ?? 'this audit',
-  startedAt: r.startedAt,
-  startedBy: r.startedBy?.name ?? null,
-  mine: actorId !== null && r.startedBy?.id === actorId,
-});
-
 /**
  * What Stop acts on (button, Ctrl+Shift+. and the phone's red icon). On an audit's own page: that audit, or nothing once
  * it ended (never another audit behind the one on screen). Elsewhere nothing is preselected: Stop lists the live
@@ -86,9 +76,9 @@ export function stopTarget(
   const onRun = /^\/runs\/([^/]+)/.exec(path)?.[1];
   if (onRun !== undefined) {
     const here = live.find((r) => r.id === decodeURIComponent(onRun));
-    return { run: here === undefined ? null : stoppable(here, actorId), choices: [], onRunPage: true };
+    return { run: here === undefined ? null : toStoppable(here, actorId), choices: [], onRunPage: true };
   }
-  return { run: null, choices: live.map((r) => stoppable(r, actorId)), onRunPage: false };
+  return { run: null, choices: live.map((r) => toStoppable(r, actorId)), onRunPage: false };
 }
 
 /** What waits on people: exact when the API counts it, else what the (capped) lists hold. */

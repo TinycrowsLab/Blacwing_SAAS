@@ -87,6 +87,25 @@ function requireRole(actor: DemoActor, roles: readonly string[], detail: string)
  *  so ids made in the same minute share a prefix: the random tail tells them apart (the web uses the same rule). */
 export const shortId = (id: string): string => id.replace(/-/g, '').slice(-SHORT_ID_LENGTH).toUpperCase();
 
+export type KillScope = 'target' | 'workspace';
+
+export interface StoppedRun {
+  readonly id: string;
+  readonly assetId: string;
+  readonly assetName: string;
+  readonly killRequestedAt: string;
+}
+
+/** What the person types to stop a whole workspace: its name, or STOP ALL while it has none. */
+export const workspaceConfirm = (name: string | null | undefined): string =>
+  name === null || name === undefined || name.trim() === '' ? 'STOP ALL' : name.trim();
+
+/** Typed confirmations compare without case and with runs of spaces folded. */
+export const confirmMatches = (typed: string, expected: string): boolean => {
+  const fold = (v: string): string => v.trim().replace(/\s+/g, ' ').toLowerCase();
+  return fold(typed) !== '' && fold(typed) === fold(expected);
+};
+
 /** `scheme://host[:port]` of each URL, without duplicates. */
 export function originsOf(urls: readonly string[]): string[] {
   return [...new Set(urls.map((url) => new URL(url).origin))];
@@ -198,6 +217,7 @@ export function runDto(row: RunRow, concurrency: number = DEFAULT_HUNT_CONCURREN
     id: row.id,
     shortId: shortId(row.id),
     requestId: row.request_id,
+    assetId: row.asset_id,
     assetName: row.asset_name,
     state: row.state,
     paused: row.paused,
@@ -1090,6 +1110,23 @@ export class DemoService {
         `Type the run id ${shortId(run.id)} to confirm.`,
       );
     }
+    const halt = await this.halt(actor, runId);
+    if (halt === null) {
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'run_not_running',
+        'The run is not queued or running.',
+      );
+    }
+    const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: halt.queued });
+    return { killRequestedAt: halt.at.toISOString(), audit };
+  }
+
+  /**
+   * The per-run kill path, shared by every scope: a queued run is killed here, a running or paused one is flagged for
+   * the worker (which halts it and measures `halt_ms`). Null when the run is no longer live.
+   */
+  private async halt(actor: DemoActor, runId: string): Promise<{ at: Date; queued: boolean } | null> {
     const killedQueued = await this.store.killQueuedRun(this.tenantId, runId, actor.id);
     if (killedQueued !== null) {
       await this.store.appendEvent(runId, {
@@ -1098,25 +1135,80 @@ export class DemoService {
         message: `Run killed by ${actor.name} before it started.`,
         data: { by: actor.id, haltMs: 0 },
       });
-      const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: true });
-      return { killRequestedAt: killedQueued.toISOString(), audit };
+      return { at: killedQueued, queued: true };
     }
     const requestedAt = await this.store.requestKill(this.tenantId, runId, actor.id);
-    if (requestedAt === null) {
-      throw new DemoRefusal(
-        HttpStatus.CONFLICT,
-        'run_not_running',
-        'The run is not queued or running.',
-      );
-    }
+    if (requestedAt === null) return null;
     await this.store.appendEvent(runId, {
       kind: 'kill.requested',
       stage: 'control',
       message: `Kill requested by ${actor.name}.`,
       data: { by: actor.id },
     });
-    const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: false });
-    return { killRequestedAt: requestedAt.toISOString(), audit };
+    return { at: requestedAt, queued: false };
+  }
+
+  /**
+   * Stop every live run in a blast radius: `target` (every run on one asset) or `workspace` (every run of the tenant).
+   * The person types the target's or the workspace's name. Each run goes through the per-run kill path; the ledger
+   * gets one `run.kill` per run and then one `kill.scope` entry naming them all.
+   */
+  async killScope(
+    actor: DemoActor,
+    input: { readonly scope: 'target'; readonly assetId: string; readonly confirm: string } | { readonly scope: 'workspace'; readonly confirm: string },
+  ): Promise<{ scope: KillScope; killRequestedAt: string; runs: StoppedRun[]; audit: AuditRef }> {
+    const live = await this.store.listLiveRuns(this.tenantId);
+    let runs: RunRow[];
+    let expected: string;
+    let target: { type: string; id: string };
+    if (input.scope === 'target') {
+      const asset = await this.assetRow(input.assetId);
+      runs = live.filter((r) => r.asset_id === asset.id);
+      expected = asset.name;
+      target = { type: 'asset', id: asset.id };
+    } else {
+      runs = live;
+      expected = workspaceConfirm((await this.store.getTenant(this.tenantId))?.name);
+      target = { type: 'tenant', id: this.tenantId };
+    }
+    if (!confirmMatches(input.confirm, expected)) {
+      throw new DemoRefusal(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'kill_confirmation_mismatch',
+        `Type ${expected} to confirm.`,
+      );
+    }
+    // Flag every run first, all at once: the halt clock starts for each before any bookkeeping.
+    const halted = await Promise.all(runs.map(async (run) => ({ run, halt: await this.halt(actor, run.id) })));
+    const stopped = halted.flatMap(({ run, halt }) => (halt === null ? [] : [{ run, halt }]));
+    if (stopped.length === 0) {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'run_not_running', 'Nothing in that scope is queued or running.');
+    }
+    const refs = await this.store.appendAudits(this.tenantId, [
+      ...stopped.map(({ run, halt }) =>
+        entryOf(actor, 'run.kill', 'run', run.id, { scope: input.scope, queued: halt.queued }),
+      ),
+      entryOf(actor, 'kill.scope', target.type, target.id, {
+        scope: input.scope,
+        confirm: input.confirm,
+        runs: stopped.length,
+        runIds: stopped.map(({ run }) => run.id).join(','),
+      }),
+    ]);
+    const audit = refs.at(-1);
+    if (audit === undefined) throw new Error('audit append returned nothing');
+    const first = Math.min(...stopped.map(({ halt }) => halt.at.getTime()));
+    return {
+      scope: input.scope,
+      killRequestedAt: new Date(first).toISOString(),
+      runs: stopped.map(({ run, halt }) => ({
+        id: run.id,
+        assetId: run.asset_id,
+        assetName: run.asset_name,
+        killRequestedAt: halt.at.toISOString(),
+      })),
+      audit,
+    };
   }
 
   /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */

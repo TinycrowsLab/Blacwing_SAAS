@@ -31,6 +31,11 @@ describe('ledger words', () => {
     expect(ledgerWords('gate2.expired', {}, 'g')).toBe('No answer in time: the request was not sent');
   });
 
+  it('says how many audits a scoped stop ended, and where', () => {
+    expect(ledgerWords('kill.scope', { scope: 'target', runs: 2 }, 'a')).toBe('Stopped 2 audits on one target');
+    expect(ledgerWords('kill.scope', { scope: 'workspace', runs: 1 }, 't')).toBe('Stopped 1 audit across the workspace');
+  });
+
   it('leaves every other action to the shared label', () => {
     expect(ledgerWords('gate1.approve', {}, 'r')).toBeNull();
     expect(ledgerWords('something.new', {}, 'x')).toBeNull();

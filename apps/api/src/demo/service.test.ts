@@ -2,13 +2,14 @@
 // the Gate 2 countdown and the ownership proof.
 import { describe, expect, it, vi } from 'vitest';
 
-import { amendRequestSchema, gate2DecisionSchema, triageManySchema, workspaceSchema } from './controller.js';
+import { amendRequestSchema, gate2DecisionSchema, killScopeSchema, triageManySchema, workspaceSchema } from './controller.js';
 import {
   ALL_ROLES,
   DemoRefusal,
   DemoService,
   actorHasRole,
   assetDto,
+  confirmMatches,
   exchangeDto,
   findingDto,
   gate2Dto,
@@ -17,6 +18,7 @@ import {
   runDto,
   secondsLeft,
   shortId,
+  workspaceConfirm,
 } from './service.js';
 
 import type { Lookup, OriginPolicy } from './ownership.js';
@@ -142,6 +144,85 @@ describe('kill', () => {
       't1',
       expect.objectContaining({ action: 'run.kill', payload: { confirm: shortId(run.id).toUpperCase(), queued: false } }),
     );
+  });
+});
+
+describe('kill with a blast radius', () => {
+  const actor = { id: 'u2', email: 'a@acme.test', name: 'A', roles: [] };
+  const assetA = '0197a5d0-aaaa-7000-8000-00000000000a';
+  const live = (id: string, assetId: string, assetName: string, state = 'running') => ({
+    id,
+    asset_id: assetId,
+    asset_name: assetName,
+    state,
+  });
+  const runs = [
+    live('r1', assetA, 'Shop'),
+    live('r2', assetA, 'Shop', 'queued'),
+    live('r3', 'other', 'Orders API'),
+  ];
+
+  function scopeService(opts: { tenantName?: string; ended?: readonly string[] } = {}) {
+    let seq = 0;
+    const store = {
+      listLiveRuns: vi.fn().mockResolvedValue(runs),
+      getAsset: vi.fn().mockResolvedValue({ id: assetA, name: 'Shop' }),
+      getTenant: vi.fn().mockResolvedValue({ id: 't1', name: opts.tenantName ?? 'Tiny Crows' }),
+      killQueuedRun: vi.fn((_t: string, id: string) =>
+        Promise.resolve(runs.find((r) => r.id === id)?.state === 'queued' ? new Date('2026-11-05T10:00:00Z') : null),
+      ),
+      requestKill: vi.fn((_t: string, id: string) =>
+        Promise.resolve(opts.ended?.includes(id) === true ? null : new Date('2026-11-05T10:00:01Z')),
+      ),
+      appendEvent: vi.fn(),
+      appendAudits: vi.fn((_t: string, entries: readonly unknown[]) =>
+        Promise.resolve(entries.map(() => ({ eventId: `e${String((seq += 1))}`, hash: `h${String(seq)}` }))),
+      ),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('stops every live run on the target, one ledger entry per run and one for the scope', async () => {
+    const { store, service } = scopeService();
+    await expect(service.killScope(actor, { scope: 'target', assetId: assetA, confirm: 'nope' })).rejects.toMatchObject({
+      response: { code: 'kill_confirmation_mismatch' },
+    });
+    expect(store.requestKill).not.toHaveBeenCalled();
+    const result = await service.killScope(actor, { scope: 'target', assetId: assetA, confirm: '  shop ' });
+    expect(result.runs.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(result.killRequestedAt).toBe('2026-11-05T10:00:00.000Z');
+    expect(store.requestKill).not.toHaveBeenCalledWith('t1', 'r3', 'u2');
+    const entries = store.appendAudits.mock.calls[0]?.[1] as { action: string; targetType: string; payload: unknown }[];
+    expect(entries.map((e) => e.action)).toEqual(['run.kill', 'run.kill', 'kill.scope']);
+    expect(entries[2]).toMatchObject({ targetType: 'asset', payload: { scope: 'target', runs: 2, runIds: 'r1,r2' } });
+    expect(result.audit).toEqual({ eventId: 'e3', hash: 'h3' });
+  });
+
+  it('stops everything in the workspace by its name and skips runs that ended meanwhile', async () => {
+    const { store, service } = scopeService({ ended: ['r3'] });
+    const result = await service.killScope(actor, { scope: 'workspace', confirm: 'tiny crows' });
+    expect(result.runs.map((r) => r.id)).toEqual(['r1', 'r2']);
+    const entries = store.appendAudits.mock.calls[0]?.[1] as { action: string; targetId: string }[];
+    expect(entries.at(-1)).toMatchObject({ action: 'kill.scope', targetId: 't1' });
+  });
+
+  it('refuses when nothing in the scope is live, and writes nothing', async () => {
+    const { store, service } = scopeService({ ended: ['r1', 'r3'] });
+    store.listLiveRuns.mockResolvedValue(runs.filter((r) => r.id !== 'r2'));
+    await expect(service.killScope(actor, { scope: 'workspace', confirm: 'Tiny Crows' })).rejects.toMatchObject({
+      response: { code: 'run_not_running' },
+    });
+    expect(store.appendAudits).not.toHaveBeenCalled();
+  });
+
+  it('confirms an unnamed workspace with STOP ALL, and validates the body', () => {
+    expect(workspaceConfirm(null)).toBe('STOP ALL');
+    expect(workspaceConfirm(' Tiny Crows ')).toBe('Tiny Crows');
+    expect(confirmMatches('stop  all', 'STOP ALL')).toBe(true);
+    expect(confirmMatches('', '')).toBe(false);
+    expect(killScopeSchema.safeParse({ scope: 'workspace', confirm: 'x' }).success).toBe(true);
+    expect(killScopeSchema.safeParse({ scope: 'target', confirm: 'x' }).success).toBe(false);
+    expect(killScopeSchema.safeParse({ scope: 'run', confirm: 'x' }).success).toBe(false);
   });
 });
 
