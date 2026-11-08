@@ -158,9 +158,11 @@ export function EmergencyStop({
 
   // After the stop: read each audit's halt until all have ended (the runner halts a running audit within seconds).
   const pending = phase.kind === 'sent' && phase.runs.some((r) => !ENDED.has(r.state));
+  // Keyed on the stop itself, not on each poll's update, so the time limit counts from the stop.
+  const runIds = phase.kind === 'sent' ? phase.runs.map((r) => r.id).join(',') : '';
   useEffect(() => {
     if (!pending) return;
-    const ids = phase.runs.map((r) => r.id);
+    const ids = runIds.split(',');
     const since = Date.now();
     const timer = window.setInterval(() => {
       if (Date.now() - since > POLL_FOR_MS) {
@@ -177,7 +179,7 @@ export function EmergencyStop({
     return () => {
       window.clearInterval(timer);
     };
-  }, [pending, phase, token]);
+  }, [pending, runIds, token]);
 
   if (phase.kind === 'sent') return <Halted phase={phase} pending={pending} gaveUp={gaveUp} />;
 
