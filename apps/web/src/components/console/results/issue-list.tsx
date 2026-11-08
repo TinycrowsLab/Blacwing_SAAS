@@ -187,20 +187,19 @@ export function IssueList({
                 onClick={() => {
                   toggle(s.id);
                 }}
-                className="flex min-h-[52px] w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus sm:px-5"
+                // The title has the whole first line; status and "seen before" sit on the line below it.
+                className="grid min-h-[52px] w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-2xl px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus sm:px-5"
               >
                 <SeverityChip severity={s.severity} />
-                <span className="min-w-0 flex-1 basis-48 text-[15px] font-semibold leading-[22px] text-foreground">
-                  {s.title}
-                </span>
-                {seenBeforeText(s) === null ? null : <Chip tone="neutral">{seenBeforeText(s)}</Chip>}
-                <span className="ml-auto flex items-center gap-2">
+                <span className="min-w-0 text-[15px] font-semibold leading-[22px] text-foreground">{s.title}</span>
+                <Icon
+                  name="chevron"
+                  size={16}
+                  className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                />
+                <span className="col-start-2 flex flex-wrap items-center gap-2">
                   <IssueStatus status={status} pill={isOpen} />
-                  <Icon
-                    name="chevron"
-                    size={16}
-                    className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                  />
+                  {seenBeforeText(s) === null ? null : <Chip tone="neutral">{seenBeforeText(s)}</Chip>}
                 </span>
               </button>
             </h3>
