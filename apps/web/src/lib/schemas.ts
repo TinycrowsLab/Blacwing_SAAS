@@ -187,7 +187,7 @@ export const coverageSchema = z.object({
         id: z.string(),
         title: z.string(),
         agent: z.string(),
-        status: z.enum(['executed', 'skipped', 'blocked', 'not_run']),
+        status: z.enum(['executed', 'skipped', 'blocked', 'model_declined', 'not_run']),
         note: z.string().nullable().default(null),
         requests: z.number().default(0),
         candidates: z.number().default(0),

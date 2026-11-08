@@ -97,10 +97,10 @@ export function huntTools(ctx: HuntContext) {
 
   const updateTestCase = tool(
     'update_test_case',
-    'Update the status of a recorded test case when you start it (executing) or skip it.',
+    'Update the status of a recorded test case when you start it (executing) or skip it. Use model_declined when you decide not to run a case yourself, and say why in note.',
     {
       id: z.string(),
-      status: z.enum(['executing', 'executed', 'skipped', 'blocked']),
+      status: z.enum(['executing', 'executed', 'skipped', 'blocked', 'model_declined']),
       note: z.string().max(CASE_NOTE_MAX_CHARS).optional(),
       agent: z.string().optional(),
     },
