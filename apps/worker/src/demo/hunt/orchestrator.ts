@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { query, type HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 
-import { EventLog, newHuntState, type CaseState, type HuntContext, type HuntDeps, type Logger } from './context.js';
+import { EventLog, newHuntState, type CaseState, type Gate2Ask, type HuntContext, type HuntDeps, type Logger } from './context.js';
 import { closePendingAsks, GATE2_POLL_MS, watchGate2 } from './http-tool.js';
 import { MessageRouter } from './messages.js';
 import { subagents, SUBAGENT_NAMES, systemPrompt } from './prompts.js';
@@ -248,7 +248,9 @@ function caseResult(ctx: HuntContext, id: string, testCase: CaseState): { status
   if (status !== 'not_run') return { status, note: testCase.note };
   const refused = [...ctx.state.asks.values()].filter((a) => a.caseId === id && (a.status === 'denied' || a.status === 'expired'));
   if (refused.length === 0) return { status, note: testCase.note };
-  return { status: 'blocked', note: refused.map((a) => `Gate 2 ${a.status === 'expired' ? 'got no answer' : 'denied'}: ${a.label}`).join('; ') };
+  const said = (a: Gate2Ask): string =>
+    a.status === 'expired' ? 'got no answer' : a.closedUnanswered === true ? 'got no answer before the audit ended' : 'denied';
+  return { status: 'blocked', note: refused.map((a) => `Gate 2 ${said(a)}: ${a.label}`).join('; ') };
 }
 
 /** The `coverage.summary` event data: what was and was not tested, and which test accounts were actually used. */

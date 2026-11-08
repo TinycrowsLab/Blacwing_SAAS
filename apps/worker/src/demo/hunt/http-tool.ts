@@ -243,6 +243,7 @@ function noticeText(ask: Gate2Ask, status: Gate2Status): string {
 async function settleAsk(ctx: HuntContext, ask: Gate2Ask, status: Gate2Status, detail: { by?: string | null; reason?: string }): Promise<void> {
   if (ask.status !== 'pending' || status === 'pending') return;
   ask.status = status;
+  if (detail.reason === 'run_ended' || detail.reason === 'killed') ask.closedUnanswered = true;
   const queued = ctx.state.notices.get(ask.agent) ?? [];
   queued.push({ gate2Id: ask.id, text: noticeText(ask, status) });
   ctx.state.notices.set(ask.agent, queued);

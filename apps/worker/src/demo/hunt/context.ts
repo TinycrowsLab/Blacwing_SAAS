@@ -61,6 +61,8 @@ export interface Gate2Ask {
   readonly caseId: string | null;
   readonly deadlineAt: number;
   status: Gate2Status;
+  /** Set when the run closed the ask itself (no person answered before it ended). */
+  closedUnanswered?: boolean;
 }
 
 export interface HuntState {

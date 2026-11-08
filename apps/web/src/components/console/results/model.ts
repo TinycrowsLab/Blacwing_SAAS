@@ -181,16 +181,21 @@ export function duration(ms: number): string {
  * that is the plain reason (the agent needed it), otherwise the safety rules or "could not run".
  */
 function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone: boolean): string[] {
-  const denied = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
+  // A person's "deny" has no close reason; an expiry or an ask the run closed at its end was simply not answered.
+  const denied = run.gate2.some((g) => g.status === 'denied' && g.closeReason === null);
+  const unanswered = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
   const refused = run.events.some((e) => e.kind === 'policy.blocked');
   const b = cases.blocked;
   const were = (n: number): string => (n === 1 ? 'was' : 'were');
+  const it = b === 1 ? 'it' : 'they';
   const blocked =
     b === 0
       ? null
       : denied
-        ? `${b} ${were(b)} skipped because the request ${b === 1 ? 'it' : 'they'} needed was denied`
-        : refused
+        ? `${b} ${were(b)} skipped because the request ${it} needed was denied`
+        : unanswered
+          ? `${b} ${were(b)} skipped because the request ${it} needed got no answer in time`
+          : refused
           ? `${b} ${were(b)} stopped by the safety rules`
           : `${b} could not run`;
   const rest = cases.total - cases.executed - cases.skipped - cases.blocked;
