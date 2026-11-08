@@ -24,11 +24,19 @@ import {
 } from './run-model';
 import { agentName } from '../../lib/agents';
 
-/** Seconds-precise local time; these tabs render only in the browser, after a click. */
-const localClock = (iso: string): string => new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
+/** Seconds-precise local time; these tabs render only in the browser, after a click. One formatter: building one per row is slow. */
+let clockFormat: Intl.DateTimeFormat | undefined;
+const localClock = (iso: string): string =>
+  (clockFormat ??= new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })).format(
+    new Date(iso),
+  );
 
 /** Activity rows the runner writes as itself or for a person. */
-const WHO: Readonly<Record<string, string>> = { run: 'Blackwing', gate2: 'Your decision', gate3: 'Your release' };
+const WHO: Readonly<Record<string, string>> = {
+  run: 'Blackwing',
+  gate2: 'Your decision',
+  gate3: 'Your release',
+};
 
 const GAUGE_TONE = {
   primary: { text: 'text-foreground', bar: 'bg-gold' },
@@ -37,7 +45,17 @@ const GAUGE_TONE = {
 } as const;
 
 /** One limit as "{x} of {cap}": gold, amber from 80 %, red at 100 % (the runner stops at the first limit reached). */
-function Limit({ label, value, cap, pct }: { readonly label: string; readonly value: string; readonly cap: string; readonly pct: number }) {
+function Limit({
+  label,
+  value,
+  cap,
+  pct,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly cap: string;
+  readonly pct: number;
+}) {
   const tone = GAUGE_TONE[gaugeTone(pct)];
   return (
     <div className="mb-2.5">
@@ -57,7 +75,8 @@ function Limit({ label, value, cap, pct }: { readonly label: string; readonly va
 }
 
 const minutes = (s: number): string => (s < 60 ? `${Math.floor(s)}s` : `${Math.floor(s / 60)}m`);
-const money = (n: number): string => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+const money = (n: number): string =>
+  n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
 export function LimitsPanel({
   elapsedS,
@@ -66,7 +85,11 @@ export function LimitsPanel({
   costUsd,
 }: {
   readonly elapsedS: number;
-  readonly budget: { readonly seconds: number; readonly requests: number; readonly costUsd: number };
+  readonly budget: {
+    readonly seconds: number;
+    readonly requests: number;
+    readonly costUsd: number;
+  };
   readonly requestsUsed: number;
   readonly costUsd: number;
 }) {
@@ -74,16 +97,28 @@ export function LimitsPanel({
     <section aria-labelledby="limits-h">
       <h2 id="limits-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
         Limits you approved
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">stops at the first</span>
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
+          stops at the first
+        </span>
       </h2>
-      <Limit label="Time" value={minutes(elapsedS)} cap={minutes(budget.seconds)} pct={(elapsedS / Math.max(1, budget.seconds)) * 100} />
+      <Limit
+        label="Time"
+        value={minutes(elapsedS)}
+        cap={minutes(budget.seconds)}
+        pct={(elapsedS / Math.max(1, budget.seconds)) * 100}
+      />
       <Limit
         label="Requests"
         value={requestsUsed.toLocaleString('en-US')}
         cap={budget.requests.toLocaleString('en-US')}
         pct={(requestsUsed / Math.max(1, budget.requests)) * 100}
       />
-      <Limit label="Model spend" value={money(costUsd)} cap={money(budget.costUsd)} pct={(costUsd / Math.max(0.01, budget.costUsd)) * 100} />
+      <Limit
+        label="Model spend"
+        value={money(costUsd)}
+        cap={money(budget.costUsd)}
+        pct={(costUsd / Math.max(0.01, budget.costUsd)) * 100}
+      />
     </section>
   );
 }
@@ -107,13 +142,17 @@ export function AccountsPanel({
     <section aria-labelledby="accounts-h">
       <h2 id="accounts-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
         Account use
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">requests sent as</span>
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
+          requests sent as
+        </span>
       </h2>
       <dl className="m-0 flex flex-col gap-[3px] text-[12px] text-muted-foreground">
         {roles.map((r) => (
           <div key={r} className="flex items-center gap-1.5">
             <dt className="min-w-0 truncate font-mono text-foreground">{r}</dt>
-            <dd className="m-0 ml-auto font-semibold tabular-nums text-foreground">{(used.get(r) ?? 0).toLocaleString('en-US')}</dd>
+            <dd className="m-0 ml-auto font-semibold tabular-nums text-foreground">
+              {(used.get(r) ?? 0).toLocaleString('en-US')}
+            </dd>
           </div>
         ))}
       </dl>
@@ -168,33 +207,53 @@ export function PlanPanel({
   readonly ended: boolean;
 }) {
   const counts = new Map<PlanPart, number>();
-  for (const c of cases) counts.set(planPart(c, waiting, ended), (counts.get(planPart(c, waiting, ended)) ?? 0) + 1);
-  const parts = PLAN_PARTS.filter((p) => (counts.get(p.key) ?? 0) > 0 || p.key === 'done' || (p.key === 'queued' && !ended));
+  for (const c of cases)
+    counts.set(planPart(c, waiting, ended), (counts.get(planPart(c, waiting, ended)) ?? 0) + 1);
+  const parts = PLAN_PARTS.filter(
+    (p) => (counts.get(p.key) ?? 0) > 0 || p.key === 'done' || (p.key === 'queued' && !ended),
+  );
   return (
     <section aria-labelledby="plan-h">
       <h2 id="plan-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
         Test plan
         <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
-          {cases.length === 0 ? 'not recorded yet' : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
+          {cases.length === 0
+            ? 'not recorded yet'
+            : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
         </span>
       </h2>
       {cases.length === 0 ? (
-        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">
+          The planner records the test plan after recon maps the site.
+        </p>
       ) : (
         <>
           <div className="flex h-2 gap-0.5 overflow-hidden rounded-[4px]" aria-hidden="true">
             {PLAN_PARTS.map((p) =>
               (counts.get(p.key) ?? 0) === 0 ? null : (
-                <b key={p.key} className="block h-full" style={{ width: `${((counts.get(p.key) ?? 0) / cases.length) * 100}%`, background: p.colour }} />
+                <b
+                  key={p.key}
+                  className="block h-full"
+                  style={{
+                    width: `${((counts.get(p.key) ?? 0) / cases.length) * 100}%`,
+                    background: p.colour,
+                  }}
+                />
               ),
             )}
           </div>
           <dl className="m-0 mt-2 grid grid-cols-2 gap-x-3 gap-y-[3px] text-[11.5px] text-muted-foreground">
             {parts.map((p) => (
               <div key={p.key} className="flex items-center gap-1.5">
-                <i aria-hidden="true" className="inline-block size-2 rounded-[2px]" style={{ background: p.colour }} />
+                <i
+                  aria-hidden="true"
+                  className="inline-block size-2 rounded-[2px]"
+                  style={{ background: p.colour }}
+                />
                 <dt>{p.label}</dt>
-                <dd className="m-0 ml-auto font-semibold text-foreground tabular-nums">{counts.get(p.key) ?? 0}</dd>
+                <dd className="m-0 ml-auto font-semibold text-foreground tabular-nums">
+                  {counts.get(p.key) ?? 0}
+                </dd>
               </div>
             ))}
           </dl>
@@ -208,11 +267,15 @@ function Verdict({ c }: { readonly c: Candidate }) {
   if (c.status === 'validating')
     return (
       <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-medium text-slate">
-        <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
+        <span
+          aria-hidden="true"
+          className="size-2.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]"
+        />
         Proving, {Math.min(c.replays, VALIDATOR_REPLAYS)} of {VALIDATOR_REPLAYS}
       </span>
     );
-  const verdict = c.status === 'released' ? 'released' : c.status === 'not_confirmed' ? 'suspected' : c.status;
+  const verdict =
+    c.status === 'released' ? 'released' : c.status === 'not_confirmed' ? 'suspected' : c.status;
   // Kept back is a settled verdict: a flat dash, never a ring that reads as "still working".
   if (verdict === 'suspected')
     return (
@@ -240,7 +303,10 @@ export function FoundPanel({
 }) {
   return (
     <section aria-labelledby="found-h">
-      <h2 id="found-h" className="mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold">
+      <h2
+        id="found-h"
+        className="mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold"
+      >
         <span className="shrink-0 whitespace-nowrap">{ended ? 'Found' : 'Found so far'}</span>
         <span className="ml-auto min-w-0 truncate text-right text-[11.5px] font-normal text-muted-foreground">
           {release === 'auto' ? 'proven issues release themselves' : 'private until you release'}
@@ -253,7 +319,10 @@ export function FoundPanel({
       ) : (
         <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {items.map((c) => (
-            <li key={c.candidateId} className="rounded-[10px] border border-border px-2.5 py-2 text-[12.5px] leading-[18px]">
+            <li
+              key={c.candidateId}
+              className="rounded-[10px] border border-border px-2.5 py-2 text-[12.5px] leading-[18px]"
+            >
               <div className="mb-[3px] flex items-center gap-1.5 text-[11px]">
                 <SeverityChip severity={c.severity} />
                 <Verdict c={c} />
@@ -261,7 +330,11 @@ export function FoundPanel({
               {c.findingId === null ? (
                 <span>{c.title}</span>
               ) : (
-                <Link href={`/findings/${c.findingId}`} prefetch={false} className="text-foreground no-underline hover:underline">
+                <Link
+                  href={`/findings/${c.findingId}`}
+                  prefetch={false}
+                  className="text-foreground no-underline hover:underline"
+                >
                   {c.title}
                 </Link>
               )}
@@ -310,7 +383,10 @@ export function TestPlanTab({
                 ? { label: 'Not finished', cls: 'bg-surface-2 text-muted-foreground' }
                 : (CASE_WORD[c.status] ?? CASE_WORD.proposed);
           return (
-            <li key={c.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-2.5 text-[13px]">
+            <li
+              key={c.id}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-2.5 text-[13px]"
+            >
               <span className="min-w-0">
                 <span className="font-medium">{c.title === '' ? c.id : c.title}</span>
                 <span className="block truncate text-[11.5px] text-muted-foreground">
@@ -320,7 +396,9 @@ export function TestPlanTab({
                   {c.note === '' ? '' : ` · ${c.note}`}
                 </span>
               </span>
-              <span className={`inline-flex h-[22px] items-center gap-1 rounded-md px-2 text-[11.5px] font-medium ${word?.cls ?? ''}`}>
+              <span
+                className={`inline-flex h-[22px] items-center gap-1 rounded-md px-2 text-[11.5px] font-medium ${word?.cls ?? ''}`}
+              >
                 {word?.label === 'Done' ? <Icon name="check" size={11} /> : null}
                 {word?.label}
               </span>
@@ -377,7 +455,8 @@ export function RequestsTab({
     <Card as="section" aria-label="Requests">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-[12px] text-muted-foreground">
         <span>
-          {items.length.toLocaleString('en-US')} recorded {items.length === 1 ? 'request' : 'requests'}
+          {items.length.toLocaleString('en-US')} recorded{' '}
+          {items.length === 1 ? 'request' : 'requests'}
         </span>
         <span>Bodies are excerpts. Credentials are redacted.</span>
       </div>
@@ -399,10 +478,18 @@ export function RequestsTab({
                 <span className="font-medium text-slate">{x.method}</span> {pathOf(x.url)}
               </span>
               {x.outcome === 'sent' && x.status !== null ? (
-                <span className={`justify-self-end rounded-[5px] px-1.5 py-px text-[10.5px] font-medium tabular-nums ${statusTone(x.status)}`}>{x.status}</span>
+                <span
+                  className={`justify-self-end rounded-[5px] px-1.5 py-px text-[10.5px] font-medium tabular-nums ${statusTone(x.status)}`}
+                >
+                  {x.status}
+                </span>
               ) : (
                 <span className={`text-[11.5px] font-medium ${OUTCOME_CLS[x.outcome] ?? ''}`}>
-                  {x.outcome === 'blocked' ? 'Blocked' : x.outcome === 'denied' ? 'Denied' : 'Failed'}
+                  {x.outcome === 'blocked'
+                    ? 'Blocked'
+                    : x.outcome === 'denied'
+                      ? 'Denied'
+                      : 'Failed'}
                 </span>
               )}
               <span className="hidden text-right text-[11px] text-muted-foreground md:inline">
@@ -486,7 +573,10 @@ const LaneMarks = memo(function LaneMarks({
   return (
     <g>
       {marks.map((m) => (
-        <g key={m.seq} transform={`translate(${AXIS_PAD + Math.max(0, m.at - startMs) * pxPerMs} ${top + markY(m.seq)})`}>
+        <g
+          key={m.seq}
+          transform={`translate(${AXIS_PAD + Math.max(0, m.at - startMs) * pxPerMs} ${top + markY(m.seq)})`}
+        >
           <title>{m.title}</title>
           <MarkShapeSvg shape={m.shape} />
         </g>
@@ -561,15 +651,24 @@ function AgentLanes({
   const ticks: { at: number; label: string; strong: boolean }[] = [];
   if (running) {
     for (let k = 0; nowMs - k * stepS * 1000 >= startMs; k += 1)
-      ticks.push({ at: nowMs - k * stepS * 1000, label: k === 0 ? 'Now' : axisSpan(k * stepS), strong: k === 0 });
+      ticks.push({
+        at: nowMs - k * stepS * 1000,
+        label: k === 0 ? 'Now' : axisSpan(k * stepS),
+        strong: k === 0,
+      });
   } else {
     for (let k = 0; startMs + k * stepS * 1000 <= nowMs; k += 1)
       if ((nowMs - startMs - k * stepS * 1000) * pxPerMs >= MIN_TICK_PX / 2 || k === 0)
-        ticks.push({ at: startMs + k * stepS * 1000, label: k === 0 ? 'Start' : axisSpan(k * stepS), strong: false });
+        ticks.push({
+          at: startMs + k * stepS * 1000,
+          label: k === 0 ? 'Start' : axisSpan(k * stepS),
+          strong: false,
+        });
     ticks.push({ at: nowMs, label: 'End', strong: true });
   }
   const runLength = Math.max(1, Math.round(spanMs / 60_000));
-  const LABEL_COLS = 'grid-cols-[136px_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)]';
+  const LABEL_COLS =
+    'grid-cols-[136px_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)]';
 
   return (
     <Card aria-label="Agent lanes" as="div">
@@ -601,7 +700,9 @@ function AgentLanes({
               </button>
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">{running ? 'Since the start' : `The whole run (${runLength} min)`}</span>
+            <span className="text-xs text-muted-foreground">
+              {running ? 'Since the start' : `The whole run (${runLength} min)`}
+            </span>
           )}
         </div>
         <span className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
@@ -611,7 +712,12 @@ function AgentLanes({
           <Legend shape="diamond" label="Candidate finding" />
           <span className="inline-flex items-center gap-1.5">
             <svg width="12" height="10" aria-hidden="true">
-              <rect width="12" height="10" rx="2" style={{ fill: `url(#${hatch})`, stroke: 'var(--gold-line)' }} />
+              <rect
+                width="12"
+                height="10"
+                rx="2"
+                style={{ fill: `url(#${hatch})`, stroke: 'var(--gold-line)' }}
+              />
             </svg>
             Waiting on you
           </span>
@@ -621,25 +727,44 @@ function AgentLanes({
         <div className="min-w-0 border-r border-border">
           {lanes.map((lane) => {
             const paused = pausedFrom(lane.name) !== null;
-            const use = lane.deterministic ? 'replay, no model' : `${lane.turns} turns, $${lane.costUsd.toFixed(2)}`;
-            const words = lane.task !== '' ? stripMarkdown(lane.task) : lane.last !== '' ? `Latest request: ${lane.last}` : 'Nothing yet';
+            const use = lane.deterministic
+              ? 'replay, no model'
+              : `${lane.turns} turns, $${lane.costUsd.toFixed(2)}`;
+            const words =
+              lane.task !== ''
+                ? stripMarkdown(lane.task)
+                : lane.last !== ''
+                  ? `Latest request: ${lane.last}`
+                  : 'Nothing yet';
             return (
-              <div key={lane.name} style={{ height: LANE_H }} className="flex min-w-0 flex-col justify-center gap-px border-b border-border px-3 md:px-4">
+              <div
+                key={lane.name}
+                style={{ height: LANE_H }}
+                className="flex min-w-0 flex-col justify-center gap-px border-b border-border px-3 md:px-4"
+              >
                 <span className="flex min-w-0 items-center gap-2">
                   <span
                     aria-hidden="true"
                     className={`size-2 shrink-0 rounded-full ${paused ? 'bg-gold' : running ? 'bg-slate motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : 'bg-muted-foreground'}`}
                   />
-                  <span className="min-w-0 truncate text-[13px] font-medium">{agentName(lane.name)}</span>
-                  <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground lg:inline">{use}</span>
+                  <span className="min-w-0 truncate text-[13px] font-medium">
+                    {agentName(lane.name)}
+                  </span>
+                  <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground lg:inline">
+                    {use}
+                  </span>
                 </span>
-                <span className="truncate pl-4 text-[11.5px] tabular-nums text-muted-foreground lg:hidden">{use}</span>
+                <span className="truncate pl-4 text-[11.5px] tabular-nums text-muted-foreground lg:hidden">
+                  {use}
+                </span>
                 {/* The mono id is never cut; the latest words give way. */}
                 <span
                   title={lane.task === '' ? lane.last : stripMarkdown(lane.task)}
                   className={`hidden min-w-0 items-baseline gap-1 text-[12px] md:flex ${paused ? 'text-gold-ink' : 'text-muted-foreground'}`}
                 >
-                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{lane.name} ·</span>
+                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                    {lane.name} ·
+                  </span>
                   <span className="min-w-0 truncate">
                     {paused ? 'Waiting. ' : ''}
                     {words}
@@ -660,9 +785,21 @@ function AgentLanes({
           aria-label="Agent lanes over time, scrolls sideways"
           className="min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus"
         >
-          <svg width={width} height={height} role="img" aria-label={`Agent activity, ${running ? 'live' : `the whole run (${runLength} min)`}`} className="block bg-surface">
+          <svg
+            width={width}
+            height={height}
+            role="img"
+            aria-label={`Agent activity, ${running ? 'live' : `the whole run (${runLength} min)`}`}
+            className="block bg-surface"
+          >
             <defs>
-              <pattern id={hatch} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <pattern
+                id={hatch}
+                width="8"
+                height="8"
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(45)"
+              >
                 <rect width="8" height="8" style={{ fill: 'var(--gold-soft)' }} />
                 <rect width="3" height="8" style={{ fill: 'var(--gold-line)' }} />
               </pattern>
@@ -679,18 +816,44 @@ function AgentLanes({
                     return (
                       <g key={`${w.from}-${w.title}`}>
                         <title>{w.title}</title>
-                        <rect x={from} y={y} width={Math.max(2, to - from)} height={w.holds ? LANE_H - 8 : 6} rx="2" style={{ fill: `url(#${hatch})` }} />
-                        <rect x={from} y={y} width="2" height={w.holds ? LANE_H - 8 : 6} style={{ fill: 'var(--gold-ink)' }} />
+                        <rect
+                          x={from}
+                          y={y}
+                          width={Math.max(2, to - from)}
+                          height={w.holds ? LANE_H - 8 : 6}
+                          rx="2"
+                          style={{ fill: `url(#${hatch})` }}
+                        />
+                        <rect
+                          x={from}
+                          y={y}
+                          width="2"
+                          height={w.holds ? LANE_H - 8 : 6}
+                          style={{ fill: 'var(--gold-ink)' }}
+                        />
                       </g>
                     );
                   })}
                   <LaneMarks marks={lane.marks} top={top} startMs={startMs} pxPerMs={pxPerMs} />
-                  <line x1="0" x2={width} y1={top + LANE_H - 0.5} y2={top + LANE_H - 0.5} style={{ stroke: 'var(--border)' }} />
+                  <line
+                    x1="0"
+                    x2={width}
+                    y1={top + LANE_H - 0.5}
+                    y2={top + LANE_H - 0.5}
+                    style={{ stroke: 'var(--border)' }}
+                  />
                 </g>
               );
             })}
             {running ? (
-              <line x1={x(nowMs)} x2={x(nowMs)} y1="0" y2={lanes.length * LANE_H} strokeWidth="2" style={{ stroke: 'var(--gold-ink)' }} />
+              <line
+                x1={x(nowMs)}
+                x2={x(nowMs)}
+                y1="0"
+                y2={lanes.length * LANE_H}
+                strokeWidth="2"
+                style={{ stroke: 'var(--gold-ink)' }}
+              />
             ) : null}
             {ticks.map((t) => {
               const tx = x(t.at);
@@ -702,7 +865,10 @@ function AgentLanes({
                   y={lanes.length * LANE_H + 17}
                   textAnchor={anchor}
                   className="text-[11px]"
-                  style={{ fill: t.strong ? (running ? 'var(--gold-ink)' : 'var(--text)') : 'var(--muted)', fontWeight: t.strong ? 500 : 400 }}
+                  style={{
+                    fill: t.strong ? (running ? 'var(--gold-ink)' : 'var(--text)') : 'var(--muted)',
+                    fontWeight: t.strong ? 500 : 400,
+                  }}
                 >
                   {t.label}
                 </text>
@@ -740,17 +906,26 @@ function passes(filter: Filter, row: Activity): boolean {
 const ROWS_PAGE = 100;
 
 /** The raw activity, newest first: time, agent, kind, what happened, and its status or size. */
-const ActivityTable = memo(function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
+const ActivityTable = memo(function ActivityTable({
+  rows,
+}: {
+  readonly rows: readonly Activity[];
+}) {
   const [filter, setFilter] = useState<Filter>('All');
   const [limit, setLimit] = useState(ROWS_PAGE);
-  const matching = useMemo(() => (filter === 'All' ? rows : rows.filter((r) => passes(filter, r))), [rows, filter]);
+  const matching = useMemo(
+    () => (filter === 'All' ? rows : rows.filter((r) => passes(filter, r))),
+    [rows, filter],
+  );
   const shown = matching.slice(-limit).reverse();
   return (
     <Card aria-labelledby="activity-h" as="section">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 id="activity-h" className="text-sm font-semibold">
           Activity
-          <span className="ml-2 text-xs font-normal tabular-nums text-muted-foreground">{matching.length.toLocaleString('en-US')}</span>
+          <span className="ml-2 text-xs font-normal tabular-nums text-muted-foreground">
+            {matching.length.toLocaleString('en-US')}
+          </span>
         </h2>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filter activity">
           {FILTERS.map((f) => (
@@ -770,43 +945,53 @@ const ActivityTable = memo(function ActivityTable({ rows }: { readonly rows: rea
         </div>
       </div>
       {shown.length === 0 ? (
-        <p className="px-4 py-6 text-[13px] text-muted-foreground">{rows.length === 0 ? 'Nothing to show yet.' : 'Nothing matches this filter yet.'}</p>
+        <p className="px-4 py-6 text-[13px] text-muted-foreground">
+          {rows.length === 0 ? 'Nothing to show yet.' : 'Nothing matches this filter yet.'}
+        </p>
       ) : (
         // The tab pane already scrolls: no scroll box inside it.
         <ol className="divide-y divide-border">
-          {shown.map((r) => (
-            <li
-              key={r.seq}
-              className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 px-4 py-[9px] text-[13px] md:grid-cols-[82px_150px_minmax(0,1fr)_auto]"
-            >
-              <time dateTime={r.at} className="font-mono text-[11.5px] text-muted-foreground">
-                {localClock(r.at)}
-              </time>
-              <span className="truncate text-xs font-medium">{WHO[r.agent] ?? agentName(r.agent)}</span>
-              <span className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto">
-                {/* Decisions are gold ("your turn"); warn stays for limits near their end. */}
-                {r.kind === 'Gate 2' ? (
-                  <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-gold-soft px-2 text-[11px] font-medium text-gold-ink">
-                    {KIND_TAG[r.kind].label}
-                  </span>
-                ) : (
-                  <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
-                )}
-                <span title={stripMarkdown(r.text)} className="truncate">
-                  {stripMarkdown(r.text)}
+          {shown.map((r) => {
+            const text = stripMarkdown(r.text);
+            return (
+              <li
+                key={r.seq}
+                className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 px-4 py-[9px] text-[13px] md:grid-cols-[82px_150px_minmax(0,1fr)_auto]"
+              >
+                <time dateTime={r.at} className="font-mono text-[11.5px] text-muted-foreground">
+                  {localClock(r.at)}
+                </time>
+                <span className="truncate text-xs font-medium">
+                  {WHO[r.agent] ?? agentName(r.agent)}
                 </span>
-              </span>
-              <span className={`col-start-2 font-mono text-[11.5px] md:col-start-auto md:text-right ${r.isError ? 'text-bad' : 'text-muted-foreground'}`}>
-                {r.meta}
-              </span>
-            </li>
-          ))}
+                <span className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto">
+                  {/* Decisions are gold ("your turn"); warn stays for limits near their end. */}
+                  {r.kind === 'Gate 2' ? (
+                    <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-gold-soft px-2 text-[11px] font-medium text-gold-ink">
+                      {KIND_TAG[r.kind].label}
+                    </span>
+                  ) : (
+                    <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
+                  )}
+                  <span title={text} className="truncate">
+                    {text}
+                  </span>
+                </span>
+                <span
+                  className={`col-start-2 font-mono text-[11.5px] md:col-start-auto md:text-right ${r.isError ? 'text-bad' : 'text-muted-foreground'}`}
+                >
+                  {r.meta}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       )}
       {matching.length > shown.length ? (
         <div className="flex items-center justify-between border-t border-border px-4 py-2.5 text-[12px] text-muted-foreground">
           <span>
-            Newest {shown.length.toLocaleString('en-US')} of {matching.length.toLocaleString('en-US')}
+            Newest {shown.length.toLocaleString('en-US')} of{' '}
+            {matching.length.toLocaleString('en-US')}
           </span>
           <button
             type="button"
@@ -834,7 +1019,9 @@ const CASE_PARTS = [
 
 /** Heading of a panel section (as "Limits you approved") or of a card. */
 const sectionHead = (bare: boolean): string =>
-  bare ? 'mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold' : 'mb-3 flex min-w-0 items-baseline gap-2 text-sm font-semibold';
+  bare
+    ? 'mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold'
+    : 'mb-3 flex min-w-0 items-baseline gap-2 text-sm font-semibold';
 const sectionNote = (bare: boolean): string =>
   `ml-auto min-w-0 truncate text-right font-normal tabular-nums text-muted-foreground ${bare ? 'text-[11.5px]' : 'text-xs'}`;
 
@@ -842,7 +1029,13 @@ const sectionNote = (bare: boolean): string =>
  * The test plan as the runner recorded it: one bar, every status counted (a status nobody reached shows 0). `bare`: a
  * section of the side panel; otherwise a card.
  */
-export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = false }: { readonly cases: readonly TestCase[]; readonly bare?: boolean }) {
+export const TestCasesSummary = memo(function TestCasesSummary({
+  cases,
+  bare = false,
+}: {
+  readonly cases: readonly TestCase[];
+  readonly bare?: boolean;
+}) {
   const id = useId();
   const counts = new Map<string, number>();
   for (const c of cases) counts.set(c.status, (counts.get(c.status) ?? 0) + 1);
@@ -850,25 +1043,47 @@ export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = f
     <>
       <h2 id={id} className={sectionHead(bare)}>
         <span className="shrink-0">Test cases</span>
-        <span className={sectionNote(bare)}>{cases.length === 0 ? 'not recorded yet' : `${cases.length} in plan`}</span>
+        <span className={sectionNote(bare)}>
+          {cases.length === 0 ? 'not recorded yet' : `${cases.length} in plan`}
+        </span>
       </h2>
       {cases.length === 0 ? (
-        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">
+          The planner records the test plan after recon maps the site.
+        </p>
       ) : (
         <>
-          <div className={`flex gap-0.5 overflow-hidden rounded-[4px] bg-surface-2 ${bare ? 'h-2' : 'h-2.5'}`} aria-hidden="true">
+          <div
+            className={`flex gap-0.5 overflow-hidden rounded-[4px] bg-surface-2 ${bare ? 'h-2' : 'h-2.5'}`}
+            aria-hidden="true"
+          >
             {CASE_PARTS.map((p) =>
               (counts.get(p.key) ?? 0) === 0 ? null : (
-                <b key={p.key} className="block h-full" style={{ width: `${((counts.get(p.key) ?? 0) / cases.length) * 100}%`, background: p.colour }} />
+                <b
+                  key={p.key}
+                  className="block h-full"
+                  style={{
+                    width: `${((counts.get(p.key) ?? 0) / cases.length) * 100}%`,
+                    background: p.colour,
+                  }}
+                />
               ),
             )}
           </div>
-          <dl className={`m-0 grid grid-cols-2 text-muted-foreground ${bare ? 'mt-2 gap-x-3 gap-y-[3px] text-[11.5px]' : 'mt-3 gap-x-5 gap-y-1.5 text-[12.5px]'}`}>
+          <dl
+            className={`m-0 grid grid-cols-2 text-muted-foreground ${bare ? 'mt-2 gap-x-3 gap-y-[3px] text-[11.5px]' : 'mt-3 gap-x-5 gap-y-1.5 text-[12.5px]'}`}
+          >
             {CASE_PARTS.map((p) => (
               <div key={p.key} className="flex min-w-0 items-center gap-1.5">
-                <i aria-hidden="true" className="inline-block size-2 shrink-0 rounded-[2px]" style={{ background: p.colour }} />
+                <i
+                  aria-hidden="true"
+                  className="inline-block size-2 shrink-0 rounded-[2px]"
+                  style={{ background: p.colour }}
+                />
                 <dt className="truncate">{p.label}</dt>
-                <dd className="m-0 ml-auto font-semibold tabular-nums text-foreground">{counts.get(p.key) ?? 0}</dd>
+                <dd className="m-0 ml-auto font-semibold tabular-nums text-foreground">
+                  {counts.get(p.key) ?? 0}
+                </dd>
               </div>
             ))}
           </dl>
@@ -895,7 +1110,10 @@ const rank = (s: string): number => {
 function candidateVerdict(c: Candidate): { verdict: string; label: string } {
   switch (c.status) {
     case 'validating':
-      return { verdict: 'validating', label: `Validating, replay ${Math.min(c.replays, VALIDATOR_REPLAYS)} of ${VALIDATOR_REPLAYS}` };
+      return {
+        verdict: 'validating',
+        label: `Validating, replay ${Math.min(c.replays, VALIDATOR_REPLAYS)} of ${VALIDATOR_REPLAYS}`,
+      };
     case 'confirmed':
       return { verdict: 'confirmed', label: 'Confirmed' };
     case 'released':
@@ -923,16 +1141,23 @@ export const CandidatesSummary = memo(function CandidatesSummary({
     <>
       <h2 id={id} className={sectionHead(bare)}>
         <span className="shrink-0">Candidate findings</span>
-        <span className={sectionNote(bare)}>{release === 'auto' ? 'proven issues release themselves' : 'private until you release'}</span>
+        <span className={sectionNote(bare)}>
+          {release === 'auto' ? 'proven issues release themselves' : 'private until you release'}
+        </span>
       </h2>
       {sorted.length === 0 ? (
-        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">None yet. Every candidate is replayed by the validator before it counts.</p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">
+          None yet. Every candidate is replayed by the validator before it counts.
+        </p>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {sorted.map((c) => {
             const v = candidateVerdict(c);
             return (
-              <li key={c.candidateId} className="rounded-[10px] border border-border px-2.5 py-2 text-[12.5px] leading-[18px]">
+              <li
+                key={c.candidateId}
+                className="rounded-[10px] border border-border px-2.5 py-2 text-[12.5px] leading-[18px]"
+              >
                 <div className="mb-[3px] flex items-center gap-1.5 text-[11px]">
                   <SeverityChip severity={c.severity} />
                   <span className="ml-auto min-w-0 truncate">
@@ -942,7 +1167,11 @@ export const CandidatesSummary = memo(function CandidatesSummary({
                 {c.findingId === null ? (
                   <span>{c.title}</span>
                 ) : (
-                  <Link href={`/findings/${c.findingId}`} prefetch={false} className="text-foreground no-underline hover:underline">
+                  <Link
+                    href={`/findings/${c.findingId}`}
+                    prefetch={false}
+                    className="text-foreground no-underline hover:underline"
+                  >
                     {c.title}
                   </Link>
                 )}
@@ -967,7 +1196,8 @@ function SummaryCard({ text }: { readonly text: string }) {
   return (
     <Card as="section" aria-labelledby="summary-h" className="p-4">
       <h2 id="summary-h" className="mb-2 text-sm font-semibold">
-        The planner&apos;s summary <span className="font-normal text-muted-foreground">· Claude, not verified</span>
+        The planner&apos;s summary{' '}
+        <span className="font-normal text-muted-foreground">· Claude, not verified</span>
       </h2>
       <div className={open ? '' : 'max-h-36 overflow-hidden'}>
         <Markdown text={text} className="text-[13.5px] leading-6" />
@@ -1017,7 +1247,15 @@ export function FlightDeck({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      {lanes.length === 0 ? null : <AgentLanes lanes={lanes} nowMs={nowMs} running={running} pausedFrom={pausedFrom} startMs={startMs} />}
+      {lanes.length === 0 ? null : (
+        <AgentLanes
+          lanes={lanes}
+          nowMs={nowMs}
+          running={running}
+          pausedFrom={pausedFrom}
+          startMs={startMs}
+        />
+      )}
       <div className="grid min-w-0 gap-3 md:grid-cols-2 md:items-start lg:hidden">
         <TestCasesSummary cases={cases} />
         <CandidatesSummary items={candidates} release={release} />

@@ -12,7 +12,7 @@ import type { Gate2, RunEvent } from '../../lib/schemas';
 export const TERMINAL_STATES: ReadonlySet<string> = new Set(['completed', 'failed', 'killed']);
 export const LANE_WINDOW_S = 120;
 
-/** The kill confirmation is the first 8 characters of the run id (the API enforces the same rule). */
+/** The kill confirmation is the last 8 characters of the run id (the API enforces the same rule). */
 /** UUIDv7 ids start with their timestamp, so the random tail tells runs made in the same minute apart (as the API). */
 export function shortId(id: string): string {
   return id.replace(/-/g, '').slice(-8).toUpperCase(); // 8 characters, as the API
