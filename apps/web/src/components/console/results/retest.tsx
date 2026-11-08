@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { retestFindingAction } from '../../../app/(console)/findings/actions';
 import { Chip, InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
+import { plainReason } from './issue-body';
 import { LocalTime } from './local-time';
 
 import type { FindingDetail } from './model';
@@ -35,7 +36,7 @@ export function RetestCard({ finding }: { readonly finding: Pick<FindingDetail, 
     };
   }, [open, router]);
   const result = latest?.result === null || latest?.result === undefined ? null : (RESULT[latest.result] ?? null);
-  const why = typeof latest?.detail.reason === 'string' ? latest.detail.reason : null;
+  const why = typeof latest?.detail.reason === 'string' ? plainReason(latest.detail.reason) : null;
   return (
     <section className="flex flex-col gap-2 rounded-[14px] border border-border bg-card p-4">
       <h2 className="m-0 text-[14.5px] font-semibold text-foreground">Retest</h2>

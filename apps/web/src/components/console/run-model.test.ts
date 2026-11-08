@@ -45,9 +45,11 @@ const ev = (
 
 suite('kill confirmation', () => {
   const runId = '0194ab12-3456-7890-abcd-ef0123456789';
-  it('accepts the first 8 characters, any case', () => {
-    expect(killConfirmed('0194AB12', runId)).toBe(true);
-    expect(killConfirmed(' 0194ab12 ', runId)).toBe(true);
+  it('accepts the last 8 characters (the random tail of a UUIDv7), any case', () => {
+    expect(killConfirmed('23456789', runId)).toBe(true);
+    expect(killConfirmed(' 23456789 ', runId)).toBe(true);
+    // The timestamp prefix is shared by runs made in the same minute: it does not confirm.
+    expect(killConfirmed('0194ab12', runId)).toBe(false);
   });
   it('refuses anything else', () => {
     expect(killConfirmed('', runId)).toBe(false);
