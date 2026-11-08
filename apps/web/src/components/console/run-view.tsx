@@ -9,7 +9,7 @@
 // returns to the same view.
 // shortcut: polling, not SSE; upgrade when the API gains an event stream.
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -61,6 +61,8 @@ import {
   stages,
   teamNodes,
 } from './run-model';
+import { runAgainAction } from './results/actions';
+import { RunAgain } from './results/report-download';
 import { StageSpine } from './stage-spine';
 import { TeamMap } from './team-map';
 import { useNow } from './use-now';
@@ -212,6 +214,17 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
  * The first render could not get the run (Blackwing was busy or did not answer in time): the page still opens, says
  * so calmly, and keeps trying with the same back-off as the live poll.
  */
+/** Honest queue copy: who is running, where this audit stands, and that nothing has reached the site. */
+function queueCopy(q: { readonly position: number; readonly ahead: number; readonly running: number; readonly concurrency: number }): string {
+  const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+  const running = q.running > 0 ? `${plural(q.running, 'audit is', 'audits are')} running (Blackwing runs ${q.concurrency} at a time). ` : `Blackwing runs ${q.concurrency} at a time. `;
+  const place =
+    q.ahead === 0
+      ? 'Yours is next and starts as soon as a slot frees.'
+      : `Yours is number ${q.position} in line: ${plural(q.ahead, 'audit waits', 'audits wait')} ahead of it.`;
+  return `${running}${place} Nothing has been sent to the site yet.`;
+}
+
 export function RunViewLoader({ id, viewerName }: { readonly id: string; readonly viewerName: string | null }) {
   const [run, setRun] = useState<Run | null>(null);
   const [missing, setMissing] = useState(false);
@@ -518,6 +531,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const model = events.find((e) => e.kind === 'run.started')?.data.model;
 
   // Every clock starts when the run started: a queued run has no elapsed time and is never "quiet".
+  const router = useRouter();
   const queued = run.state === 'queued';
   const startedMs = run.startedAt === null ? null : new Date(run.startedAt).getTime();
   const end = run.finishedAt === null ? (mounted ? nowMs : (startedMs ?? 0)) : new Date(run.finishedAt).getTime();
@@ -610,7 +624,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       {/* Beside the flight deck the panel carries its test cases and candidate findings (design 1a), in its words. */}
       {tab === 'deck' ? (
         <>
-          <TestCasesSummary cases={cases} bare />
+          <TestCasesSummary cases={cases} bare ended={terminal} />
           <CandidatesSummary items={cands} release={autoRelease ? 'auto' : 'hold'} bare />
         </>
       ) : (
@@ -675,7 +689,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2.5">
           {liveShown ? <Liveness tone={live.tone} text={live.text} className="max-md:hidden" /> : null}
           {/* A run stopped before it started never ran: no "Ran for 0m 00s". */}
-          {terminal && startedMs === null ? null : (
+          {(terminal || queued) && startedMs === null ? null : (
             <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
               {terminal ? 'Ran for' : 'Elapsed'}
               <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
@@ -685,17 +699,22 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           )}
           {/* One gold next step: the conversation's last line carries it; other views get it here. */}
           {terminal ? (
-            tab === 'conversation' && filter === null ? null : (
-              <Link href={resultsHref} className={buttonClass('primary', 'h-10 max-md:h-11')}>
-                See results
-                <Icon name="arrow" size={14} />
-              </Link>
-            )
+            <>
+              <span className="max-lg:hidden">
+                <RunAgain requestId={run.requestId} />
+              </span>
+              {tab === 'conversation' && filter === null ? null : (
+                <Link href={resultsHref} className={buttonClass('primary', 'h-10 max-md:h-11')}>
+                  See results
+                  <Icon name="arrow" size={14} />
+                </Link>
+              )}
+            </>
           ) : (
             <PendingButton
               variant="secondary"
               className="max-md:h-11 max-md:w-11 max-md:px-0 max-md:[&_[aria-live]]:sr-only"
-              title={run.paused ? 'Resume' : 'Pause'}
+              title={queued ? 'Waiting to start: nothing to pause yet' : run.paused ? 'Resume' : 'Pause'}
               icon={run.paused ? 'replay' : 'pause'}
               pendingLabel={run.paused ? 'Resuming…' : 'Pausing…'}
               disabled={stopping || run.state === 'queued'}
@@ -754,6 +773,22 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 <Icon name="download" size={15} />
                 Download transcript (JSON)
               </DropdownMenuItem>
+              {terminal ? (
+                <DropdownMenuItem
+                  className="gap-2.5"
+                  onSelect={() => {
+                    void runAgainAction(run.requestId).then((r) => {
+                      if (r.ok) {
+                        window.dispatchEvent(new Event('bw:refresh'));
+                        router.push(`/audits/${encodeURIComponent(r.data.id)}`);
+                      }
+                    });
+                  }}
+                >
+                  <Icon name="repeat" size={15} />
+                  Run this audit again
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="gap-2.5"
@@ -817,9 +852,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           <Icon name="clock" size={14} className="shrink-0 text-foreground" />
           <span>
             <b className="font-semibold text-foreground">Waiting to start.</b>{' '}
-            {run.queue === null
-              ? 'Nothing has been sent to the site yet.'
-              : `${run.queue.ahead === 0 ? 'No audit is ahead of this one' : `${run.queue.ahead} ${run.queue.ahead === 1 ? 'audit is' : 'audits are'} ahead`}. Blackwing runs ${run.queue.concurrency} at a time. Nothing has been sent to the site yet.`}
+            {run.queue === null ? 'Nothing has been sent to the site yet.' : queueCopy(run.queue)}
           </span>
         </p>
       ) : null}
@@ -863,7 +896,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             />
           </div>
           <div className="mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="flex max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-surface-2 p-0.5">
+            <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="flex min-w-0 max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-surface-2 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {TABS.map((t) => (
                 <button
                   key={t.id}
@@ -876,10 +909,11 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                   id={`tab-${t.id}`}
                   aria-selected={tab === t.id}
                   aria-controls={`panel-${t.id}`}
-                  onClick={() => {
+                  onClick={(e) => {
                     setTab(t.id);
+                    e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' });
                   }}
-                  className={`h-8 max-md:h-10 whitespace-nowrap rounded-lg border px-3.5 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${tab === t.id ? 'border-border bg-surface text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                  className={`h-8 max-md:h-10 whitespace-nowrap rounded-lg border px-3.5 max-md:px-2 max-md:text-[12.5px] text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${tab === t.id ? 'border-border bg-surface text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                 >
                   {t.label}
                 </button>

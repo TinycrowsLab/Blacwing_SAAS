@@ -8,6 +8,8 @@ const DRAFTS_KEY = 'bw:drafts';
 export const DRAFTS_EVENT = 'bw:drafts';
 const MAX_DRAFTS = 5;
 const QUESTIONS = 4;
+/** Longest note carried in a draft's link, so the link restores the answers wherever it is opened. */
+const CARRIED_TEXT_MAX = 600;
 
 const draftSchema = z.object({
   /** Stable id of the draft (the order picks it, e.g. crypto.randomUUID()). */
@@ -51,5 +53,8 @@ export function removeDraft(id: string): void {
 }
 
 /** Where a draft's sidebar row leads. */
-export const draftHref = (d: Draft): string =>
-  `/audits/new?draft=${encodeURIComponent(d.id)}&target=${encodeURIComponent(d.origin)}&step=${d.step}`;
+export const draftHref = (d: Draft): string => {
+  const text = typeof d.answers.text === 'string' ? d.answers.text.slice(0, CARRIED_TEXT_MAX) : undefined;
+  const carried = JSON.stringify(text === undefined ? d.answers : { ...d.answers, text });
+  return `/audits/new?draft=${encodeURIComponent(d.id)}&target=${encodeURIComponent(d.origin)}&step=${d.step}&a=${encodeURIComponent(carried)}`;
+};

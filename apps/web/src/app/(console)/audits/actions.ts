@@ -90,6 +90,17 @@ export async function ensureTargetAction(
   );
 }
 
+/** Removes a target from the list (the API keeps it in the ledger and for past runs; refused while an audit is open). */
+export async function removeTargetAction(assetId: string): Promise<ActionResult<{ removed: true }>> {
+  const session = await getViewer();
+  if (session === null) return signedOut;
+  if (!uuid.safeParse(assetId).success) return invalid('That target could not be found.');
+  return toResult(async () => {
+    await callApi(session, `/assets/${assetId}`, { method: 'DELETE' });
+    return { removed: true as const };
+  });
+}
+
 const verifySchema = z.discriminatedUnion('method', [
   z.object({ method: z.literal('http_token') }),
   z.object({ method: z.literal('owner_attestation'), statement: z.string().trim().min(10).max(1000) }),

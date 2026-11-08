@@ -284,13 +284,28 @@ export function takeNotices(ctx: HuntContext, agent: string, except?: string): s
   return queued.filter((n) => n.gate2Id !== except).map((n) => n.text);
 }
 
+/** Sleeps `ms`, or returns the moment the run is stopped, so a kill never waits out a poll interval. */
+export async function sleepUnlessStopped(ctx: HuntContext, ms: number): Promise<void> {
+  if (ctx.signal.aborted) return;
+  let onAbort: (() => void) | undefined;
+  const stopped = new Promise<void>((resolve) => {
+    onAbort = resolve;
+    ctx.signal.addEventListener('abort', resolve, { once: true });
+  });
+  try {
+    await Promise.race([ctx.deps.sleep(ms), stopped]);
+  } finally {
+    if (onAbort !== undefined) ctx.signal.removeEventListener('abort', onAbort);
+  }
+}
+
 /** Waits (honouring pause and kill) for a human to decide one ask, at most `maxMs` of unpaused time. */
 export async function awaitDecision(ctx: HuntContext, gate2Id: string, maxMs: number): Promise<Gate2Status | 'unknown' | 'halted'> {
   const ask = ctx.state.asks.get(gate2Id);
   if (ask === undefined) return 'unknown';
   let waited = 0;
   while (ask.status === 'pending' && !ctx.signal.aborted && (ctx.state.paused || waited < maxMs)) {
-    await ctx.deps.sleep(GATE2_POLL_MS);
+    await sleepUnlessStopped(ctx, GATE2_POLL_MS);
     if (!ctx.state.paused) waited += GATE2_POLL_MS;
     await watchGate2(ctx);
   }
@@ -334,7 +349,7 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
     }
     gate2Id = ask.id;
   }
-  while (ctx.state.paused && !ctx.signal.aborted) await ctx.deps.sleep(PAUSE_POLL_MS);
+  while (ctx.state.paused && !ctx.signal.aborted) await sleepUnlessStopped(ctx, PAUSE_POLL_MS);
   if (ctx.signal.aborted) return { ok: false, refusal: 'The run was halted. The request was not sent.' };
   // Re-check after the pause wait: parallel agents may have used the budget meanwhile.
   if (ctx.state.requestsUsed >= ctx.run.budgetRequests) return block(ctx, agent, req, 'request_budget');

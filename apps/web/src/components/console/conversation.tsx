@@ -583,6 +583,46 @@ export const Conversation = memo(function Conversation({
     // Only a new request from the header moves the view, not a new pending list.
   }, [showDecision, goTo]);
 
+  // D or A with every pending card scrolled out of view: bring the first one into view (keys then answer it) instead
+  // of staying silent.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const key = e.key.toLowerCase();
+      if ((key !== 'd' && key !== 'a') || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+      const ids = pendingKey === '' ? [] : pendingKey.split(',');
+      const box = scroller.current?.getBoundingClientRect();
+      if (ids.length === 0 || box === undefined) return;
+      const shown = ids.some((id) => {
+        const r = cardOf(id)?.getBoundingClientRect();
+        return r !== undefined && r.bottom > box.top && r.top < box.bottom;
+      });
+      const first = ids[0];
+      if (shown || first === undefined) return;
+      e.preventDefault();
+      goTo(first);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [pendingKey, goTo]);
+
+  // A decision already waiting when the page opens is brought into view once (never taken from a reader who scrolled):
+  // D and A answer only a card that is on screen, so a card parked below the fold would leave them silent.
+  const openedAtCard = useRef(false);
+  useEffect(() => {
+    if (openedAtCard.current) return;
+    const first = pendingKey.split(',')[0];
+    if (first === undefined || first === '') return;
+    const card = cardOf(first);
+    if (card === null) return;
+    openedAtCard.current = true;
+    card.scrollIntoView({ block: card.offsetHeight > (scroller.current?.clientHeight ?? 0) ? 'start' : 'center' });
+    checkPending();
+  }, [pendingKey, checkPending]);
+
   // Typing a reason in a decision card: no floating pill may sit on the field.
   const [editing, setEditing] = useState(false);
   const p: ChildProps = { gate2, viewerName, resultsHref, onOpenCall, onOpenPlan };

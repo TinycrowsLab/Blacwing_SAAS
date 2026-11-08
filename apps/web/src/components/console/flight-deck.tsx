@@ -160,6 +160,15 @@ function planPart(c: TestCase, waiting: ReadonlySet<string>, ended: boolean): Pl
   }
 }
 
+/** A case note in plain words: no internal ids or gate numbers, and no "awaiting" once the audit has ended. */
+export function plainNote(note: string, ended: boolean): string {
+  const text = note.replace(/\s*\(?\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b\)?/gi, '');
+  return text
+    .replace(/Awaiting Gate 2/gi, ended ? 'Needed your approval to send a request. Not sent: the audit ended' : 'Waiting for your approval to send a request')
+    .replace(/pending Gate 2/gi, ended ? 'needed your approval' : 'waiting for your approval')
+    .replace(/Gate 2/g, 'your approval');
+}
+
 export function PlanPanel({
   cases,
   waiting,
@@ -177,11 +186,11 @@ export function PlanPanel({
       <h2 id="plan-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
         Test plan
         <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
-          {cases.length === 0 ? 'not recorded yet' : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
+          {cases.length === 0 ? (ended ? 'none recorded' : 'not recorded yet') : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
         </span>
       </h2>
       {cases.length === 0 ? (
-        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">{ended ? 'No test plan was recorded: the audit ended first.' : 'The planner records the test plan after recon maps the site.'}</p>
       ) : (
         <>
           <div className="flex h-2 gap-0.5 overflow-hidden rounded-[4px]" aria-hidden="true">
@@ -313,7 +322,9 @@ export function TestPlanTab({
   if (cases.length === 0)
     return (
       <p className="m-0 rounded-[14px] border border-dashed border-border-strong px-5 py-6 text-[13px] text-muted-foreground">
-        No test plan yet. The planner records it once recon has mapped the site.
+        {ended
+          ? 'No test plan was recorded: the audit ended before recon had mapped the site.'
+          : 'No test plan yet. The planner records it once recon has mapped the site.'}
       </p>
     );
   return (
@@ -335,7 +346,7 @@ export function TestPlanTab({
                   <span className="font-mono">{c.id}</span>
                   {c.agent === '' ? '' : ` · ${agentName(c.agent)}`}
                   {c.target === '' ? '' : ` · ${c.target}`}
-                  {c.note === '' ? '' : ` · ${c.note}`}
+                  {c.note === '' ? '' : ` · ${plainNote(c.note, ended)}`}
                 </span>
               </span>
               <span className={`inline-flex h-[22px] items-center gap-1 rounded-md px-2 text-[11.5px] font-medium ${word?.cls ?? ''}`}>
@@ -866,7 +877,7 @@ const sectionNote = (bare: boolean): string =>
  * The test plan as the runner recorded it: one bar, every status counted (a status nobody reached shows 0). `bare`: a
  * section of the side panel; otherwise a card.
  */
-export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = false }: { readonly cases: readonly TestCase[]; readonly bare?: boolean }) {
+export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = false, ended = false }: { readonly cases: readonly TestCase[]; readonly bare?: boolean; readonly ended?: boolean }) {
   const id = useId();
   const counts = new Map<string, number>();
   for (const c of cases) counts.set(c.status, (counts.get(c.status) ?? 0) + 1);
@@ -874,10 +885,10 @@ export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = f
     <>
       <h2 id={id} className={sectionHead(bare)}>
         <span className="shrink-0">Test plan</span>
-        <span className={sectionNote(bare)}>{cases.length === 0 ? 'not recorded yet' : `${cases.length} in plan`}</span>
+        <span className={sectionNote(bare)}>{cases.length === 0 ? (ended ? 'none recorded' : 'not recorded yet') : `${cases.length} in plan`}</span>
       </h2>
       {cases.length === 0 ? (
-        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">{ended ? 'No test plan was recorded: the audit ended first.' : 'The planner records the test plan after recon maps the site.'}</p>
       ) : (
         <>
           <div className={`flex gap-0.5 overflow-hidden rounded-[4px] bg-surface-2 ${bare ? 'h-2' : 'h-2.5'}`} aria-hidden="true">

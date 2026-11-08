@@ -62,7 +62,7 @@ const SMOKE_DB_NAME = 'blackwing_smoke';
 const SMOKE_API_PORT = 13401;
 const SMOKE_WORKER_HEALTH_PORT = 13801;
 // Same variable and default as the API and the hunt engine; passed to both so the console shows the real deadline.
-const GATE2_TIMEOUT_S = process.env.BW_GATE2_TIMEOUT_S ?? '300';
+const GATE2_TIMEOUT_S = process.env.BW_GATE2_TIMEOUT_S ?? '900';
 const STACK_FILE = path.join(RUN_DIR, 'stack.json');
 const WEB_PORT = Number(process.env.DEMO_WEB_PORT ?? 3000);
 // The console's public origin; Google must allow `<origin>/api/auth/callback/google` as a redirect URI.

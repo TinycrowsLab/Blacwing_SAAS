@@ -50,6 +50,25 @@ export interface Limits {
   readonly costUsd: number;
 }
 
+/** Longest note carried in the address (the stored draft keeps the whole note). */
+const CARRIED_TEXT_MAX = 600;
+const carriedAnswers = (a: {
+  readonly focus: readonly FocusKey[];
+  readonly text: string;
+  readonly care: Care | null;
+  readonly method: ProofMethod;
+}): Record<string, unknown> => ({ ...a, text: a.text.slice(0, CARRIED_TEXT_MAX) });
+/** The answers carried in this page's address, if any. */
+function answersFromUrl(): Record<string, unknown> | undefined {
+  try {
+    const raw = new URLSearchParams(window.location.search).get('a');
+    const parsed: unknown = raw === null ? undefined : JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const answersSchema = z
   .object({
     focus: z.array(z.enum(FOCUS_KEYS as [FocusKey, ...FocusKey[]])),
@@ -182,7 +201,14 @@ export function Order({
     // Once, on mount: later changes are the person's own.
     if (restored.current) return;
     restored.current = true;
-    const d = readDrafts().find((x) => x.id === draftId);
+    const stored = readDrafts().find((x) => x.id === draftId);
+    // Answers also travel in the page address, so a draft opened on another device or in a fresh browser still has them.
+    const carried = stored === undefined && restoreDraft ? answersFromUrl() : undefined;
+    const d =
+      stored ??
+      (carried === undefined || first === null
+        ? undefined
+        : { id: draftId, origin: first.origin, host: first.host, step: initialStep, answers: carried, savedAt: '' });
     if (d === undefined || (!restoreDraft && d.origin !== first?.origin)) return;
     const a = answersSchema.safeParse(d.answers);
     if (!a.success) return;
@@ -199,7 +225,7 @@ export function Order({
         if (isVerified(r.data)) setStep(d.step);
       });
     else setStep(d.step);
-  }, [draftId, restoreDraft, startStep, first, firstAsset]);
+  }, [draftId, restoreDraft, startStep, initialStep, first, firstAsset]);
 
   // Question 2 registers the site (the API reuses an existing one): the file needs its token, and only the API knows
   // whether the owner's word is accepted for it (a lab the operator listed) or the address is refused outright.
@@ -234,10 +260,11 @@ export function Order({
     if (target !== null) q.set('target', target.origin);
     q.set('step', String(step));
     q.set('draft', draftId);
+    if (target !== null) q.set('a', JSON.stringify(carriedAnswers({ focus, text: focusText, care, method })));
     window.history.replaceState(window.history.state, '', `/audits/new?${q.toString()}`);
     if (mounted.current || step > 1) h1.current?.focus();
     mounted.current = true;
-  }, [step, target, draftId]);
+  }, [step, target, draftId, focus, focusText, care, method]);
 
   // Draft kept on this device, 300 ms after the last change, once there is a site. A change still waiting when the
   // order unmounts (browser Back straight after Continue) is written then, so Forward comes back to the same question.

@@ -8,7 +8,7 @@ import { query, type HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod';
 
 import { caseOutcome, EventLog, newHuntState, type CaseState, type Gate2Ask, type HuntContext, type HuntDeps, type Logger } from './context.js';
-import { closePendingAsks, GATE2_POLL_MS, watchGate2 } from './http-tool.js';
+import { closePendingAsks, GATE2_POLL_MS, sleepUnlessStopped, watchGate2 } from './http-tool.js';
 import { MessageRouter } from './messages.js';
 import { subagents, SUBAGENT_NAMES, systemPrompt } from './prompts.js';
 import { createHuntServer } from './tools.js';
@@ -16,7 +16,7 @@ import { createHuntServer } from './tools.js';
 import type { HuntRun, HuntStore } from './types.js';
 
 const MS_PER_S = 1000;
-const CONTROL_POLL_MS = 500;
+const CONTROL_POLL_MS = 200;
 const PAUSE_POLL_MS = 500;
 /** Hook timeout headroom past the duration budget: the pause gate may hold a tool call that long. */
 const HOOK_TIMEOUT_SLACK_S = 60;
@@ -61,7 +61,7 @@ export function toolGate(ctx: HuntContext): HookCallbackMatcher {
     timeout: ctx.run.budgetSeconds + HOOK_TIMEOUT_SLACK_S,
     hooks: [
       async (input) => {
-        while (ctx.state.paused && !ctx.signal.aborted) await ctx.deps.sleep(PAUSE_POLL_MS);
+        while (ctx.state.paused && !ctx.signal.aborted) await sleepUnlessStopped(ctx, PAUSE_POLL_MS);
         const parsed = hookInput.safeParse(input);
         if (!parsed.success || !parsed.data.tool_name.startsWith(BLACKWING_TOOL)) return {};
         const agent = parsed.data.agent_type ?? 'orchestrator';
@@ -254,7 +254,7 @@ export async function holdForAsks(ctx: HuntContext, halted: () => boolean): Prom
   const count = pending().length;
   await ctx.log.emit('run.holding', 'gate2', `Waiting for your answer on ${count} request${count === 1 ? '' : 's'} before finishing`, { gate2Ids: pending().map((a) => a.id) });
   while (pending().length > 0 && !halted() && !ctx.signal.aborted) {
-    await ctx.deps.sleep(GATE2_POLL_MS);
+    await sleepUnlessStopped(ctx, GATE2_POLL_MS);
     await watchGate2(ctx);
   }
 }
@@ -312,12 +312,25 @@ export function settle(halt: HaltReason | null, failure: string | null, end: Age
 
 function caseResult(ctx: HuntContext, id: string, testCase: CaseState): { status: ReturnType<typeof caseOutcome>; note: string | null } {
   const status = caseOutcome(testCase);
-  if (status !== 'not_run') return { status, note: testCase.note };
-  const refused = [...ctx.state.asks.values()].filter((a) => a.caseId === id && (a.status === 'denied' || a.status === 'expired'));
-  if (refused.length === 0) return { status, note: testCase.note };
+  const asks = [...ctx.state.asks.values()].filter((a) => a.caseId === id);
+  const refused = asks.filter((a) => a.status === 'denied' || a.status === 'expired');
   const said = (a: Gate2Ask): string =>
     a.status === 'expired' ? 'got no answer' : a.closedUnanswered === true ? 'got no answer before the audit ended' : 'denied';
-  return { status: 'blocked', note: refused.map((a) => `Gate 2 ${said(a)}: ${a.label}`).join('; ') };
+  if (refused.length > 0 && (status === 'not_run' || status === 'blocked')) {
+    return { status: 'blocked', note: refused.map((a) => `Gate 2 ${said(a)}: ${a.label}`).join('; ') };
+  }
+  // The model's own "blocked" note was written while its Gate 2 ask was open; the outcome since is the runner's to state.
+  if (status === 'blocked' && asks.length > 0) {
+    const approved = asks.filter((a) => a.status === 'approved');
+    if (approved.length === asks.length) {
+      const unsent = approved.filter((a) => a.sent !== true);
+      return unsent.length === 0
+        ? { status: 'executed', note: `Approved at Gate 2 and sent: ${approved.map((a) => a.label).join('; ')}` }
+        : { status: 'not_run', note: `Approved at Gate 2 but not sent before the audit ended: ${unsent.map((a) => a.label).join('; ')}` };
+    }
+    return { status, note: `Waiting for a Gate 2 decision: ${asks.filter((a) => a.status === 'pending').map((a) => a.label).join('; ')}` };
+  }
+  return { status, note: testCase.note };
 }
 
 /** The `coverage.summary` event data: what was and was not tested, and which test accounts were actually used. */

@@ -18,6 +18,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseFilters,
   UseInterceptors,
@@ -178,6 +179,12 @@ const cloneSchema = z.preprocess(
   z.strictObject({ untriedFromRunId: z.string().regex(UUID).optional() }),
 );
 
+/** The wizard's answers: plain JSON, bounded. Test-account secrets never belong here. */
+const draftSchema = z.strictObject({
+  step: z.number().int().min(1).max(10),
+  answers: z.record(z.string().max(LIMITS.name), z.unknown()).refine((v) => JSON.stringify(v).length <= 16_000, 'Too large.'),
+});
+
 const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });
 /** A blast radius wider than one run: every run on a target, or every run in the workspace. */
 export const killScopeSchema = z.discriminatedUnion('scope', [
@@ -234,6 +241,7 @@ class VerifyAssetDto extends createZodDto(verifyAssetSchema) {}
 class CreateRequestDto extends createZodDto(createRequestSchema) {}
 class DecisionDto extends createZodDto(decisionSchema) {}
 class AmendRequestDto extends createZodDto(amendRequestSchema) {}
+class DraftDto extends createZodDto(draftSchema) {}
 class CloneDto extends createZodDto(cloneSchema) {}
 class TriageManyDto extends createZodDto(triageManySchema) {}
 class WorkspaceDto extends createZodDto(workspaceSchema) {}
@@ -455,6 +463,26 @@ export class DemoController {
     @ZodBody(VerifyAssetDto) body: VerifyAssetDto,
   ): Promise<unknown> {
     return this.service.verifyAsset(await this.actor(headers), uuid(id, 'asset'), body);
+  }
+
+  @Get('drafts')
+  async drafts(@Headers() headers: RequestHeaders): Promise<unknown> {
+    return { items: await this.service.drafts(await this.actor(headers)) };
+  }
+
+  @Get('drafts/:id')
+  async draft(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+    return this.service.draft(await this.actor(headers), uuid(id, 'draft'));
+  }
+
+  @Put('drafts/:id')
+  async saveDraft(@Headers() headers: RequestHeaders, @Param('id') id: string, @ZodBody(DraftDto) body: DraftDto): Promise<unknown> {
+    return this.service.saveDraft(await this.actor(headers), uuid(id, 'draft'), body);
+  }
+
+  @Delete('drafts/:id')
+  async discardDraft(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+    return this.service.discardDraft(await this.actor(headers), uuid(id, 'draft'));
   }
 
   @Post('requests')

@@ -14,6 +14,7 @@ import { defaultLookup, firstRefusal, isLabOrigin, type Lookup, type OriginPolic
 import {
   BODY_EXCERPT_CHARS,
   type AssetRow,
+  type DraftRow,
   type AuditEntry,
   type DemoStore,
   type EmergencyContact,
@@ -665,6 +666,34 @@ export class DemoService {
       ownership: asset.ownership_status,
     });
     return { audit };
+  }
+
+  private draftDto(row: DraftRow): Record<string, unknown> {
+    return { id: row.id, step: row.step, answers: row.answers, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString() };
+  }
+
+  async drafts(actor: DemoActor): Promise<Record<string, unknown>[]> {
+    return (await this.store.listDrafts(this.tenantId, actor.id)).map((row) => this.draftDto(row));
+  }
+
+  async draft(actor: DemoActor, id: string): Promise<Record<string, unknown>> {
+    const row = await this.store.getDraft(this.tenantId, actor.id, id);
+    if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such draft.');
+    return this.draftDto(row);
+  }
+
+  /** Saves a draft (the caller picks the id). Creating and discarding are ledgered; each autosave of the same draft is not. */
+  async saveDraft(actor: DemoActor, id: string, input: { step: number; answers: Record<string, unknown> }): Promise<Record<string, unknown>> {
+    requireRole(actor, ['appsec-engineer'], 'Only an appsec engineer can draft an audit.');
+    const created = await this.store.saveDraft(this.tenantId, actor.id, id, input.step, input.answers);
+    if (created === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such draft.');
+    if (created) await this.audit(actor, 'draft.created', 'draft', id, { step: input.step });
+    return this.draft(actor, id);
+  }
+
+  async discardDraft(actor: DemoActor, id: string): Promise<{ audit: AuditRef | null }> {
+    if (!(await this.store.deleteDraft(this.tenantId, actor.id, id))) return { audit: null };
+    return { audit: await this.audit(actor, 'draft.discarded', 'draft', id, {}) };
   }
 
   /** The asset owner proves control by serving the token, or attests authority (lab or owned system). */

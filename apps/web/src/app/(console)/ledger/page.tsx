@@ -106,7 +106,7 @@ export default async function LedgerPage({
   const all = (await searchParams).all !== undefined;
   // The ledger stores ids; the findings list names them. Without it the entries still read, just unnamed.
   const [{ items, chain }, findings] = await Promise.all([
-    readApi('/audit').then((b) => ledgerSchema.parse(b)),
+    readApi(all ? '/audit?all=1' : '/audit').then((b) => ledgerSchema.parse(b)),
     readApi('/findings')
       .then((b) => findingTitles.parse(b).items)
       .catch(() => []),

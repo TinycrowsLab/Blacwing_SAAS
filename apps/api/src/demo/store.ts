@@ -6,6 +6,15 @@ import { GENESIS, auditHash, type AuditFields, type AuditPayload, type AuditRef 
 
 import type pg from 'pg';
 
+/** An audit-order draft (demo.drafts): the wizard's answers, kept per person. */
+export interface DraftRow {
+  readonly id: string;
+  readonly step: number;
+  readonly answers: Record<string, unknown>;
+  readonly created_at: Date;
+  readonly updated_at: Date;
+}
+
 export interface TenantRow {
   readonly id: string;
   readonly name: string;
@@ -1002,6 +1011,42 @@ export class DemoStore {
     );
     const row = r.rows[0];
     return row === undefined ? null : { eventId: row.id, hash: row.hash };
+  }
+
+  /** A person's order drafts, newest first. */
+  async listDrafts(tenantId: string, ownerId: string): Promise<DraftRow[]> {
+    const r = await this.pool.query<DraftRow>(
+      `SELECT id, step, answers, created_at, updated_at FROM demo.drafts
+       WHERE tenant_id = $1 AND owner_id = $2 ORDER BY updated_at DESC LIMIT 100`,
+      [tenantId, ownerId],
+    );
+    return r.rows;
+  }
+
+  async getDraft(tenantId: string, ownerId: string, id: string): Promise<DraftRow | null> {
+    const r = await this.pool.query<DraftRow>(
+      `SELECT id, step, answers, created_at, updated_at FROM demo.drafts
+       WHERE tenant_id = $1 AND owner_id = $2 AND id = $3`,
+      [tenantId, ownerId, id],
+    );
+    return r.rows[0] ?? null;
+  }
+
+  /** Creates the draft, or replaces its answers when it exists. Returns true when it was created, null when the id belongs to someone else. */
+  async saveDraft(tenantId: string, ownerId: string, id: string, step: number, answers: unknown): Promise<boolean | null> {
+    const r = await this.pool.query<{ created: boolean }>(
+      `INSERT INTO demo.drafts (id, tenant_id, owner_id, step, answers) VALUES ($3, $1, $2, $4, $5)
+       ON CONFLICT (id) DO UPDATE SET step = EXCLUDED.step, answers = EXCLUDED.answers, updated_at = now()
+         WHERE demo.drafts.tenant_id = $1 AND demo.drafts.owner_id = $2
+       RETURNING (xmax = 0) AS created`,
+      [tenantId, ownerId, id, step, JSON.stringify(answers)],
+    );
+    return r.rows[0]?.created ?? null;
+  }
+
+  async deleteDraft(tenantId: string, ownerId: string, id: string): Promise<boolean> {
+    const r = await this.pool.query('DELETE FROM demo.drafts WHERE tenant_id = $1 AND owner_id = $2 AND id = $3', [tenantId, ownerId, id]);
+    return (r.rowCount ?? 0) === 1;
   }
 
   /** The whole ledger in seq order (the chain is verified over all of it). */

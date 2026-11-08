@@ -463,6 +463,31 @@ ${gapsHtml}
 `;
 }
 
+/** Fields that only mean something inside Blackwing (storage ids, hashes of bodies, queue and kill bookkeeping, other audits' ids). */
+const INTERNAL_KEYS: ReadonlySet<string> = new Set([
+  'assetId',
+  'requestId',
+  'exchangeId',
+  'identityKey',
+  'bodySha256',
+  'killRequestedAt',
+  'haltMs',
+  'queue',
+  'pins',
+  'seenBefore',
+]);
+
+/** Removes INTERNAL_KEYS at any depth, so a report handed to a client carries no internal bookkeeping. */
+function dropInternal(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(dropInternal);
+  if (typeof value !== 'object' || value === null) return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([k]) => !INTERNAL_KEYS.has(k))
+      .map(([k, v]) => [k, dropInternal(v)]),
+  );
+}
+
 /** The machine-readable report: the API's JSON without the agent's run summary, and the findings most severe first. */
 export function renderJson(
   raw: Readonly<Record<string, unknown>>,
@@ -489,7 +514,7 @@ export function renderJson(
     asset.excludedPaths = pinned;
   // An empty list here means nothing was released, not that nothing was found.
   const scope = { releasedFindingsOnly: true, releasedCount: list.length };
-  return JSON.stringify(scrubDeep({ ...raw, asset, run, scope, findings: list }), null, 2);
+  return JSON.stringify(dropInternal(scrubDeep({ ...raw, asset, run, scope, findings: list })), null, 2);
 }
 
 /** Released findings, most severe first (the order of the results page). */

@@ -8,7 +8,7 @@ import { AskField, findKnown, useNormalized } from './ask-field';
 import { LocalTime } from './local-time';
 import { dayLabel, FORBIDDEN_MESSAGE, isForbiddenHost, isVerified, originOf, recommendedProof, refreshSidebar, unverifiableHost } from './shared';
 import { type ProofMethod, VerifyOwnership } from './verify-ownership';
-import { ensureTargetAction } from '../../../app/(console)/audits/actions';
+import { ensureTargetAction, removeTargetAction } from '../../../app/(console)/audits/actions';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage, LinkButton } from '../design';
 import { ChipInput, PendingButton } from '../design-client';
@@ -90,6 +90,11 @@ function VerifyPanel({
 }
 
 const MAX_ORIGINS = 50;
+/** 0.0.0.0 and friends name no machine you could reach. */
+const isUnroutableHost = (host: string): boolean => /^(0(\.0){0,3}|\[::\])(:\d+)?$/.test(host);
+/** A loopback address on the port this console is served from. */
+const isOwnConsole = (host: string, port: string): boolean =>
+  port !== '' && /^(localhost|127(\.\d{1,3}){3}|\[::1\])$/i.test(host.replace(/:\d+$/, '')) && host.endsWith(`:${port}`);
 const HTTP_BAD_REQUEST = 400;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_TOO_MANY = 429;
@@ -128,8 +133,20 @@ function AddTarget({
   const [refusedFor, setRefusedFor] = useState<{ text: string; message: string } | null>(null);
   const [extra, setExtra] = useState<readonly string[] | null>(null);
   const typed = useNormalized(text);
+  const [consoleHost, setConsoleHost] = useState<{ port: string } | null>(null);
+  useEffect(() => {
+    setConsoleHost({ port: window.location.port });
+  }, []);
   const refusal =
-    typed.ok && isForbiddenHost(typed.host) ? FORBIDDEN_MESSAGE : refusedFor?.text === text ? refusedFor.message : null;
+    typed.ok && isForbiddenHost(typed.host)
+      ? FORBIDDEN_MESSAGE
+      : typed.ok && isUnroutableHost(typed.host)
+        ? 'That is not an address a site can be reached at. Use the site\'s real address.'
+        : typed.ok && consoleHost !== null && isOwnConsole(typed.host, consoleHost.port)
+          ? 'Blackwing cannot test its own console or API.'
+          : refusedFor?.text === text
+            ? refusedFor.message
+            : null;
   const result: TargetResult = refusal === null ? typed : { ok: false, message: refusal };
   const add = async (): Promise<boolean> => {
     setError(null);
@@ -282,6 +299,22 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
   const [open, setOpen] = useState<string | null>(null);
   /** A site added again: its row is scrolled to and marked, so the click is never lost. */
   const [again, setAgain] = useState<string | null>(null);
+  /** The row whose removal is being confirmed, and any refusal from the API. */
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const remove = async (id: string): Promise<boolean> => {
+    const r = await removeTargetAction(id);
+    if (!r.ok) {
+      setRemoveError(r.message);
+      return false;
+    }
+    setAssets((list) => list.filter((x) => x.id !== id));
+    setRemoving(null);
+    setRemoveError(null);
+    setOpen((o) => (o === id ? null : o));
+    refreshSidebar();
+    return true;
+  };
   const justVerified = open !== null && assets.some((a) => a.id === open && isVerified(a));
   useEffect(() => {
     if (again === null) return;
@@ -435,6 +468,51 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     </button>
                   )}
                 </div>
+                {removing === a.id ? (
+                  <div
+                    role="alertdialog"
+                    aria-label={`Remove ${a.name}`}
+                    className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5"
+                  >
+                    <p className="m-0 text-[13.5px] text-foreground">
+                      Remove <b className="font-semibold">{a.name}</b> from this workspace? Past audits and the ledger keep
+                      their record of it. You can add it again later.
+                    </p>
+                    {removeError === null ? null : <InlineMessage tone="bad">{removeError}</InlineMessage>}
+                    <div className="flex flex-wrap gap-2.5">
+                      <PendingButton
+                        onAction={() => remove(a.id)}
+                        pendingLabel="Removing…"
+                      >
+                        Remove target
+                      </PendingButton>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRemoving(null);
+                          setRemoveError(null);
+                        }}
+                        className={buttonClass('ghost')}
+                      >
+                        Keep it
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end border-t border-border px-4 py-1.5 sm:px-5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRemoving(a.id);
+                        setRemoveError(null);
+                      }}
+                      aria-label={`Remove ${a.name}`}
+                      className="inline-flex h-8 items-center rounded-lg px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
                 {expanded ? (
                   <VerifyPanel
                     asset={a}

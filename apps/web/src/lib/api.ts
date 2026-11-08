@@ -112,7 +112,7 @@ export async function callEmergencyApi<T = unknown>(path: string, body: unknown,
 export async function callApi<T = unknown>(
   session: Viewer,
   path: string,
-  init: { readonly method?: 'GET' | 'POST' | 'PATCH'; readonly body?: unknown } = {},
+  init: { readonly method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'; readonly body?: unknown } = {},
 ): Promise<T> {
   const token = process.env.BW_DEMO_INTERNAL_TOKEN ?? '';
   if (token === '')
