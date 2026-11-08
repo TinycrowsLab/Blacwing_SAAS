@@ -890,7 +890,14 @@ export function conversationItems(
         break;
       }
       default:
-        host(e, hostLine(e, { viewerName, cases: e.kind === 'run.completed' ? caseTally(events) : null }));
+        host(
+          e,
+          hostLine(e, {
+            viewerName,
+            cases: e.kind === 'run.completed' ? caseTally(events) : null,
+            started: events.some((x) => x.kind === 'run.started'),
+          }),
+        );
     }
   }
   const ended = events.some((e) => e.kind === 'run.completed' || e.kind === 'run.killed' || e.kind === 'run.failed');

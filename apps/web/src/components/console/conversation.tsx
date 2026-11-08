@@ -11,7 +11,7 @@
 import Link from 'next/link';
 import { memo, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 
-import { buttonClass, Icon, SeverityChip, VoiceTag } from './design';
+import { buttonClass, Icon, SeverityChip, VoiceTag, withRedactions } from './design';
 import { statusTone } from './flight-deck';
 import { Gate2Card } from './gate2-view';
 import { Markdown } from './markdown';
@@ -167,7 +167,7 @@ function CallList({ calls, onOpen }: { readonly calls: readonly CallRow[]; reado
                 <span className="min-w-0 flex-1">
                   <span className="font-medium">Blocked by scope: not sent</span> ({ruleWords(c.rule ?? '')})
                   <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                    {c.method} {c.path}
+                    {c.method} {withRedactions(c.path)}
                   </span>
                 </span>
               </div>
@@ -185,7 +185,7 @@ function CallList({ calls, onOpen }: { readonly calls: readonly CallRow[]; reado
               >
                 <span className="font-medium text-slate">{c.method}</span>
                 <span className="min-w-0 flex-1 truncate">
-                  {c.path}
+                  {withRedactions(c.path)}
                   {c.asRole === null ? null : <span className="text-muted-foreground"> · as {c.asRole}</span>}
                 </span>
                 <span className={`rounded-[5px] px-1.5 py-px text-[10.5px] font-medium ${statusTone(c.status ?? 0)}`}>{c.status}</span>

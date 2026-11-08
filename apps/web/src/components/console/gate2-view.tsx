@@ -443,7 +443,7 @@ function Checking({ gate2 }: { readonly gate2: Card }) {
       <span className="size-2 shrink-0 animate-pulse rounded-full bg-gold-ink motion-reduce:animate-none" />
       Checking the answer for{' '}
       <span className="font-mono text-[12px]">
-        {gate2.method} {pathOf(gate2.url)}
+        {gate2.method} {withRedactions(pathOf(gate2.url))}
       </span>
       …
     </div>
@@ -668,7 +668,7 @@ function PageReceipt({
   const runLink = `/runs/${gate2.runId}`;
   const live = audit?.live ?? true;
   return (
-    <div className="flex max-w-[880px] flex-col gap-4 max-md:-mx-4 max-md:-mt-5 max-md:min-h-[calc(100dvh-52px)] max-md:bg-surface-2 max-md:px-4 max-md:pb-6 max-md:pt-5">
+    <div className="flex max-w-[880px] flex-col gap-4 max-md:-mx-4 max-md:-mt-5 max-md:min-h-[calc(100dvh-52px)] max-md:px-4 max-md:pb-6 max-md:pt-5">
       <h1 className="m-0 text-[22px] font-semibold leading-[30px] text-foreground md:hidden">
         {audit?.assetName ?? 'Request during an audit'}
       </h1>
@@ -986,7 +986,7 @@ export function Gate2Card({
 
       <div
         data-gate2-scope=""
-        className="-mx-4 -mb-5 -mt-5 flex min-h-[calc(100dvh-52px)] flex-col bg-surface-2 md:hidden"
+        className="-mx-4 -mb-5 -mt-5 flex min-h-[calc(100dvh-52px)] flex-col bg-bg md:hidden"
       >
         {/* Sticky under the 52 px top bar, so the time left never scrolls away. */}
         <div className="sticky top-[52px] z-30 h-1 [&>div]:h-1">{bar}</div>

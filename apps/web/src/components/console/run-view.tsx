@@ -24,9 +24,10 @@ import {
 } from '@blackwing/ui';
 
 import { Conversation, shortTime } from './conversation';
-import { AuthorisedUnder, buttonClass, Icon, VoiceTag } from './design';
-import { PendingButton, useCountdown } from './design-client';
+import { AuthorisedUnder, buttonClass, Icon, VoiceTag, withRedactions } from './design';
+import { CLOCK_TONE, PendingButton, useCountdown } from './design-client';
 import { AccountsPanel, FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
+import { plainWhy } from './gate2-view';
 import { KillButton } from './kill-dialog';
 import { ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
@@ -46,6 +47,7 @@ import {
   liveness,
   manifest,
   mergeEvents,
+  pathOf,
   stages,
   teamNodes,
 } from './run-model';
@@ -154,27 +156,41 @@ function Liveness({
   );
 }
 
-const CLOCK_TONE = { normal: 'text-gold-ink', warn: 'text-warn', bad: 'text-bad' } as const;
-
-/** Phones: the first open decision, pinned under the top bar. Same clock (and rounding) as the decision card. */
+/**
+ * The first open decision, pinned under the top bar on every width: who asks, the request, why it is outside the
+ * authorisation (wider screens) and the live clock. Same clock (and rounding) as the decision card.
+ */
 function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number }) {
   const clock = useCountdown(g.deadlineAt, g.createdAt);
   return (
     <Link
       href={`/decisions/gate2/${g.id}`}
-      className="flex min-h-12 items-center gap-2.5 border-b border-gold-line bg-gold-soft px-4 py-1.5 text-[13px] text-foreground no-underline md:hidden"
+      className="flex min-h-12 items-center gap-2.5 border-b border-gold-line bg-gold-soft px-4 py-1.5 text-[13px] text-foreground no-underline md:px-6"
     >
       <Icon name="hand" size={16} className="shrink-0 text-gold-ink" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold">{decisionTitle(g.method, g.url)}</span>
+        <span className="block truncate font-semibold md:hidden">{decisionTitle(g.method, g.url)}</span>
+        <span className="hidden truncate md:block">
+          <b className="font-semibold">{agentName(g.agent)} asks to send</b>{' '}
+          <span className="font-mono text-[12.5px]">
+            {g.method} {withRedactions(pathOf(g.url))}
+          </span>
+        </span>
         <span className="block truncate text-[11.5px] text-muted-foreground">
-          {agentName(g.agent)}
+          <span className="md:hidden">{agentName(g.agent)}</span>
+          {g.whyOutside === '' ? null : <span className="max-md:hidden">{plainWhy(g.whyOutside)}</span>}
           {more > 0 ? ` · +${more} more` : ''}
         </span>
       </span>
-      {/* The card's colours for the same clock: gold, then warn under 60 s and bad under 15 s (spec §11.1). */}
-      <span className={`font-semibold tabular-nums ${CLOCK_TONE[clock?.tone ?? 'normal']}`}>{clock?.label ?? ''}</span>
-      <span className={buttonClass('primary', 'h-11 px-3.5')}>Decide</span>
+      {/* The card's colours for the same clock: gold, amber under 5 min, red with a pulse in the last minute. */}
+      <span className={`font-semibold tabular-nums ${CLOCK_TONE[clock?.tone ?? 'normal']}`}>
+        {clock?.label ?? ''}
+        <span className="text-[11.5px] font-normal text-muted-foreground max-md:hidden"> left</span>
+      </span>
+      <span className={buttonClass('primary', 'h-11 px-3.5 md:h-9')}>
+        <span className="md:hidden">Decide</span>
+        <span className="max-md:hidden">Review</span>
+      </span>
     </Link>
   );
 }
@@ -460,6 +476,14 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     () => new Set(pendingIds === '' ? [] : blockingAsks(events, run.gate2.filter((g) => pendingIds.includes(g.id))).map((g) => g.agent)),
     [pendingIds, run.gate2, events],
   );
+  // The test plan also holds each case an open request names (`case:<id>`), blocking or not.
+  const heldCases = useMemo(() => {
+    const held = new Set(waitingAgents);
+    for (const e of events)
+      if (e.kind === 'gate2.requested' && typeof e.data.caseId === 'string' && pendingIds.includes(String(e.data.gate2Id)))
+        held.add(`case:${e.data.caseId}`);
+    return held;
+  }, [waitingAgents, events, pendingIds]);
   // The sidebar's "Waiting on you" polls every 5 s: when this run's open decisions change, it refreshes now, so the two
   // counts never disagree on screen.
   const firstPending = useRef(true);
@@ -563,7 +587,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} />
       <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} />
-      <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
+      <PlanPanel cases={cases} waiting={heldCases} ended={terminal} />
       <FoundPanel items={cands} ended={terminal} release={release === 'auto' || teamMap.autoReleased ? 'auto' : 'hold'} />
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
         Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
@@ -783,7 +807,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </p>
       ) : null}
 
-      {/* Phones: a pending decision pins a gold banner under the top bar. */}
+      {/* A pending decision pins a gold banner under the top bar. */}
       {firstOpen === undefined || terminal ? null : <DecisionBanner g={firstOpen} more={pending.length - 1} />}
 
       {/* One row that fills the height: the side panel scrolls on its own instead of stretching the page. */}
@@ -884,7 +908,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 }
               />
             ) : tab === 'plan' ? (
-              <TestPlanTab cases={shownCases} waiting={waitingAgents} ended={terminal} />
+              <TestPlanTab cases={shownCases} waiting={heldCases} ended={terminal} />
             ) : tab === 'requests' ? (
               <RequestsTab
                 items={shownExchanges}

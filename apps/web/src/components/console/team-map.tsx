@@ -193,7 +193,9 @@ export function TeamMap({
   const empty = team.planner === null && team.specialists.length === 0;
 
   const body = empty ? (
-    <p className="m-0 py-3 text-[12.5px] text-muted-foreground">The team appears when the run starts.</p>
+    <p className="m-0 py-3 text-[12.5px] text-muted-foreground">
+      {ended ? 'No agent started: the run ended before testing began.' : 'The team appears when the run starts.'}
+    </p>
   ) : column ? (
     <div className="flex flex-col">
       <p className="m-0 text-[12px] text-muted-foreground">

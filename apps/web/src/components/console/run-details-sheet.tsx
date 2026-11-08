@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@blackwing/ui';
 
-import { Chip } from './design';
+import { Chip, withRedactions } from './design';
 import { CopyField } from './design-client';
 import { type Exchange, pathOf } from './run-model';
 import { agentName } from '../../lib/agents';
@@ -231,7 +231,7 @@ export function ExchangeSheet({
           <SheetTitle className="pr-8 text-[16px] font-semibold">
             {exchange === null ? 'Request' : (
               <span className="font-mono text-[14px]">
-                <span className="text-slate">{exchange.method}</span> {pathOf(exchange.url)}
+                <span className="text-slate">{exchange.method}</span> {withRedactions(pathOf(exchange.url))}
               </span>
             )}
           </SheetTitle>
