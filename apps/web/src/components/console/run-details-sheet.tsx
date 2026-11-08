@@ -13,8 +13,8 @@ import { CopyField } from './design-client';
 import { type Exchange, pathOf } from './run-model';
 import { agentName } from '../../lib/agents';
 import { limitsPhrase } from '../../lib/plan-text';
-
 import { CARE_LABEL, type Run } from '../../lib/schemas';
+
 import type { ReactNode } from 'react';
 
 /** Restores focus to what opened the sheet (Radix has no trigger to return to for a controlled sheet). */
@@ -44,7 +44,6 @@ const pinnedRequestSchema = z
   })
   .loose();
 const runnerSchema = z.object({ name: z.string(), version: z.string() }).loose();
-
 
 function Row({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (

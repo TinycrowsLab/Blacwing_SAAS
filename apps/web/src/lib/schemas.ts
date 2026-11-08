@@ -248,7 +248,6 @@ export interface PinnedAuthorisation {
   readonly signedBy: string | null;
   /** The care level's label ("Probe gently"); null when the run did not pin it. */
   readonly care: string | null;
-  readonly approvedAt: string | null;
   readonly origins: readonly string[];
   readonly excludedPaths: readonly string[];
 }
@@ -258,12 +257,10 @@ export function pinnedAuthorisation(pins: Run['pins']): PinnedAuthorisation | nu
   const auth = pins.authorisation;
   if (auth === undefined) return null;
   const care = pins.request?.intrusiveness;
-  const approvedAt = pins.request?.['decidedAt'];
   return {
     saId: auth.saId,
     signedBy: auth.signedBy,
     care: care === undefined || care === '' ? null : (CARE_LABEL[care] ?? care),
-    approvedAt: typeof approvedAt === 'string' ? approvedAt : null,
     origins: pins.asset?.allowedOrigins ?? [],
     excludedPaths: pins.asset?.excludedPaths ?? [],
   };

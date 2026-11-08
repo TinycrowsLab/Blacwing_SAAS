@@ -58,7 +58,6 @@ import { agentName } from '../../lib/agents';
 import { decisionTitle } from '../../lib/plan-text';
 import { CARE_LABEL, type Gate2, pinnedAuthorisation, type Run, type RunEvent, runSchema } from '../../lib/schemas';
 
-
 const BACKOFF_MS = [1500, 3000, 6000, 10_000] as const;
 /** Pause and Resume give up after this long, so the answer (or the error) lands inside the 2 s budget. */
 const CONTROL_TIMEOUT_MS = 1500;

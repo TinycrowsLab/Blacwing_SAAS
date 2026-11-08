@@ -184,7 +184,7 @@ function Chips({ gate2 }: { readonly gate2: Card }) {
   if (intent === null) return null;
   return (
     <div className="mt-2.5 flex flex-wrap gap-1.5">
-      {intent === null ? null : <Chip tone="gold">{intent}</Chip>}
+      <Chip tone="gold">{intent}</Chip>
     </div>
   );
 }
