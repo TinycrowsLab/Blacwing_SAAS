@@ -554,6 +554,15 @@ export const Conversation = memo(function Conversation({
     checkPending();
   }, [pendingKey, checkPending]);
 
+  // Answering a decision (a click or focus inside its card) stops following: new lines arriving below must never
+  // scroll the card, its reason field or its confirm button away while the person is using them.
+  const release = (target: EventTarget): void => {
+    if (!(target instanceof Element) || target.closest('[data-gate2-pending]') === null) return;
+    hold.current = null;
+    followRef.current = false;
+    setFollow(false);
+  };
+
   const goTo = useCallback((id: string): void => {
     const card = cardOf(id);
     if (card === null) return;
@@ -606,6 +615,10 @@ export const Conversation = memo(function Conversation({
         }}
         onFocus={(e) => {
           setEditing(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement);
+          release(e.target);
+        }}
+        onPointerDown={(e) => {
+          release(e.target);
         }}
         onBlur={() => {
           setEditing(false);
