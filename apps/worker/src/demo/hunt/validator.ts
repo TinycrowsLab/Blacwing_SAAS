@@ -190,6 +190,16 @@ export function templateRefusal(candidate: Pick<Candidate, 'probe' | 'control' |
   return null;
 }
 
+/** The differing path segments of probe and control name the same resource when one contains the other. */
+function samePathResource(probeUrl: string, controlUrl: string): boolean {
+  const p = new URL(probeUrl).pathname.split('/');
+  const c = new URL(controlUrl).pathname.split('/');
+  const i = p.findIndex((segment, n) => segment !== c[n]);
+  const a = (p[i] ?? '').toLowerCase();
+  const b = (c[i] ?? '').toLowerCase();
+  return a !== '' && b !== '' && (a.includes(b) || b.includes(a));
+}
+
 /** GET/HEAD/OPTIONS that do not look state-changing are replayed 3 times; anything that may change data, once. */
 export function replaysFor(probe: HttpRequest): number {
   try {
@@ -230,8 +240,9 @@ export async function validateCandidate(candidate: Pick<Candidate, 'probe' | 'co
   const controlMatched = oracleMatches(candidate.oracle, control);
   await hooks.control(control.status, controlMatched);
   if (controlMatched) return { confirmed: false, reason: 'the negative control also matched the oracle', delta, replays, probe, control, controlMatched };
-  // A page that does not exist never matches anything: it is not a control for another path.
-  if (delta === 'path_segment' && MISSING_PAGE.has(control.status)) {
+  // A page that does not exist never matches anything: it is not a control for another resource. A payload in the
+  // segment (`/users/test'` vs `/users/test`) keeps the resource, so its 404 control still counts.
+  if (delta === 'path_segment' && MISSING_PAGE.has(control.status) && !samePathResource(candidate.probe.url, candidate.control.url)) {
     return { confirmed: false, reason: 'control_page_missing: the control asked for a page that does not exist', delta, replays, probe, control, controlMatched };
   }
   return { confirmed: true, reason: 'all probe replays matched and the negative control did not', delta, replays, probe, control, controlMatched };

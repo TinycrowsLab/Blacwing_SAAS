@@ -143,6 +143,7 @@ export default async function ResultsPage({
     coverage: run.coverage,
     endReason: run.coverage?.endReason ?? null,
     excludedPaths: request?.excludedPaths ?? [],
+    summary: run.summary,
   });
   const untried = run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
 

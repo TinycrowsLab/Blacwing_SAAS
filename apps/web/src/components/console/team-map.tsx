@@ -33,7 +33,7 @@ function NodeButton({
   stacked = false,
 }: {
   readonly node: TeamNode;
-  /** The technical id, shown in the tooltip (or "deterministic replay" for the validator). */
+  /** The technical id, shown in the tooltip (or "replay engine" for the validator). */
   readonly mono: string;
   readonly selected: boolean;
   readonly onSelect: (id: string) => void;
@@ -211,7 +211,7 @@ export function TeamMap({
       </div>
       <Down label={team.candidates === 0 ? undefined : plural(team.candidates, 'candidate', 'candidates')} />
       {team.validator === null ? null : (
-        <NodeButton node={team.validator} mono="deterministic replay" wide selected={filter === 'validator'} onSelect={select} />
+        <NodeButton node={team.validator} mono="replay engine" wide selected={filter === 'validator'} onSelect={select} />
       )}
       <Down label={proven} />
       <p className="m-0 text-[12px] text-muted-foreground">
@@ -246,7 +246,7 @@ export function TeamMap({
       )}
       {team.validator === null ? null : (
         <div className="w-[132px] shrink-0">
-          <NodeButton node={team.validator} mono="deterministic replay" stacked selected={filter === 'validator'} onSelect={select} />
+          <NodeButton node={team.validator} mono="replay engine" stacked selected={filter === 'validator'} onSelect={select} />
         </div>
       )}
       <Arrow wide label={proven} />

@@ -355,5 +355,9 @@ describe('class templates', () => {
     const verdict = await validateCandidate(phpinfo, hooks((request) => (request.url.includes('nonexistent') ? ok(request, 'Not Found', 404) : ok(request, 'PHP Version 8'))).hooks);
     expect(verdict.confirmed).toBe(false);
     expect(verdict.reason).toMatch(/^control_page_missing/);
+    // A payload inside the segment keeps the resource: the 404 control of a quote probe still counts.
+    const sqli: Candidate = { ...candidate, probe: { method: 'GET', url: "https://t.example/users/v1/test'" }, control: { method: 'GET', url: 'https://t.example/users/v1/test' }, oracle: { type: 'body_contains', value: 'OperationalError' } };
+    const quoted = await validateCandidate(sqli, hooks((request) => (request.url.endsWith("'") ? ok(request, 'sqlite3.OperationalError', 500) : ok(request, 'Not Found', 404))).hooks);
+    expect(quoted.confirmed).toBe(true);
   });
 });
