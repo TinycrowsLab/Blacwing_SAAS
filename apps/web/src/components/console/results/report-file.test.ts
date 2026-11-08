@@ -103,6 +103,7 @@ describe('run report file', () => {
           { id: 'a', title: 'Search SQLi', agent: 'web-api-specialist', status: 'executed' },
           { id: 'b', title: 'Basket IDOR', agent: 'authz-specialist', status: 'not_run' },
           { id: 'c', title: 'Admin page', agent: 'web-api-specialist', status: 'blocked', note: 'needed a denied POST' },
+          { id: 'd', title: 'Account takeover', agent: 'authz-specialist', status: 'model_declined', note: 'out of the agreed scope' },
         ],
         rolesConfigured: ['alice', 'bob'],
         rolesUsed: { alice: 14 },
@@ -110,9 +111,10 @@ describe('run report file', () => {
     });
     const md = renderMarkdown(src, ordered(src));
     expect(md).toContain('**Signed-in testing:** Configured: alice, bob · used in 14 requests (alice 14, bob 0)');
-    expect(md).toContain('**Test cases:** 1 of 3 planned test cases ran');
+    expect(md).toContain('**Test cases:** 1 of 4 planned test cases ran');
     expect(md).toContain('- **Basket IDOR:** Not tried: the time limit came first');
     expect(md).toContain('- **Admin page:** Blocked: needed a denied POST');
+    expect(md).toContain('- **Account takeover:** Declined by Claude: out of the agreed scope');
     expect(md).toContain('- **/setup.php:** Left out on purpose: the plan excluded these paths');
     expect(md).toContain('Claude’s own note (not verified):');
     expect(md).not.toContain('eyJhbGciOiJIUzI1NiJ9');

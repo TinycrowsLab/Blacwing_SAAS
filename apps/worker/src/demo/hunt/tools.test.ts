@@ -153,6 +153,8 @@ describe('test cases and coverage counting', () => {
     await call(ctx, 'update_test_case', { id: 'idor', status: 'skipped', note: 'no second object', agent: 'authz-specialist' });
     expect(ctx.state.cases.get('xss-search')).toMatchObject({ requests: 1, candidates: 1 });
     expect(ctx.state.cases.get('idor')).toMatchObject({ status: 'skipped', note: 'no second object' });
+    await call(ctx, 'update_test_case', { id: 'idor', status: 'model_declined', note: 'would need a real user', agent: 'authz-specialist' });
+    expect(ctx.state.cases.get('idor')).toMatchObject({ status: 'model_declined', note: 'would need a real user' });
   });
 });
 

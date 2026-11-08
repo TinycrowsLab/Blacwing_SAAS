@@ -69,9 +69,9 @@ export interface Gate2Ask {
   sent?: boolean;
 }
 
-/** Runner-owned case status: the model's skip or block stands (with its note); otherwise only sent requests or candidates count. */
-export function caseOutcome(testCase: CaseState): 'executed' | 'skipped' | 'blocked' | 'not_run' {
-  if (testCase.status === 'skipped' || testCase.status === 'blocked') return testCase.status;
+/** Runner-owned case status: the model's skip, block or decline stands (with its note); otherwise only sent requests or candidates count. */
+export function caseOutcome(testCase: CaseState): 'executed' | 'skipped' | 'blocked' | 'model_declined' | 'not_run' {
+  if (testCase.status === 'skipped' || testCase.status === 'blocked' || testCase.status === 'model_declined') return testCase.status;
   return testCase.requests > 0 || testCase.candidates > 0 ? 'executed' : 'not_run';
 }
 

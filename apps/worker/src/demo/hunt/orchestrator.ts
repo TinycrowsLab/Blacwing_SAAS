@@ -310,8 +310,6 @@ export function settle(halt: HaltReason | null, failure: string | null, end: Age
   }
 }
 
-
-/** A case that never ran because a human denied (or did not answer) the request it needed is `blocked`, saying which. */
 function caseResult(ctx: HuntContext, id: string, testCase: CaseState): { status: ReturnType<typeof caseOutcome>; note: string | null } {
   const status = caseOutcome(testCase);
   if (status !== 'not_run') return { status, note: testCase.note };
@@ -338,6 +336,6 @@ async function emitCoverage(ctx: HuntContext, endReason: string | null): Promise
   const count = (status: string): number => cases.filter((c) => c === status).length;
   const message = cases.length === 0
     ? 'Coverage: no test cases were recorded'
-    : `Coverage: ${count('executed')} of ${cases.length} test cases executed, ${count('skipped') + count('blocked')} skipped or blocked, ${count('not_run')} not run`;
+    : `Coverage: ${count('executed')} of ${cases.length} test cases executed, ${count('skipped') + count('blocked')} skipped or blocked, ${count('model_declined')} declined by the model, ${count('not_run')} not run`;
   await ctx.log.emit('coverage.summary', 'done', message, coverageOf(ctx, endReason));
 }

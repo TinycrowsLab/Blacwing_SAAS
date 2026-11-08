@@ -266,7 +266,9 @@ export function notTested(input: {
         ? `Skipped: ${note ?? 'Claude judged it not relevant'}`
         : c.status === 'blocked'
           ? `Blocked: ${note ?? 'a request it needed was refused or denied'}`
-          : `Not tried: ${ended}`;
+          : c.status === 'model_declined'
+            ? `Declined by Claude: ${note ?? 'no reason given'}`
+            : `Not tried: ${ended}`;
     return [{ what: scrub(c.title) || c.id, why }];
   });
   if (input.excludedPaths.length > 0)

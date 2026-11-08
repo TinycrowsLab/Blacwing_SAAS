@@ -59,6 +59,7 @@ describe('coverage', () => {
     expect(caseOutcome({ ...base, status: 'proposed', candidates: 1 })).toBe('executed');
     expect(caseOutcome({ ...base, status: 'skipped', requests: 3 })).toBe('skipped');
     expect(caseOutcome({ ...base, status: 'blocked' })).toBe('blocked');
+    expect(caseOutcome({ ...base, status: 'model_declined', requests: 1 })).toBe('model_declined');
   });
 
   it('reports cases, roles configured and used, requests sent and the end reason', () => {
