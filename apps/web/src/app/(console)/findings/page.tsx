@@ -46,7 +46,7 @@ export default async function FindingsPage(): Promise<ReactNode> {
   const items = list.items.sort(bySeverity);
 
   return (
-    <div className="flex w-full max-w-[1100px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
           Findings

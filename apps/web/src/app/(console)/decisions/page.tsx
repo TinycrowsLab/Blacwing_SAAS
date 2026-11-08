@@ -144,7 +144,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
   };
 
   return (
-    <div className="flex max-w-[880px] flex-col gap-7">
+    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-7">
       {/* A read that failed (an owner not known yet) is tried again on the next poll. */}
       <InboxRefresh waiting={waiting} incomplete={[...runs.values()].some((r) => !r.complete)} />
       <header className="flex flex-col gap-1.5">
