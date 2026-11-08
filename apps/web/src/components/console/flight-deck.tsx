@@ -573,8 +573,37 @@ function AgentLanes({
 
   return (
     <Card aria-label="Agent lanes" as="div">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold">Agent lanes</h2>
+      <div className="flex flex-col gap-2 border-b border-border px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Agent lanes</h2>
+          {canZoom ? (
+            <span className="flex gap-1.5" role="group" aria-label="Time axis">
+              <button
+                type="button"
+                aria-pressed={!fit}
+                onClick={() => {
+                  follow.current = true;
+                  setZoom('window');
+                }}
+                className={`${PILL} ${pillState(!fit)}`}
+              >
+                Last 2 min
+              </button>
+              <button
+                type="button"
+                aria-pressed={fit}
+                onClick={() => {
+                  setZoom('fit');
+                }}
+                className={`${PILL} ${pillState(fit)}`}
+              >
+                Whole run{running ? '' : ` (${runLength} min)`}
+              </button>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">{running ? 'Since the start' : `The whole run (${runLength} min)`}</span>
+          )}
+        </div>
         <span className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
           <Legend shape="circle" label="HTTP request" />
           <Legend shape="square" label="Tool call" />
@@ -586,18 +615,6 @@ function AgentLanes({
             </svg>
             Waiting on you
           </span>
-          {canZoom ? (
-            <span className="flex gap-1.5" role="group" aria-label="Time axis">
-              <button type="button" aria-pressed={!fit} onClick={() => { follow.current = true; setZoom('window'); }} className={`${PILL} ${pillState(!fit)}`}>
-                Last 2 min
-              </button>
-              <button type="button" aria-pressed={fit} onClick={() => { setZoom('fit'); }} className={`${PILL} ${pillState(fit)}`}>
-                Whole run{running ? '' : ` (${runLength} min)`}
-              </button>
-            </span>
-          ) : (
-            <span>{running ? 'Since the start' : `The whole run (${runLength} min)`}</span>
-          )}
         </span>
       </div>
       <div className={`grid ${LABEL_COLS}`}>
@@ -815,32 +832,40 @@ const CASE_PARTS = [
   { key: 'model_declined', label: 'Model declined', colour: 'var(--bad)' },
 ] as const;
 
-/** The test plan as the runner recorded it: one bar, every status counted (a status nobody reached shows 0). */
-const TestCasesCard = memo(function TestCasesCard({ cases }: { readonly cases: readonly TestCase[] }) {
+/** Heading of a panel section (as "Limits you approved") or of a card. */
+const sectionHead = (bare: boolean): string =>
+  bare ? 'mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold' : 'mb-3 flex min-w-0 items-baseline gap-2 text-sm font-semibold';
+const sectionNote = (bare: boolean): string =>
+  `ml-auto min-w-0 truncate text-right font-normal tabular-nums text-muted-foreground ${bare ? 'text-[11.5px]' : 'text-xs'}`;
+
+/**
+ * The test plan as the runner recorded it: one bar, every status counted (a status nobody reached shows 0). `bare`: a
+ * section of the side panel; otherwise a card.
+ */
+export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = false }: { readonly cases: readonly TestCase[]; readonly bare?: boolean }) {
+  const id = useId();
   const counts = new Map<string, number>();
   for (const c of cases) counts.set(c.status, (counts.get(c.status) ?? 0) + 1);
-  return (
-    <Card as="section" aria-labelledby="cases-h" className="p-4">
-      <h2 id="cases-h" className="mb-3 flex items-baseline text-sm font-semibold">
-        Test cases
-        <span className="ml-auto text-xs font-normal tabular-nums text-muted-foreground">
-          {cases.length === 0 ? 'not recorded yet' : `${cases.length} in plan`}
-        </span>
+  const body = (
+    <>
+      <h2 id={id} className={sectionHead(bare)}>
+        <span className="shrink-0">Test cases</span>
+        <span className={sectionNote(bare)}>{cases.length === 0 ? 'not recorded yet' : `${cases.length} in plan`}</span>
       </h2>
       {cases.length === 0 ? (
-        <p className="m-0 text-[12.5px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
       ) : (
         <>
-          <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-[4px] bg-surface-2" aria-hidden="true">
+          <div className={`flex gap-0.5 overflow-hidden rounded-[4px] bg-surface-2 ${bare ? 'h-2' : 'h-2.5'}`} aria-hidden="true">
             {CASE_PARTS.map((p) =>
               (counts.get(p.key) ?? 0) === 0 ? null : (
                 <b key={p.key} className="block h-full" style={{ width: `${((counts.get(p.key) ?? 0) / cases.length) * 100}%`, background: p.colour }} />
               ),
             )}
           </div>
-          <dl className="m-0 mt-3 grid grid-cols-2 gap-x-5 gap-y-1.5 text-[12.5px] text-muted-foreground">
+          <dl className={`m-0 grid grid-cols-2 text-muted-foreground ${bare ? 'mt-2 gap-x-3 gap-y-[3px] text-[11.5px]' : 'mt-3 gap-x-5 gap-y-1.5 text-[12.5px]'}`}>
             {CASE_PARTS.map((p) => (
-              <div key={p.key} className="flex items-center gap-2">
+              <div key={p.key} className="flex min-w-0 items-center gap-1.5">
                 <i aria-hidden="true" className="inline-block size-2 shrink-0 rounded-[2px]" style={{ background: p.colour }} />
                 <dt className="truncate">{p.label}</dt>
                 <dd className="m-0 ml-auto font-semibold tabular-nums text-foreground">{counts.get(p.key) ?? 0}</dd>
@@ -849,6 +874,13 @@ const TestCasesCard = memo(function TestCasesCard({ cases }: { readonly cases: r
           </dl>
         </>
       )}
+    </>
+  );
+  return bare ? (
+    <section aria-labelledby={id}>{body}</section>
+  ) : (
+    <Card as="section" aria-labelledby={id} className="p-4">
+      {body}
     </Card>
   );
 });
@@ -875,28 +907,33 @@ function candidateVerdict(c: Candidate): { verdict: string; label: string } {
   }
 }
 
-/** Every candidate the agents submitted, most severe first, with where the validator has got to. */
-const CandidatesCard = memo(function CandidatesCard({ items, release }: { readonly items: readonly Candidate[]; readonly release: 'hold' | 'auto' }) {
+/** Every candidate the agents submitted, most severe first, with where the validator has got to. `bare` as above. */
+export const CandidatesSummary = memo(function CandidatesSummary({
+  items,
+  release,
+  bare = false,
+}: {
+  readonly items: readonly Candidate[];
+  readonly release: 'hold' | 'auto';
+  readonly bare?: boolean;
+}) {
+  const id = useId();
   const sorted = [...items].sort((a, b) => rank(a.severity) - rank(b.severity));
-  return (
-    <Card as="section" aria-labelledby="candidates-h">
-      <h2 id="candidates-h" className="flex min-w-0 items-baseline gap-2 px-4 pb-2 pt-4 text-sm font-semibold">
+  const body = (
+    <>
+      <h2 id={id} className={sectionHead(bare)}>
         <span className="shrink-0">Candidate findings</span>
-        <span className="ml-auto min-w-0 truncate text-right text-xs font-normal text-muted-foreground">
-          {release === 'auto' ? 'confirmed issues release themselves' : 'released only after your review'}
-        </span>
+        <span className={sectionNote(bare)}>{release === 'auto' ? 'confirmed issues release themselves' : 'released only after your review'}</span>
       </h2>
       {sorted.length === 0 ? (
-        <p className="m-0 px-4 pb-4 text-[12.5px] leading-[18px] text-muted-foreground">
-          None yet. Every candidate is replayed by the validator before it counts.
-        </p>
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">None yet. Every candidate is replayed by the validator before it counts.</p>
       ) : (
-        <ul className="m-0 list-none divide-y divide-border p-0">
+        <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {sorted.map((c) => {
             const v = candidateVerdict(c);
             return (
-              <li key={c.candidateId} className="px-4 py-2.5 text-[13px] leading-[18px]">
-                <div className="mb-1 flex items-center gap-2">
+              <li key={c.candidateId} className="rounded-[10px] border border-border px-2.5 py-2 text-[12.5px] leading-[18px]">
+                <div className="mb-[3px] flex items-center gap-1.5 text-[11px]">
                   <SeverityChip severity={c.severity} />
                   <span className="ml-auto min-w-0 truncate">
                     <VerdictMark verdict={v.verdict} label={v.label} />
@@ -914,6 +951,13 @@ const CandidatesCard = memo(function CandidatesCard({ items, release }: { readon
           })}
         </ul>
       )}
+    </>
+  );
+  return bare ? (
+    <section aria-labelledby={id}>{body}</section>
+  ) : (
+    <Card as="section" aria-labelledby={id} className="p-4">
+      {body}
     </Card>
   );
 });
@@ -943,9 +987,10 @@ function SummaryCard({ text }: { readonly text: string }) {
 }
 
 /**
- * The Flight deck tab (design 1a): the agent lanes, then the test cases and the candidate findings, then the raw
- * activity and, once written, the planner's summary. Everything comes from the run's events through props, so it updates
- * with the run page's own poll.
+ * The Flight deck tab (design 1a): the agent lanes, the raw activity and, once written, the planner's summary. The test
+ * cases and the candidate findings sit in the side panel beside it (run-view); where that panel is a sheet (under
+ * 1024 px) they show here, under the lanes. Everything comes from the run's events through props, so it updates with the
+ * run page's own poll.
  */
 export function FlightDeck({
   lanes,
@@ -973,9 +1018,9 @@ export function FlightDeck({
   return (
     <div className="flex min-w-0 flex-col gap-3">
       {lanes.length === 0 ? null : <AgentLanes lanes={lanes} nowMs={nowMs} running={running} pausedFrom={pausedFrom} startMs={startMs} />}
-      <div className="grid min-w-0 gap-3 md:grid-cols-2 md:items-start">
-        <TestCasesCard cases={cases} />
-        <CandidatesCard items={candidates} release={release} />
+      <div className="grid min-w-0 gap-3 md:grid-cols-2 md:items-start lg:hidden">
+        <TestCasesSummary cases={cases} />
+        <CandidatesSummary items={candidates} release={release} />
       </div>
       <ActivityTable rows={rows} />
       {summary === null ? null : <SummaryCard text={summary} />}

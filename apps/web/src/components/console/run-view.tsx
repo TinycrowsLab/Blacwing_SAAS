@@ -26,7 +26,17 @@ import {
 import { Conversation, shortTime } from './conversation';
 import { buttonClass, Icon, VoiceTag } from './design';
 import { PendingButton, useCountdown } from './design-client';
-import { AccountsPanel, FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
+import {
+  AccountsPanel,
+  CandidatesSummary,
+  FlightDeck,
+  FoundPanel,
+  LimitsPanel,
+  PlanPanel,
+  RequestsTab,
+  TestCasesSummary,
+  TestPlanTab,
+} from './flight-deck';
 import { KillButton } from './kill-dialog';
 import { CARE_LABEL, ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
@@ -565,9 +575,18 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} />
       <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} />
-      {/* The flight deck shows the test cases and candidates itself: the panel does not repeat them beside it. */}
-      {tab === 'deck' ? null : <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />}
-      {tab === 'deck' ? null : <FoundPanel items={cands} ended={terminal} release={autoRelease ? 'auto' : 'hold'} />}
+      {/* Beside the flight deck the panel carries its test cases and candidate findings (design 1a), in its words. */}
+      {tab === 'deck' ? (
+        <>
+          <TestCasesSummary cases={shownCases} bare />
+          <CandidatesSummary items={cands} release={autoRelease ? 'auto' : 'hold'} bare />
+        </>
+      ) : (
+        <>
+          <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
+          <FoundPanel items={cands} ended={terminal} release={autoRelease ? 'auto' : 'hold'} />
+        </>
+      )}
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
         Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
         validator proves them.
