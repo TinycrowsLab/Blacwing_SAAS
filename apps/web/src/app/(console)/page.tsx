@@ -30,7 +30,7 @@ const bySeverity = (a: Dashboard['findings'][number], b: Dashboard['findings'][n
 const HOW = [
   { n: 1, who: 'you', tag: 'You · 1 min', title: 'Tell me what to audit', body: "The site, how you prove it's yours, what worries you, and how careful to be." },
   { n: 2, who: 'you', tag: 'You', title: 'Approve the plan', body: 'I read the whole plan back in plain words. Nothing runs before you approve.' },
-  { n: 3, who: 'claude', tag: 'Claude', title: "Claude's team works", body: 'You watch the agents plan, test and hand off. Anything that changes data waits for you.' },
+  { n: 3, who: 'claude', tag: 'Claude', title: "Claude's team works", body: 'You watch the agents plan, test and hand off. Anything that changes data waits for you, or is never sent.' },
   { n: 4, who: 'you', tag: 'You', title: 'Release the findings', body: 'Only proven issues, most serious first. You decide what reaches the report.' },
 ] as const;
 

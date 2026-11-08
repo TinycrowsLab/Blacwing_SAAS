@@ -334,7 +334,7 @@ function KillDialog({
         : `Stop testing ${name ?? 'this audit'}?`;
 
   return (
-    <Modal open={open} onClose={onClose} label={pick ? 'Stop an audit' : `Stop testing ${name ?? 'this audit'}`} className="max-w-[520px]">
+    <Modal open={open} onClose={onClose} label={pick ? 'Stop an audit' : `Stop testing ${name ?? 'this audit'}`} className={pick ? 'max-w-[560px]' : 'max-w-[520px]'}>
       <div className="flex flex-col gap-5 p-6 sm:p-7">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-kill-soft text-kill">
@@ -399,8 +399,9 @@ function KillDialog({
                 {error}
               </p>
             )}
-            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-              <span className="text-xs text-muted-foreground sm:mr-auto">Recorded in the ledger</span>
+            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end">
+              {/* The picker needs the room for its third button; the halt view still says it is on the ledger. */}
+              {pick ? null : <span className="text-xs text-muted-foreground sm:mr-auto">Recorded in the ledger</span>}
               <button type="button" onClick={onClose} className={buttonClass('secondary', 'h-11 px-5')}>
                 Keep running
               </button>

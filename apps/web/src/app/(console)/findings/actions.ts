@@ -143,3 +143,21 @@ export async function releaseFindingsAction(
   revalidateGate3(run);
   return { ok: true, data: { released, failed } };
 }
+
+/**
+ * "Retest now": the runner replays this proven finding's probe and control against the site as it is today. The API
+ * refuses a probe that changes data (that needs Gate 2, so a new audit) and rechecks ownership first.
+ */
+export async function retestFindingAction(findingId: string): Promise<ActionResult<{ retestId: string }>> {
+  const session = await getViewer();
+  if (session === null) return SIGNED_OUT;
+  if (!UUID.test(findingId))
+    return { ok: false, code: 'not_found', message: 'That finding does not exist.', status: HTTP_UNPROCESSABLE };
+  const result = await toResult(async () =>
+    z
+      .object({ retestId: z.string() })
+      .parse(await callApi(session, `/findings/${encodeURIComponent(findingId)}/replay`, { method: 'POST' })),
+  );
+  if (result.ok || result.status === HTTP_CONFLICT) revalidatePath(`/findings/${findingId}`);
+  return result;
+}

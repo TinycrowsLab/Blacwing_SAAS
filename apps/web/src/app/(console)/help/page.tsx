@@ -22,7 +22,7 @@ const STEPS: readonly { who: 'You' | 'Claude'; title: string; body: string }[] =
   {
     who: 'Claude',
     title: "Claude's team works",
-    body: 'The planner hands work to specialists, and you watch their conversation live. Anything that would change data waits for your yes.',
+    body: 'The planner hands work to specialists, and you watch their conversation live. Anything that would change data waits for your yes, or is refused outright when you chose “Look, don’t touch”.',
   },
   {
     who: 'You',
@@ -35,7 +35,7 @@ const GATES: readonly { name: string; term: string; body: string }[] = [
   {
     name: 'Proof of ownership',
     term: 'asset verification',
-    body: 'We only audit sites you show you control: a file on the site, or your recorded confirmation for internal hosts and labs.',
+    body: 'We only audit sites you show you control: a file on the site, or, for a test lab, your recorded confirmation.',
   },
   {
     name: 'Your approval',
@@ -45,7 +45,7 @@ const GATES: readonly { name: string; term: string; body: string }[] = [
   {
     name: 'Your decision',
     term: 'Gate 2 · runtime exception',
-    body: 'When an agent wants to send a request that could change data, it stops and asks. Allowing needs a reason and lasts for this audit only. No answer in time means denied.',
+    body: 'When an agent wants to send a request that could change data, that request waits for your answer and nothing is sent before it. Allowing needs a reason and lasts for this audit only. No answer in time means denied.',
   },
   {
     name: 'Release or dismiss',
@@ -70,7 +70,7 @@ const VOICES: readonly { voice: Voice; body: string }[] = [
   },
   {
     voice: 'validator',
-    body: 'The validator: code, not a model. It replays each issue three times with a control. Only it can prove an issue.',
+    body: 'The validator: code, not a model. It replays each issue Claude raises against a control (a read three times, a change once) and checks the result Claude proposed. Only it can prove an issue.',
   },
   { voice: 'you', body: 'Your decisions, each with your name and reason on the ledger.' },
 ];

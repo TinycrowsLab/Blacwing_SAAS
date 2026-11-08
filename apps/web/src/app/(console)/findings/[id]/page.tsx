@@ -19,6 +19,7 @@ import {
   FINDING_FORMATS,
   ReportDownload,
 } from '../../../../components/console/results/report-download';
+import { RetestCard } from '../../../../components/console/results/retest';
 import { CopyButton, FindingTriage } from '../../../../components/console/results/triage';
 import { ApiError } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
@@ -109,6 +110,12 @@ export default async function FindingPage({
   const method =
     finding.evidence.probe.request?.method.toUpperCase() ?? methodOf(finding.reproCurl);
   const writes = method === null || !READ_ONLY.has(method);
+  const controlMethod = finding.evidence.control.request?.method.toUpperCase();
+  // A retest replays without a person at Gate 2, so only a proven probe and control that read can be retested.
+  const retestable =
+    (finding.status === 'confirmed' || finding.status === 'released') &&
+    !writes &&
+    (controlMethod === undefined || READ_ONLY.has(controlMethod));
   const host = hostOf(finding);
 
   return (
@@ -260,6 +267,7 @@ export default async function FindingPage({
               </pre>
             </section>
           )}
+          {retestable ? <RetestCard finding={finding} /> : null}
           <section className="flex flex-col gap-2 rounded-[14px] border border-border bg-card p-4">
             <h2 className="m-0 text-[14.5px] font-semibold text-foreground">Report</h2>
             {released ? (

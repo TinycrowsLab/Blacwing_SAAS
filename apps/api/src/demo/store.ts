@@ -292,7 +292,9 @@ const RUN_SELECT = `
 const LIVE_STATES = ['queued', 'running', 'paused'];
 
 /** Bodies in exchange lists are excerpts; the full body stays in the table. */
-const BODY_EXCERPT_CHARS = 2048;
+export const BODY_EXCERPT_CHARS = 2048;
+/** Read twice the excerpt, so a secret that straddles the cut is still whole when the service scrubs it. */
+const BODY_READ_CHARS = BODY_EXCERPT_CHARS * 2;
 const EXCHANGE_PAGE = 200;
 const EVENT_APPEND_ATTEMPTS = 5;
 const UNIQUE_VIOLATION = '23505';
@@ -724,7 +726,7 @@ export class DemoStore {
       `SELECT id, seq, agent, method, url, request_headers, left(request_body, $3) AS request_body, status,
               response_headers, left(response_body, $3) AS response_body, duration_ms, outcome, reason, at
        FROM demo.http_exchanges WHERE run_id = $1 AND seq > $2 ORDER BY seq LIMIT $4`,
-      [runId, afterSeq, BODY_EXCERPT_CHARS, EXCHANGE_PAGE],
+      [runId, afterSeq, BODY_READ_CHARS, EXCHANGE_PAGE],
     );
     return r.rows;
   }

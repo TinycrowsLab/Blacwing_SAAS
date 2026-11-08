@@ -11,17 +11,17 @@ import { newId } from '@blackwing/ids';
 import { verifyChain, type AuditPayload, type AuditRef, type ChainState } from './audit.js';
 import { BUDGET_LIMITS, BUDGET_PRESETS, DEFAULT_HUNT_CONCURRENCY, OBJECTIVE_MAX } from './config.js';
 import { defaultLookup, firstRefusal, isLabOrigin, type Lookup, type OriginPolicy } from './ownership.js';
-
-import type {
-  AssetRow,
-  AuditEntry,
-  DemoStore,
-  ExchangeRow,
-  FindingRow,
-  Gate2Row,
-  RequestRow,
-  RunEventRow,
-  RunRow,
+import {
+  BODY_EXCERPT_CHARS,
+  type AssetRow,
+  type AuditEntry,
+  type DemoStore,
+  type ExchangeRow,
+  type FindingRow,
+  type Gate2Row,
+  type RequestRow,
+  type RunEventRow,
+  type RunRow,
 } from './store.js';
 
 /** Identity forwarded by the web server from the signed-in Google session (internal hop only). */
@@ -276,6 +276,9 @@ export function findingDto(
   };
 }
 
+/** Scrubbed first, then cut: a secret cut in half would no longer match the scrub patterns. */
+const excerpt = (body: string): string => scrub(body).slice(0, BODY_EXCERPT_CHARS);
+
 export function exchangeDto(row: ExchangeRow): Record<string, unknown> {
   return {
     id: row.id,
@@ -284,10 +287,10 @@ export function exchangeDto(row: ExchangeRow): Record<string, unknown> {
     method: row.method,
     url: scrub(row.url),
     requestHeaders: scrubHeaders(row.request_headers),
-    requestBody: row.request_body === null ? null : scrub(row.request_body),
+    requestBody: row.request_body === null ? null : excerpt(row.request_body),
     status: row.status,
     responseHeaders: row.response_headers === null ? null : scrubHeaders(row.response_headers),
-    responseBody: row.response_body === null ? null : scrub(row.response_body),
+    responseBody: row.response_body === null ? null : excerpt(row.response_body),
     durationMs: row.duration_ms,
     outcome: row.outcome,
     reason: row.reason,
