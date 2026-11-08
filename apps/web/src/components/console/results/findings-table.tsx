@@ -58,9 +58,12 @@ function parseFilters(
     )?.key,
     severity: SEVERITIES.find((s) => s === severity),
     target: targets.find((t) => target !== null && fold(t) === target),
-    // An audit id, or its first 8 characters (the short id people copy).
+    // An audit id, or the short id people copy (its last 8 characters, as the ledger and results show it).
     audit: audits.find(
-      (a) => audit !== null && audit.length >= SHORT_ID && fold(a).startsWith(audit),
+      (a) =>
+        audit !== null &&
+        audit.length >= SHORT_ID &&
+        (fold(a).startsWith(audit) || a.replace(/-/g, '').toLowerCase().endsWith(audit)),
     ),
   };
 }
@@ -193,6 +196,9 @@ function useClock(): ((iso: string) => string) | null {
   return format;
 }
 
+/** Rows rendered at first and per "Show more": a long workspace list stays a page, not 11,000 px. */
+export const FINDINGS_PAGE = 50;
+
 export function FindingsTable({
   items,
   runs = [],
@@ -218,14 +224,17 @@ export function FindingsTable({
   const audits = [...firstAt.entries()].sort((a, b) => b[1].localeCompare(a[1])).map(([id]) => id);
   const fromUrl = parseFilters((k) => params.get(k), targets, audits);
   const [filters, setFilters] = useState<FindingFilters>(fromUrl);
+  const [limit, setLimit] = useState(FINDINGS_PAGE);
   const urlKey = params.toString();
   useEffect(() => {
     setFilters(parseFilters((k) => new URLSearchParams(urlKey).get(k), targets, audits));
+    setLimit(FINDINGS_PAGE);
     // targets derive from items; the URL is what changes on Back.
   }, [urlKey]);
 
   const write = (next: FindingFilters): void => {
     setFilters(next);
+    setLimit(FINDINGS_PAGE);
     const query = new URLSearchParams();
     for (const [k, v] of Object.entries(next)) if (typeof v === 'string') query.set(k, v);
     const text = query.toString();
@@ -339,7 +348,7 @@ export function FindingsTable({
         </div>
       ) : (
         <ul className="m-0 flex list-none flex-col overflow-hidden rounded-[14px] border border-border bg-card p-0">
-          {shown.map((f) => (
+          {shown.slice(0, limit).map((f) => (
             <li key={f.id} className="border-b border-border last:border-b-0">
               <NavLink
                 href={`/findings/${f.id}`}
@@ -372,6 +381,22 @@ export function FindingsTable({
           ))}
         </ul>
       )}
+      {shown.length > limit ? (
+        <div className="flex flex-wrap items-center justify-center gap-3 text-[12.5px] text-muted-foreground">
+          <span>
+            Showing {limit.toLocaleString()} of {shown.length.toLocaleString()}
+          </span>
+          <button
+            type="button"
+            className={buttonClass('secondary')}
+            onClick={() => {
+              setLimit((n) => n + FINDINGS_PAGE);
+            }}
+          >
+            Show {Math.min(FINDINGS_PAGE, shown.length - limit).toLocaleString()} more
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

@@ -4,7 +4,7 @@ import type { SidebarData } from '../../lib/schemas';
 
 vi.mock('../../lib/auth-actions', () => ({ signOutAction: vi.fn() }));
 
-const { stopTarget, waitingCount } = await import('./sidebar');
+const { outcomeDot, stopTarget, waitingCount, waitingRows } = await import('./sidebar');
 
 const live = (id: string, by: string | null): SidebarData['live'][number] => ({
   id,
@@ -73,5 +73,26 @@ describe('waiting count', () => {
   it('counts the lists for an older API, and 0 before any data', () => {
     expect(waitingCount(slice(lists))).toBe(2);
     expect(waitingCount(null)).toBe(0);
+  });
+});
+
+describe('waiting rows', () => {
+  it('folds proven findings into one counted row and sends the rest to Decisions', () => {
+    const releases = Array.from({ length: 10 }, (_, i) => ({ id: `f${i}`, title: 't', assetName: null }));
+    const gate2 = [{ id: 'g', runId: 'r', method: 'POST', url: 'http://x.test/a', deadlineAt: '2026-11-08T10:05:00.000Z' }];
+    expect(waitingRows(slice({ releases, gate2, counts: { gate1: 2, gate2: 1, gate3: 56, live: 0 } }))).toEqual({
+      findings: 56,
+      more: 2,
+    });
+    expect(waitingRows(slice({ releases }))).toEqual({ findings: 10, more: 0 });
+  });
+});
+
+describe('outcome dot', () => {
+  it('is green for a finished audit, red for a stopped or failed one', () => {
+    expect(outcomeDot('completed')).toBe('ok');
+    expect(outcomeDot('killed')).toBe('bad');
+    expect(outcomeDot('failed')).toBe('bad');
+    expect(outcomeDot('queued')).toBe('faint');
   });
 });

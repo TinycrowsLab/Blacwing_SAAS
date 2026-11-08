@@ -147,7 +147,7 @@ function Section({
 
 export default function HelpPage(): ReactNode {
   return (
-    <div className="flex w-full max-w-[860px] flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-[860px] flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">
           Help

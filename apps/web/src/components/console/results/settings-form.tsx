@@ -15,7 +15,7 @@ import {
 } from '../../../lib/workspace-name';
 import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
-import { useDarkTheme } from '../theme-toggle';
+import { useThemeChoice } from '../theme-toggle';
 import { useSettledAction } from './triage';
 
 const HTTP_BAD_REQUEST = 400;
@@ -155,34 +155,35 @@ export function WorkspaceNameForm({
 }
 
 export function ThemeSetting() {
-  const [dark, toggle] = useDarkTheme();
+  const [choice, setChoice] = useThemeChoice();
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div
         role="radiogroup"
         aria-label="Theme"
-        className="inline-grid grid-cols-2 gap-1 rounded-[10px] bg-surface-2 p-1"
+        className="inline-grid grid-cols-3 gap-1 rounded-[10px] bg-surface-2 p-1"
       >
         {[
-          { key: false, label: 'Light', icon: 'sun' as const },
-          { key: true, label: 'Dark', icon: 'moon' as const },
+          { key: 'light' as const, label: 'Light', icon: 'sun' as const },
+          { key: 'dark' as const, label: 'Dark', icon: 'moon' as const },
+          { key: 'system' as const, label: 'System', icon: 'monitor' as const },
         ].map((o) => (
           <button
-            key={o.label}
+            key={o.key}
             type="button"
             role="radio"
-            aria-checked={dark === o.key}
+            aria-checked={choice === o.key}
             onClick={() => {
-              if (dark !== o.key) toggle();
+              setChoice(o.key);
             }}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-[7px] px-4 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${dark === o.key ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(31,23,4,.08)]' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`inline-flex h-9 items-center gap-1.5 rounded-[7px] px-4 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${choice === o.key ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(31,23,4,.08)]' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Icon name={o.icon} size={14} />
             {o.label}
           </button>
         ))}
       </div>
-      <span className="text-[12.5px] text-muted-foreground">Saved on this device.</span>
+      <span className="text-[12.5px] text-muted-foreground">Saved on this device. System follows your device.</span>
     </div>
   );
 }

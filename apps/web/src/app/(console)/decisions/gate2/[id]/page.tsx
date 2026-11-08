@@ -54,7 +54,7 @@ export default async function Gate2Page({
     // A bare path is shown as it is.
   }
   return (
-    <>
+    <div className="mx-auto w-full max-w-[1120px]">
       <div className="hidden md:block">
         <PageHeader
           crumbs={[{ label: 'Decisions', href: '/decisions' }, { label: 'Your decision' }]}
@@ -75,6 +75,6 @@ export default async function Gate2Page({
         audit={audit}
         history={history}
       />
-    </>
+    </div>
   );
 }

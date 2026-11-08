@@ -368,10 +368,15 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                       </span>
                     )}
                     {verified && a.ownership.verifiedAt !== null ? (
-                      <span className="text-[11.5px] text-muted-foreground">
-                        {a.ownership.method === 'http_token' ? 'Verified with a file' : 'Confirmed'}
-                        {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`},{' '}
-                        <LocalTime iso={a.ownership.verifiedAt} format={dayLabel} />
+                      // Who on one line, the day on its own: a date never breaks across lines.
+                      <span className="flex flex-col text-[11.5px] text-muted-foreground sm:items-end">
+                        <span>
+                          {a.ownership.method === 'http_token' ? 'Verified with a file' : 'Confirmed'}
+                          {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`}
+                        </span>
+                        <span className="whitespace-nowrap">
+                          <LocalTime iso={a.ownership.verifiedAt} format={dayLabel} />
+                        </span>
                       </span>
                     ) : null}
                   </span>

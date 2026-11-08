@@ -127,7 +127,7 @@ export default async function LedgerPage({
   // Naming the workspace is always entry #1, so "nothing else yet" is the real first-run state of the ledger.
   const onlySetup = items.every((e) => e.action === 'workspace.named');
   return (
-    <div className="flex w-full max-w-[1100px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5">
       <HashFocus />
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">

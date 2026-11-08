@@ -119,7 +119,7 @@ export default async function FindingPage({
   const host = hostOf(finding);
 
   return (
-    <article className="flex w-full max-w-[1180px] flex-col gap-5" aria-labelledby="finding-h">
+    <article className="mx-auto flex w-full max-w-[1180px] flex-col gap-5" aria-labelledby="finding-h">
       <div className="flex flex-col gap-2">
         <nav aria-label="Breadcrumb">
           <ol className="m-0 flex min-w-0 list-none items-center gap-2 p-0 text-[12.5px] text-muted-foreground">

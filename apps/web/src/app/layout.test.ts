@@ -13,7 +13,7 @@ describe('root layout theming wiring', () => {
   });
   it('mounts ThemeProvider in providers.tsx and does not hand-roll a localStorage reader', () => {
     const providers = src('providers.tsx');
-    expect(providers).toContain('<ThemeProvider defaultTheme="light" enableSystem={false}>');
+    expect(providers).toContain('<ThemeProvider defaultTheme="system" enableSystem>');
     expect(providers + src('layout.tsx')).not.toContain('localStorage');
   });
 });
