@@ -207,7 +207,8 @@ class CloneDto extends createZodDto(cloneSchema) {}
 class TriageManyDto extends createZodDto(triageManySchema) {}
 class WorkspaceDto extends createZodDto(workspaceSchema) {}
 class KillDto extends createZodDto(killSchema) {}
-class KillScopeDto extends createZodDto(killScopeSchema) {}
+/** A union has no class form: the DTO is the schema holder itself. */
+const KillScopeDto = createZodDto(killScopeSchema);
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
 class TriageDto extends createZodDto(triageSchema) {}
@@ -435,7 +436,7 @@ export class DemoController {
 
   @Post('kill')
   @HttpCode(HttpStatus.OK)
-  async killScope(@Headers() headers: RequestHeaders, @ZodBody(KillScopeDto) body: KillScopeDto): Promise<unknown> {
+  async killScope(@Headers() headers: RequestHeaders, @ZodBody(KillScopeDto) body: z.infer<typeof killScopeSchema>): Promise<unknown> {
     return this.service.killScope(await this.actor(headers), body);
   }
 
