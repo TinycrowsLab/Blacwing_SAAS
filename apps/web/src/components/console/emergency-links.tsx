@@ -10,6 +10,7 @@ import { useState } from 'react';
 
 import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from './design';
 import { CopyField, PendingButton } from './design-client';
+import { LocalTime } from './results/local-time';
 import {
   createEmergencyLinkAction,
   revokeEmergencyLinkAction,
@@ -28,9 +29,6 @@ const LABEL_MAX = 80;
 const NAME_MAX = 80;
 const PHONE = /^\+?[0-9][0-9 ()./-]{2,38}$/;
 
-const when = (iso: string): string =>
-  new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
-
 /** Choose how long the link works and who it is for, create it, copy it. */
 export function EmergencyLinkCreator() {
   const router = useRouter();
@@ -45,7 +43,10 @@ export function EmergencyLinkCreator() {
         <CopyField value={created.url} label="Emergency stop link" copyLabel="Copy link" />
         <InlineMessage tone="gold">
           Copy it now: Blackwing keeps only a fingerprint of it, so it can&rsquo;t be shown again. It works until{' '}
-          <b>{when(created.link.expiresAt)}</b>, with no login.
+          <b>
+            <LocalTime iso={created.link.expiresAt} style="datetime" />
+          </b>
+          , with no login.
         </InlineMessage>
         <div>
           <button
@@ -153,8 +154,8 @@ export function EmergencyLinkList({ links }: { readonly links: readonly Emergenc
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[13.5px] font-semibold text-foreground">{l.label ?? 'No recipient named'}</span>
               <span className="text-[12.5px] text-muted-foreground">
-                Works until {when(l.expiresAt)} · created by {l.createdBy.name}
-                {l.lastUsedAt === null ? '' : ` · used ${when(l.lastUsedAt)}`}
+                Works until <LocalTime iso={l.expiresAt} style="datetime" /> · created by {l.createdBy.name}
+                {l.lastUsedAt === null ? null : <LocalTime iso={l.lastUsedAt} style="datetime" prefix=" · used " />}
               </span>
             </span>
             <PendingButton
@@ -186,12 +187,14 @@ export function EmergencyContactForm({
   readonly canEdit: boolean;
 }) {
   const router = useRouter();
+  // What the server holds now: the form compares against it, so a saved form never looks dirty.
+  const [saved, setSaved] = useState(current);
   const [name, setName] = useState(current?.name ?? '');
   const [phone, setPhone] = useState(current?.phone ?? '');
   const [state, setState] = useState<{ kind: 'idle' } | { kind: 'saved' } | { kind: 'failed'; message: string }>({
     kind: 'idle',
   });
-  const changed = name.trim() !== (current?.name ?? '') || phone.trim() !== (current?.phone ?? '');
+  const changed = name.trim() !== (saved?.name ?? '') || phone.trim() !== (saved?.phone ?? '');
   const invalid =
     name.trim() === '' || phone.trim() === ''
       ? 'Give a name and a phone number.'
@@ -205,10 +208,9 @@ export function EmergencyContactForm({
       setState({ kind: 'failed', message: r.message });
       return;
     }
-    if (contact === null) {
-      setName('');
-      setPhone('');
-    }
+    setSaved(contact);
+    setName(contact?.name ?? '');
+    setPhone(contact?.phone ?? '');
     setState({ kind: 'saved' });
     router.refresh();
   }
@@ -281,7 +283,7 @@ export function EmergencyContactForm({
         >
           Save contact
         </PendingButton>
-        {current === null ? null : (
+        {saved === null ? null : (
           <PendingButton
             variant="ghost"
             pendingLabel="Removing…"
