@@ -440,14 +440,14 @@ const VERDICT_RING: Record<string, { tone: string; ring: string; label: string }
 };
 
 /** Candidate verdict: a 10 px ring and the word, in one colour. Unknown verdicts render as plain muted text. */
-export function VerdictMark({ verdict }: { readonly verdict: string }) {
+export function VerdictMark({ verdict, label }: { readonly verdict: string; /** Words in place of the default. */ readonly label?: string }) {
   const v = VERDICT_RING[verdict.toLowerCase()];
   if (v === undefined)
-    return <span className="text-[11.5px] text-muted-foreground">{verdict}</span>;
+    return <span className="text-[11.5px] text-muted-foreground">{label ?? verdict}</span>;
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-medium ${v.tone}`}>
-      <span aria-hidden="true" className={`size-2.5 rounded-full ${v.ring}`} />
-      {v.label}
+      <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${v.ring}`} />
+      {label ?? v.label}
     </span>
   );
 }

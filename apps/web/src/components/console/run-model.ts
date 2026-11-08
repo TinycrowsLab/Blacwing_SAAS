@@ -62,6 +62,9 @@ export function pathOf(url: string): string {
   }
 }
 
+/** A response size as the activity table shows it: `512 B`, `2.0 KB`. */
+const byteSize = (bytes: number): string => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`);
+
 export type MarkShape = 'circle' | 'square' | 'ring' | 'diamond';
 type ActivityKind =
   'HTTP' | 'Tool' | 'Policy' | 'Gate 2' | 'Finding' | 'Validator' | 'Agent' | 'Run';
@@ -89,7 +92,7 @@ export function describe(e: RunEvent): Activity | null {
         ...base,
         kind: 'HTTP',
         text: `${str(d.method)} ${pathOf(str(d.url))}`,
-        meta: `${status}, ${num(d.bytes)} B, ${num(d.ms)} ms`,
+        meta: `${status}, ${byteSize(num(d.bytes))}`,
         isError: status >= 400 || status === 0,
         mark: 'circle',
       };
@@ -264,6 +267,8 @@ export interface LaneWait {
   /** Null while it still waits. */
   readonly to: number | null;
   readonly title: string;
+  /** The agent stops for it (a pause, or an ask the runner waits on); a non-blocking ask lets the agent carry on. */
+  readonly holds: boolean;
 }
 
 export interface AgentLane {
@@ -327,13 +332,13 @@ export function agentLanes(events: readonly RunEvent[]): AgentLane[] {
     const gate2Id = str(e.data.gate2Id);
     if (e.kind === 'gate2.requested' && acc.has(str(e.data.agent))) {
       const title = `Waiting for your decision on ${str(e.data.method)} ${pathOf(str(e.data.url))}`;
-      asks.set(gate2Id, { agent: str(e.data.agent), wait: { from: at, to: null, title } });
+      asks.set(gate2Id, { agent: str(e.data.agent), wait: { from: at, to: null, title, holds: e.data.blocking !== false } });
     } else if (e.kind === 'gate2.decided') {
       const ask = asks.get(gate2Id);
       asks.delete(gate2Id);
       if (ask !== undefined) acc.get(ask.agent)?.waits.push({ ...ask.wait, to: at });
     } else if (e.kind === 'run.paused' && pauses.at(-1)?.to !== null) {
-      pauses.push({ from: at, to: null, title: 'Run paused' });
+      pauses.push({ from: at, to: null, title: 'Run paused', holds: true });
     } else if (e.kind === 'run.resumed') {
       const open = pauses.at(-1);
       if (open?.to === null) pauses[pauses.length - 1] = { ...open, to: at };
