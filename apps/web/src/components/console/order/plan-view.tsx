@@ -449,7 +449,7 @@ export function PlanView({
         {field === null && updated !== null ? (
           <p role="status" className="m-0 flex items-center gap-2 text-[12.5px] font-medium text-ok">
             <Icon name="check" size={14} />
-            Plan updated: {FIELD_LABEL[updated].toLowerCase()} changed. Nothing has been sent to the site yet.
+            Plan updated: {FIELD_LABEL[updated].charAt(0).toLowerCase() + FIELD_LABEL[updated].slice(1)} changed. Nothing has been sent to the site yet.
           </p>
         ) : field === null ? (
           <p className="m-0 flex items-center gap-2 text-[12.5px] text-muted-foreground">
