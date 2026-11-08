@@ -14,7 +14,7 @@ import { type Exchange, pathOf } from './run-model';
 import { agentName } from '../../lib/agents';
 import { limitsPhrase } from '../../lib/plan-text';
 
-import type { Run } from '../../lib/schemas';
+import { CARE_LABEL, type Run } from '../../lib/schemas';
 import type { ReactNode } from 'react';
 
 /** Restores focus to what opened the sheet (Radix has no trigger to return to for a controlled sheet). */
@@ -45,7 +45,6 @@ const pinnedRequestSchema = z
   .loose();
 const runnerSchema = z.object({ name: z.string(), version: z.string() }).loose();
 
-export const CARE_LABEL: Readonly<Record<string, string>> = { passive: "Look, don't touch", active_safe: 'Probe gently' };
 
 function Row({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (
@@ -125,9 +124,7 @@ export function RunDetailsSheet({
           <Row label="Objective">{request === null || request.objective === '' ? 'Not recorded' : request.objective}</Row>
           <Row label="Care level">
             {request === null ? 'Not recorded' : (
-              <>
-                {CARE_LABEL[request.intrusiveness] ?? request.intrusiveness} {mono(request.intrusiveness)}
-              </>
+              (CARE_LABEL[request.intrusiveness] ?? request.intrusiveness)
             )}
           </Row>
           <Row label="Signed-in testing">

@@ -24,11 +24,11 @@ import {
 } from '@blackwing/ui';
 
 import { Conversation, shortTime } from './conversation';
-import { buttonClass, Icon, VoiceTag } from './design';
+import { AuthorisedUnder, buttonClass, Icon, VoiceTag } from './design';
 import { PendingButton, useCountdown } from './design-client';
 import { AccountsPanel, FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
 import { KillButton } from './kill-dialog';
-import { CARE_LABEL, ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
+import { ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
   type Exchange,
   TERMINAL_STATES,
@@ -54,7 +54,7 @@ import { TeamMap } from './team-map';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
 import { decisionTitle } from '../../lib/plan-text';
-import { type Gate2, type Run, type RunEvent, runSchema } from '../../lib/schemas';
+import { CARE_LABEL, type Gate2, pinnedAuthorisation, type Run, type RunEvent, runSchema } from '../../lib/schemas';
 
 
 const BACKOFF_MS = [1500, 3000, 6000, 10_000] as const;

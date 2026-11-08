@@ -136,24 +136,16 @@ export function resultsHeadline(severities: readonly string[]): string {
   return head;
 }
 
-const ID_SEGMENT = /^(\d+|[0-9a-f-]{16,})$/i;
-
 /**
- * "Allow a request to checkout?" from `POST /rest/basket/7/checkout` (the last path segment that is not an id). The
- * segment is often a plural collection ("users", "orders"), so it is the object of "to", never an adjective.
+ * "Allow POST /rest/basket/7/checkout?" from the request itself (method and path, no query): the exact thing to decide,
+ * never a word guessed from the path. A request with no path names its method only.
  */
 export function decisionTitle(method: string, url: string): string {
   let path = url;
   try {
     path = new URL(url).pathname;
   } catch {
-    // A bare path is fine as it is.
+    path = url.split('?')[0] ?? url;
   }
-  const word = path
-    .split('/')
-    .findLast((s) => s !== '' && !ID_SEGMENT.test(s))
-    ?.replace(/[^a-z0-9]+/gi, ' ')
-    .trim()
-    .toLowerCase();
-  return word === undefined || word === '' ? `Allow a ${method.toUpperCase()} request?` : `Allow a request to ${word}?`;
+  return path === '' || path === '/' ? `Allow a ${method.toUpperCase()} request?` : `Allow ${method.toUpperCase()} ${path}?`;
 }
