@@ -61,6 +61,8 @@ export function ledgerWords(action: string, payload: Payload, targetId: string):
         ? 'No answer in time: the request was not sent'
         : `No answer in time: ${method.toUpperCase()} ${pathOf(url)} was not sent`;
     }
+    case 'finding.reopen':
+      return 'Reopened a dismissed finding';
     case 'finding.retest':
       return 'Asked Blackwing to retest a finding';
     case 'kill.scope': {

@@ -157,7 +157,10 @@ export function headline(proven: readonly FindingSummary[]): string {
   // resultsHeadline of only-low severities is the bare count sentence, so it measures the advice that follows.
   const bare = (list: readonly string[]): string => resultsHeadline(list.map(() => 'low'));
   const advice = resultsHeadline(open).slice(bare(open).length);
-  return `${bare(all)}${open.length === 0 ? '' : advice}`.replace(
+  // Proven is not the same as reported: say how many of them were dismissed (by a person, or as repeats of a newer proof).
+  const dismissed = proven.filter((f) => f.status === 'dismissed').length;
+  const gone = dismissed === 0 ? '' : ` ${dismissed === 1 ? '1 is' : `${dismissed} are`} dismissed.`;
+  return `${bare(all)}${gone}${open.length === 0 ? '' : advice}`.replace(
     'high-severity',
     'high\u2011severity',
   );
@@ -573,6 +576,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   'gate2.deny': 'Denied a request',
   'finding.release': 'Released a finding',
   'finding.dismiss': 'Dismissed a finding',
+  'finding.reopen': 'Reopened a dismissed finding',
   'finding.superseded': 'Merged a repeated finding into its newer proof',
   'run.kill': 'Stopped an audit',
 };

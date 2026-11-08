@@ -4,6 +4,8 @@
 // steps inline; verification shows only for the row where the person picks Verify.
 import { useEffect, useState } from 'react';
 
+import { z } from 'zod';
+
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { LocalTime } from './local-time';
 import { dayLabel, FORBIDDEN_MESSAGE, isForbiddenHost, isVerified, originOf, recommendedProof, refreshSidebar, unverifiableHost } from './shared';
@@ -95,6 +97,8 @@ const isUnroutableHost = (host: string): boolean => /^(0(\.0){0,3}|\[::\])(:\d+)
 /** A loopback address on the port this console is served from. */
 const isOwnConsole = (host: string, port: string): boolean =>
   port !== '' && /^(localhost|127(\.\d{1,3}){3}|\[::1\])$/i.test(host.replace(/:\d+$/, '')) && host.endsWith(`:${port}`);
+/** How long typing pauses before the API is asked about the address. */
+const ASK_PAUSE_MS = 350;
 const HTTP_BAD_REQUEST = 400;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_TOO_MANY = 429;
@@ -137,8 +141,30 @@ function AddTarget({
   useEffect(() => {
     setConsoleHost({ port: window.location.port });
   }, []);
+  // Private and local addresses are refused unless the operator listed them as labs: only the API knows, so the
+  // preview asks it (after a short pause in typing) instead of waiting for the Add button.
+  const [asked, setAsked] = useState<{ origin: string; message: string | null } | null>(null);
+  const askOrigin = typed.ok ? typed.origin : null;
+  useEffect(() => {
+    if (askOrigin === null) return;
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const res = await fetch(`/api/target-check?origin=${encodeURIComponent(askOrigin)}`, { cache: 'no-store', signal: ctrl.signal }).catch(() => null);
+        const parsed = res?.ok === true ? z.object({ refusal: z.string().nullable() }).safeParse(await res.json().catch(() => null)) : null;
+        if (parsed?.success === true && !ctrl.signal.aborted) setAsked({ origin: askOrigin, message: parsed.data.refusal });
+      })();
+    }, ASK_PAUSE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [askOrigin]);
+  const askedRefusal = typed.ok && asked?.origin === typed.origin ? asked.message : null;
   const refusal =
-    typed.ok && isForbiddenHost(typed.host)
+    askedRefusal !== null
+      ? askedRefusal
+      : typed.ok && isForbiddenHost(typed.host)
       ? FORBIDDEN_MESSAGE
       : typed.ok && isUnroutableHost(typed.host)
         ? 'That is not an address a site can be reached at. Use the site\'s real address.'

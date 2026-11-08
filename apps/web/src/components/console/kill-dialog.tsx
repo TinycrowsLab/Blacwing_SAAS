@@ -187,6 +187,9 @@ interface KillAnswer {
 
 const UNREACHABLE = "Couldn't reach Blackwing. Nothing was stopped. Try again.";
 
+/** Blackwing answered, but not with a reason: say so, never that it could not be reached. */
+const NOT_CONFIRMED = "Blackwing didn't confirm the stop. Check the audit's state, then try again.";
+
 const answerSchema = z.object({
   message: z.string().optional().catch(undefined),
   code: z.string().optional().catch(undefined),
@@ -217,7 +220,7 @@ async function postKill(url: string, body: unknown, runs: readonly StoppableRun[
           ? runs.length === 1
             ? 'This audit has already finished. Nothing is running.'
             : 'Nothing in that scope is running now.'
-          : (a.message ?? UNREACHABLE),
+          : (a.message ?? NOT_CONFIRMED),
       killRequestedAt: a.killRequestedAt ?? null,
       audit: a.audit ?? null,
     };
@@ -383,6 +386,11 @@ function KillDialog({
     setPhase('stopping');
     try {
       const answer = await postKill(url, body, list);
+      if (!answer.ok && (await allEnded(list))) {
+        // The audit ended before the stop landed: show how it ended instead of an error.
+        setRequestedAt(new Date().toISOString());
+        return;
+      }
       if (!answer.ok) {
         setPhase('confirm');
         setTargets([]);
@@ -398,7 +406,20 @@ function KillDialog({
     }
   }
 
-  /** "Stop all of mine": the viewer's own audits, one per-run call each (the same path as one audit). */
+  /** True when every audit in the list has already ended (a stop that came too late is a result, not an error). */
+async function allEnded(list: readonly StoppableRun[]): Promise<boolean> {
+  if (list.length === 0) return false;
+  const states = await Promise.all(
+    list.map(async (t) => {
+      const res = await fetch(`/api/runs/${encodeURIComponent(t.id)}?afterSeq=${NO_EVENTS}`, { cache: 'no-store' }).catch(() => null);
+      const parsed = res?.ok === true ? haltSchema.safeParse(await res.json().catch(() => null)) : null;
+      return parsed?.success === true && ENDED.includes(parsed.data.state);
+    }),
+  );
+  return states.every(Boolean);
+}
+
+/** "Stop all of mine": the viewer's own audits, one per-run call each (the same path as one audit). */
   async function stopMine(list: readonly StoppableRun[]): Promise<void> {
     if (busy || list.length === 0) return;
     setBusy(true);
@@ -412,6 +433,10 @@ function KillDialog({
       );
       const sent = answers.filter((a) => a.ok);
       const refused = answers.find((a) => !a.ok);
+      if (sent.length === 0 && (await allEnded(list))) {
+        setRequestedAt(new Date().toISOString());
+        return;
+      }
       if (sent.length === 0) {
         setPhase('confirm');
         setTargets([]);

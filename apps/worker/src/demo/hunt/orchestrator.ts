@@ -153,6 +153,14 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
   }
 
   const halted: { reason: HaltReason | null; killedBy: string | null } = { reason: null, killedBy: null };
+  // A kill ends the run at once: the agent session unwinds in the background (every tool is already refused by the
+  // aborted signal), so the measured halt is the time to stop acting, not the time the session takes to tear down.
+  let released: () => void = () => undefined;
+  const killed = new Promise<null>((resolve) => {
+    released = () => {
+      resolve(null);
+    };
+  });
   let polling = false;
   const controlTimer = setInterval(() => {
     if (polling) return;
@@ -165,6 +173,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
           halted.reason = 'killed';
           halted.killedBy = control.kill.by;
           abort.abort();
+          released();
           await closePendingAsks(ctx, 'killed');
         }
       })
@@ -203,7 +212,9 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
     await log.emit('run.started', 'plan', `Run started with ${config.model}`, { model: config.model, agents: AGENT_LANES });
     let prompt = 'Begin the assessment now.';
     for (let round = 1; ; round += 1) {
-      end = await streamAgents(ctx, config, abort, router, prompt);
+      const session = streamAgents(ctx, config, abort, router, prompt);
+      session.catch(() => undefined); // a session abandoned by a kill unwinds on its own
+      end = await Promise.race([session, killed]);
       if (end?.summary !== null && end?.summary !== undefined) summaries.push(end.summary);
       if (halted.reason !== null || end?.subtype !== 'success') break;
       const isHalted = (): boolean => halted.reason !== null;

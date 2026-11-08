@@ -88,6 +88,25 @@ export async function triageFindingAction(
   return result;
 }
 
+/** Gate 3 undo: a dismissed finding returns to the queue awaiting release, with a reason on the ledger. */
+export async function reopenFindingAction(findingId: string, reason: string): Promise<ActionResult<FindingDetail>> {
+  const session = await getViewer();
+  if (session === null) return SIGNED_OUT;
+  const refused = reasonRefusal(reason);
+  if (refused !== null) return refused;
+  if (!UUID.test(findingId))
+    return { ok: false, code: 'not_found', message: 'That finding does not exist.', status: HTTP_UNPROCESSABLE };
+  const result = await toResult(async () =>
+    findingDetailSchema.parse(
+      await retryBusy(() =>
+        callApi(session, `/findings/${encodeURIComponent(findingId)}/reopen`, { method: 'POST', body: { reason: tidyReason(reason) } }),
+      ),
+    ),
+  );
+  if (result.ok || result.status === HTTP_CONFLICT) revalidatePath('/', 'layout');
+  return result;
+}
+
 const batchSchema = z.object({
   moved: z.number(),
   conflicts: z.number().default(0),

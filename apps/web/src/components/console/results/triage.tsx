@@ -16,7 +16,7 @@ import {
   useTransition,
 } from 'react';
 
-import { triageFindingAction } from '../../../app/(console)/findings/actions';
+import { reopenFindingAction, triageFindingAction } from '../../../app/(console)/findings/actions';
 import { reasonEnough } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
@@ -120,7 +120,7 @@ function Decided({
       <p className="m-0 text-[12.5px] text-muted-foreground">
         {released
           ? 'It is in the report. Dismissing it takes it out again, with a reason.'
-          : 'It stays off the report. The decision and its reason are on the ledger.'}
+          : 'It stays off the report until it is reopened. The decision and its reason are on the ledger.'}
       </p>
     </div>
   );
@@ -180,19 +180,19 @@ export function TriageControls({
   readonly primary?: boolean;
 }) {
   const proven = finding.status === 'confirmed';
-  const [mode, setMode] = useState<'idle' | 'release' | 'dismiss'>('idle');
+  const [mode, setMode] = useState<'idle' | 'release' | 'dismiss' | 'reopen'>('idle');
   const [reason, setReason] = useState(proven ? PROVEN_REASON : '');
   const [error, setError] = useState<string | null>(null);
   const { settling: busy, run } = useSettledAction();
 
-  async function decide(decision: 'release' | 'dismiss', why: string): Promise<void> {
+  async function decide(decision: 'release' | 'dismiss' | 'reopen', why: string): Promise<void> {
     if (!reasonEnough(why)) {
       setError('Give a reason of at least 8 characters. It is kept on the ledger.');
       return;
     }
     setError(null);
     await run(async () => {
-      const result = await triageFindingAction(finding.id, decision, why);
+      const result = decision === 'reopen' ? await reopenFindingAction(finding.id, why) : await triageFindingAction(finding.id, decision, why);
       startTransition(() => {
         if (!result.ok && result.status !== HTTP_CONFLICT) {
           setError(result.message);
@@ -226,45 +226,61 @@ export function TriageControls({
     setReason(proven ? PROVEN_REASON : '');
   };
 
-  if (!canRelease && !canDismiss)
+  if (!canRelease && !canDismiss && mode === 'idle')
     return (
       <div className="flex flex-col gap-2.5">
         <Decided finding={finding} viewerName={viewerName} />
+        {finding.status === 'dismissed' ? (
+          <div className="flex flex-wrap gap-1">
+            <button
+              type="button"
+              disabled={busy}
+              className={buttonClass('secondary', 'h-11 px-4')}
+              onClick={() => {
+                setMode('reopen');
+                setReason('');
+              }}
+            >
+              Reopen…
+            </button>
+          </div>
+        ) : null}
         {trailing === undefined ? null : <div className="flex flex-wrap gap-1">{trailing}</div>}
       </div>
     );
 
   if (mode !== 'idle') {
     const release = mode === 'release';
+    const reopen = mode === 'reopen';
     return (
       <div
         onKeyDown={escapeCloses(cancel)}
         className="flex flex-col gap-3 rounded-xl border border-border bg-surface-2/60 p-3.5"
       >
         <ReasonField
-          label={release ? 'Why release it to the report?' : 'Why dismiss it?'}
+          label={release ? 'Why release it to the report?' : reopen ? 'Why reopen it?' : 'Why dismiss it?'}
           value={reason}
           onChange={setReason}
           autoFocus
           footnote={REASON_NOTE}
-          suggestions={release ? (proven ? [PROVEN_REASON] : []) : DISMISS_SUGGESTIONS}
+          suggestions={release ? (proven ? [PROVEN_REASON] : []) : reopen ? [] : DISMISS_SUGGESTIONS}
           onSubmit={() => {
             void decide(mode, reason);
           }}
           rows={2}
         />
-        {release ? null : (
+        {release || reopen ? null : (
           <p className="m-0 flex items-start gap-1.5 text-[12.5px] leading-5 text-foreground">
             <Icon name="info" size={14} className="mt-[3px] shrink-0 text-muted-foreground" />A
-            dismissal can&rsquo;t be undone: the issue stays off the report for good. If you are
-            unsure, leave it awaiting release.
+            dismissal keeps the issue off the report. You can reopen it later, with a reason; both are
+            on the ledger.
           </p>
         )}
         {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
         <div className="flex flex-wrap items-center gap-2">
           <PendingButton
-            variant={release ? 'primary' : 'deny'}
-            pendingLabel={release ? 'Releasing…' : 'Dismissing…'}
+            variant={release ? 'primary' : reopen ? 'secondary' : 'deny'}
+            pendingLabel={release ? 'Releasing…' : reopen ? 'Reopening…' : 'Dismissing…'}
             disabled={!reasonEnough(reason) || busy}
             stayPending
             onAction={async () => {
@@ -272,7 +288,7 @@ export function TriageControls({
               return false;
             }}
           >
-            {release ? 'Release to report' : 'Dismiss for good'}
+            {release ? 'Release to report' : reopen ? 'Reopen' : 'Dismiss for good'}
           </PendingButton>
           <button type="button" className={buttonClass('ghost')} onClick={cancel}>
             Cancel

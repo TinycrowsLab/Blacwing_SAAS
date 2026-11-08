@@ -901,6 +901,18 @@ export class DemoStore {
     return (r.rowCount ?? 0) === 1;
   }
 
+  /** Reopens a dismissed finding: proven ones return to `confirmed`, the rest to `suspected`. False when it is not dismissed. */
+  async reopenFinding(tenantId: string, id: string, by: string, reason: string): Promise<boolean> {
+    const r = await this.pool.query(
+      `UPDATE demo.findings
+         SET status = CASE WHEN jsonb_exists(evidence::jsonb, 'probe') THEN 'confirmed' ELSE 'suspected' END,
+             triaged_by = $3, triaged_at = now(), triage_reason = $4
+       WHERE tenant_id = $1 AND id = $2 AND status = 'dismissed'`,
+      [tenantId, id, by, reason],
+    );
+    return (r.rowCount ?? 0) === 1;
+  }
+
   /** Queues a retest. False when one is already open for the finding (one queued or running at a time). */
   async insertRetest(row: { id: string; tenant_id: string; finding_id: string; requested_by: string }): Promise<boolean> {
     try {

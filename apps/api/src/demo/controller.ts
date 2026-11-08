@@ -255,7 +255,10 @@ class EmergencyContactDto extends createZodDto(emergencyContactSchema) {}
 class EmergencyTokenDto extends createZodDto(emergencyTokenSchema) {}
 class EmergencyRunsDto extends createZodDto(emergencyRunsSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
+const targetCheckQuerySchema = z.strictObject({ origin: z.url({ protocol: /^https?$/ }).max(LIMITS.url) });
+class TargetCheckQueryDto extends createZodDto(targetCheckQuerySchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
+class ReopenDto extends createZodDto(z.strictObject({ reason: z.string().trim().min(LIMITS.reasonMin).max(LIMITS.reason) })) {}
 class TriageDto extends createZodDto(triageSchema) {}
 class ReportQueryDto extends createZodDto(reportQuerySchema) {}
 class RunReportQueryDto extends createZodDto(runReportQuerySchema) {}
@@ -439,6 +442,12 @@ export class DemoController {
   async assets(@Headers() headers: RequestHeaders): Promise<unknown> {
     await this.actor(headers);
     return { items: await this.service.assets() };
+  }
+
+  @Get('target-check')
+  async targetCheck(@Headers() headers: RequestHeaders, @ZodQuery(TargetCheckQueryDto) query: TargetCheckQueryDto): Promise<unknown> {
+    await this.actor(headers);
+    return this.service.checkTarget(query.origin);
   }
 
   @Get('assets/:id')
@@ -641,6 +650,12 @@ export class DemoController {
     @ZodBody(TriageDto) body: TriageDto,
   ): Promise<unknown> {
     return this.service.triage(await this.actor(headers), uuid(id, 'finding'), body.decision, body.reason);
+  }
+
+  @Post('findings/:id/reopen')
+  @HttpCode(HttpStatus.OK)
+  async reopen(@Headers() headers: RequestHeaders, @Param('id') id: string, @ZodBody(ReopenDto) body: ReopenDto): Promise<unknown> {
+    return this.service.reopen(await this.actor(headers), uuid(id, 'finding'), body.reason);
   }
 
   /** Retest: the runner replays the proven probe and its control once more (state-changing probes excluded). */

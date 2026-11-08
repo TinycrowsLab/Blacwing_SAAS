@@ -394,11 +394,11 @@ describe('headline and plain reasons', () => {
       'Claude proved 2 issues. Start with the high\u2011severity one.',
     );
     expect(headline([finding('a', 'critical', 'dismissed'), finding('b', 'low', 'released')])).toBe(
-      'Claude proved 2 issues.',
+      'Claude proved 2 issues. 1 is dismissed.',
     );
     // Everything decided: no stale "start with" advice.
     expect(headline([finding('a', 'high', 'released'), finding('b', 'low', 'dismissed')])).toBe(
-      'Claude proved 2 issues.',
+      'Claude proved 2 issues. 1 is dismissed.',
     );
   });
   it('rewrites the engine word "oracle"', () => {

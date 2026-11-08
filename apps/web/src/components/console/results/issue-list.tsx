@@ -6,7 +6,7 @@
 // once). R releases the issue you opened last, or else the first open one that still awaits release.
 import { startTransition, useEffect, useRef, useState } from 'react';
 
-import { buttonClass, Chip, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
+import { buttonClass, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
 import { IssueBody } from './issue-body';
 import { findingDetailSchema, seenBeforeText, type FindingDetail, type FindingSummary } from './model';
@@ -199,10 +199,19 @@ export function IssueList({
                 />
                 <span className="col-start-2 flex flex-wrap items-center gap-2">
                   <IssueStatus status={status} pill={isOpen} />
-                  {seenBeforeText(s) === null ? null : <Chip tone="neutral">{seenBeforeText(s)}</Chip>}
                 </span>
               </button>
             </h3>
+            {s.seenBefore === null ? null : (
+              <p className="m-0 px-4 pb-3 sm:px-5">
+                <NavLink
+                  href={`/findings/${s.seenBefore.findingId}`}
+                  className="inline-flex min-h-6 items-center rounded-md text-[12.5px] font-medium text-gold-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+                >
+                  {seenBeforeText(s)}
+                </NavLink>
+              </p>
+            )}
             {isOpen ? (
               <div id={bodyId} className="border-t border-border px-4 pb-4 pt-3.5 sm:px-5">
                 {d === undefined || d.state === 'loading' ? (

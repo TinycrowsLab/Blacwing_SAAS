@@ -605,6 +605,11 @@ export class DemoService {
       .map((row) => assetDto(row, this.origins));
   }
 
+  /** The refusal an address would meet when added (read only, nothing is recorded), or null when it may be added. */
+  async checkTarget(origin: string): Promise<{ refusal: string | null }> {
+    return { refusal: await this.targetRefusal([new URL(origin).origin]) };
+  }
+
   async asset(id: string): Promise<Record<string, unknown>> {
     return assetDto(await this.assetRow(id), this.origins);
   }
@@ -1724,6 +1729,24 @@ export class DemoService {
     });
     await this.store.appendEvent(finding.run_id, this.triageEvent(finding, to, actor, reason));
     if (decision === 'release') await this.deliver(finding, actor.name);
+    return this.findingDetail(actor, id, audit);
+  }
+
+  /** Gate 3 undo: a dismissed finding returns to the queue awaiting release, with a reason on the ledger. */
+  async reopen(actor: DemoActor, id: string, reason: string): Promise<Record<string, unknown>> {
+    requireRole(actor, ['appsec-engineer'], 'Only an AppSec engineer can reopen a finding.');
+    const finding = await this.finding(actor, id);
+    if (!(await this.store.reopenFinding(this.tenantId, id, actor.id, reason))) {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_triageable', `A ${finding.status} finding cannot be reopened.`);
+    }
+    const audit = await this.audit(actor, 'finding.reopen', 'finding', id, { decision: 'reopen', reason, runId: finding.run_id });
+    const title = scrub(finding.title);
+    await this.store.appendEvent(finding.run_id, {
+      kind: 'finding.reopened',
+      stage: 'gate3',
+      message: `Reopened by ${actor.name}: ${title}`,
+      data: { findingId: finding.id, title, severity: severityOf(finding.severity), by: actor.id, reason },
+    });
     return this.findingDetail(actor, id, audit);
   }
 
