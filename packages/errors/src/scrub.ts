@@ -36,7 +36,7 @@ const SECRET_SUFFIXES = [
   'seedphrase',
   'mnemonic',
 ];
-const SECRET_EXACT = new Set(['token', 'hash', 'seed']);
+const SECRET_EXACT = new Set(['token', 'hash', 'seed', 'pass', 'pwd']);
 
 /** Whether an object or JSON key names a secret (the audit ledger's rule plus hashes and seeds). */
 function isSecretName(key: string): boolean {
@@ -59,7 +59,16 @@ const JSON_FIELD = /"([A-Za-z0-9_$.-]{1,64})"(\s{0,8}:\s{0,8})"((?:[^"\\]|\\.)*)
 const ESCAPED_JSON_FIELD = /\\"([A-Za-z0-9_$.-]{1,64})\\"(\s{0,8}:\s{0,8})\\"((?:[^"\\]|\\[^"])*)\\"/g;
 const FORM_PAIR = /(?<![A-Za-z0-9_.[\]-])([A-Za-z0-9_.[\]-]{1,64})=(\[redacted[^\]]*\]|[^&\s'"]*)/g;
 const FORM_EXACT = new Set(['pwd', 'pass', 'sid', 'session', 'sessionid']);
-const FORM_SUFFIXES = ['password', 'passwd', 'token', 'apikey', 'secret', 'sessid', 'sessionid'];
+/** A form or query key holding one of these anywhere is a secret (`password_new`, `password_conf`, `user_token`). */
+const FORM_PARTS = ['password', 'passwd', 'pwd', 'token', 'apikey', 'secret', 'sessid', 'sessionid'];
+/** Names whose prose or config value is a secret: `db_password = x`, `api_key: x`, `` `db_password` `x` ``. Bare `token` is
+ *  left out on purpose ("unrecognized token: ..." in an SQL error is evidence, not a secret). */
+const PROSE_SECRET = /password|passwd|pwd|passphrase|secret|apikey|accesstoken|authtoken|privatekey/;
+const PROSE_EXACT = new Set(['pass']);
+/** Unquoted or backticked name, an optional `=`, `:`, `is` or `was`, then a bare or backticked value. */
+const PROSE_ASSIGN =
+  /(?<![A-Za-z0-9_.-])(`?)([A-Za-z0-9_.-]{0,40}(?:password|passwd|pwd|passphrase|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)[A-Za-z0-9_.-]{0,20}|pass)\1([ \t]{0,8}(?:=|:|\bis\b|\bwas\b)?[ \t]{0,8})(`[^`\r\n]{1,200}`|[^\s`'"<>,;&()[\]{}]{1,200})/gi;
+const XML_SECRET = /<([A-Za-z][A-Za-z0-9_:-]{0,63})>([^<\r\n]{1,200})<\/\1>/g;
 const CONFIG_ASSIGN =
   /(?<![A-Za-z0-9_.-])([A-Za-z0-9_.-]{1,64})(['"]?\s{0,8}\]?\s{0,8}(?:=>?|:|,)\s{0,8})('(?:[^'\\\r\n]|\\.)*'|"(?:[^"\\\r\n]|\\.)*")/g;
 const BCRYPT = /\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}/g;
@@ -67,8 +76,10 @@ const ARGON2 = /\$argon2(?:id|i|d)\$[^\s"']+/g;
 
 function isFormSecret(name: string): boolean {
   const n = norm(name);
-  return FORM_EXACT.has(n) || FORM_SUFFIXES.some((suffix) => n.endsWith(suffix));
+  return FORM_EXACT.has(n) || FORM_PARTS.some((part) => n.includes(part));
 }
+
+const isProseSecret = (name: string): boolean => PROSE_EXACT.has(norm(name)) || PROSE_SECRET.test(norm(name));
 
 function scrubText(text: string): string {
   let out = redactBuiltinSecrets(text);
@@ -97,10 +108,27 @@ function scrubText(text: string): string {
     const n = norm(name);
     const value = quoted.slice(1, -1);
     if (value === '' || isPlaceholder(value)) return match;
-    if (!/password|passwd|secret|apikey|token/.test(n)) return match;
+    if (!/password|passwd|pwd|secret|apikey|token/.test(n) && !PROSE_EXACT.has(n)) return match;
+    // `unrecognized token: "..."` (an SQL error quoting the payload) is evidence; a quoted 'token' key is not prose.
+    if (n === 'token' && !/^['"]/.test(sep)) return match;
     const q = quoted[0] ?? "'";
     return `${name}${sep}${q}${scrubbed(n.includes('pass') ? 'password' : 'secret')}${q}`;
   });
+  out = out.replace(PROSE_ASSIGN, (match, tick: string, name: string, sep: string, raw: string) => {
+    const quoted = raw.startsWith('`');
+    const value = quoted ? raw.slice(1, -1) : raw;
+    if (!isProseSecret(name) || value.trim() === '' || isPlaceholder(value)) return match;
+    const word = sep.trim();
+    // A bare value needs `=`, or after `:`/is/was a digit or symbol or an identifier-like name (`db_password`):
+    // "the password is wrong" and "Plaintext password: exposed" stay prose.
+    const looksSet = /[^A-Za-z]/.test(value) || /[_.-]|[a-z][A-Z]/.test(name) || tick !== '';
+    if (!quoted && (word === '' || (word !== '=' && !looksSet))) return match;
+    const kind = norm(name).includes('pass') || norm(name) === 'pwd' ? 'password' : 'secret';
+    return `${tick}${name}${tick}${sep}${quoted ? `\`${scrubbed(kind)}\`` : scrubbed(kind)}`;
+  });
+  out = out.replace(XML_SECRET, (match, tag: string, value: string) =>
+    isSecretName(tag) && !isPlaceholder(value) ? `<${tag}>${scrubbed(kindFor(tag))}</${tag}>` : match,
+  );
   out = out.replace(BCRYPT, scrubbed('hash')).replace(ARGON2, scrubbed('hash'));
   return out;
 }

@@ -10,19 +10,29 @@ export type ScopeVerdict =
   | { readonly ok: true; readonly url: URL }
   | { readonly ok: false; readonly rule: string };
 
-/** Words in a GET/HEAD path or query that suggest the request changes state (logout links, password resets, ...). */
+/** Words in a GET/HEAD path segment or query key that suggest the request changes state (logout links, password resets, ...). */
 const STATE_CHANGE_WORDS = /(password|passwd|delete|remove|destroy|logout|signout|sign-out|change|reset|update|transfer|unsubscribe|deactivate)/i;
-/** Query keys that usually pick a server-side action. */
-const ACTION_KEYS = new Set(['action', 'do', 'cmd', 'op']);
+/** Action verbs, matched as whole words in the last path segment or a query key only (`/basket/1/checkout`, `?add=1`). */
+const ACTION_WORDS = new Set(['approve', 'promote', 'checkout', 'order', 'erase', 'erasure', 'create', 'add', 'submit']);
+/** Query keys that usually pick a server-side action; `_method` overrides the HTTP method on many frameworks. */
+const ACTION_KEYS = new Set(['action', 'do', 'cmd', 'op', '_method']);
 
-/** The word that makes a GET/HEAD look state-changing, or null. Other methods are classified by method alone. */
+const words = (text: string): string[] => text.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z]+/);
+
+/**
+ * The word that makes a GET/HEAD look state-changing, or null. Only path segments and query KEYS are read, never query
+ * values, so a read-only probe such as `?page=../../etc/passwd` stays a read. Other methods are classified by method alone.
+ */
 export function stateChangeHint(method: string, url: URL): string | null {
   const upper = method.toUpperCase();
   if (upper !== 'GET' && upper !== 'HEAD') return null;
-  const word = STATE_CHANGE_WORDS.exec(safeDecode(`${url.pathname}${url.search}`))?.[1];
+  const keys = [...url.searchParams.keys()];
+  for (const key of keys) if (ACTION_KEYS.has(key.toLowerCase())) return `${key.toLowerCase()}=`;
+  const segments = (decodeForms(url.pathname).at(-1) ?? url.pathname).split('/');
+  const word = STATE_CHANGE_WORDS.exec([...segments, ...keys].join('/'))?.[1];
   if (word !== undefined) return word.toLowerCase();
-  for (const key of url.searchParams.keys()) if (ACTION_KEYS.has(key.toLowerCase())) return `${key.toLowerCase()}=`;
-  return null;
+  const action = [...words(segments.findLast((s) => s !== '') ?? ''), ...keys.flatMap(words)].find((w) => ACTION_WORDS.has(w));
+  return action ?? null;
 }
 
 /**
@@ -59,15 +69,41 @@ function isUnder(path: string, prefix: string): boolean {
   return lower === base || lower.startsWith(`${base}/`);
 }
 
-function safeDecode(path: string): string {
+const DECODE_ROUNDS = 3;
+const ESCAPE = /%([0-9a-f]{2})/gi;
+const FIRST_NON_ASCII = 0x80;
+
+/**
+ * One decode round. decodeURIComponent throws on a malformed escape (`%ZZ`) or bytes that are not UTF-8 (`%ff`,
+ * overlong `%c0%ae`); then each valid escape is decoded on its own, and a non-ASCII byte makes the path invalid (null),
+ * because servers differ on how they read it. Never "no decode": that would hide `%61dmin` next to a bad escape.
+ */
+function decodeOnce(path: string): string | null {
   try {
     return decodeURIComponent(path);
   } catch {
-    return path;
+    let invalid = false;
+    const out = path.replace(ESCAPE, (_, hex: string) => {
+      const code = Number.parseInt(hex, 16);
+      if (code >= FIRST_NON_ASCII) invalid = true;
+      return String.fromCharCode(code);
+    });
+    return invalid ? null : out;
   }
 }
 
-const DECODE_ROUNDS = 3;
+/** Raw path plus each decode round (up to 3, until stable); null when a round is invalid (see decodeOnce). */
+function decodeForms(pathname: string): string[] {
+  const decoded = [pathname];
+  for (let round = 0; round < DECODE_ROUNDS; round += 1) {
+    const next = decodeOnce(decoded.at(-1) ?? pathname);
+    if (next === null) return [];
+    if (next === decoded.at(-1)) break;
+    decoded.push(next);
+  }
+  return decoded;
+}
+
 const ENCODED_CONTROL = /%(?:[01][0-9a-f]|7f)/i;
 const FIRST_PRINTABLE = 0x20;
 const DEL = 0x7f;
@@ -82,11 +118,12 @@ function hasControlByte(text: string): boolean {
   return false;
 }
 
-/** Lower-case, `\` as `/`, `//` collapsed, `;params` stripped per segment, dot segments resolved. */
+/** Lower-case, `\` as `/`, `//` collapsed, `;params` and trailing dots/spaces stripped per segment, dot segments resolved. */
 function canonicalPath(path: string): string {
   const out: string[] = [];
   for (const raw of path.replaceAll('\\', '/').split('/')) {
-    const segment = raw.split(';', 1)[0] ?? '';
+    const params = raw.split(';', 1)[0] ?? '';
+    const segment = params === '.' || params === '..' ? params : params.replace(/[. ]+$/, '');
     if (segment === '' || segment === '.') continue;
     if (segment === '..') out.pop();
     else out.push(segment);
@@ -96,16 +133,12 @@ function canonicalPath(path: string): string {
 
 /**
  * Every form a server might see the path as: raw, each decode round (up to 3, until stable) and the canonical form of
- * each. Null when any form carries a control byte (a NUL or CR/LF can cut a path differently on the server).
+ * each. Null when a round cannot be decoded safely (see decodeOnce) or any form carries a control byte (a NUL or CR/LF
+ * can cut a path differently on the server).
  */
 function pathForms(pathname: string): string[] | null {
-  const decoded = [pathname];
-  for (let round = 0; round < DECODE_ROUNDS; round += 1) {
-    const next = safeDecode(decoded.at(-1) ?? pathname);
-    if (next === decoded.at(-1)) break;
-    decoded.push(next);
-  }
-  if (decoded.some((form) => hasControlByte(form))) return null;
+  const decoded = decodeForms(pathname);
+  if (decoded.length === 0 || decoded.some((form) => hasControlByte(form))) return null;
   return [...decoded, ...decoded.map((form) => canonicalPath(form))];
 }
 

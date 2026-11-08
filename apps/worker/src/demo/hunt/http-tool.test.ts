@@ -235,7 +235,7 @@ describe('non-blocking Gate 2', () => {
     const result = await sendRequest(ctx, 'web-api-specialist', { method: 'GET', url: 'https://t.example/vulnerabilities/csrf/?password_new=a&Change=Change' }, opts);
     expect(result).toMatchObject({ ok: false, pending: true });
     expect(sent).toEqual([]);
-    expect([...store.gate2.values()][0]?.row.whyOutside).toContain('This GET looks like it changes state (password)');
+    expect([...store.gate2.values()][0]?.row.whyOutside).toContain('This GET may change state (password)');
   });
 
   it('closes every pending ask at the end of the run', async () => {

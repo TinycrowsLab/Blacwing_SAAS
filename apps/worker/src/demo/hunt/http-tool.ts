@@ -199,7 +199,7 @@ async function raiseGate2(ctx: HuntContext, agent: string, req: HttpRequest, url
   const method = req.method.toUpperCase();
   const identity = role === undefined ? 'without a test account credential' : `as test account role ${role}`;
   const hint = stateChangeHint(method, url);
-  const why = hint === null ? `${method} is a state-changing method` : `This ${method} looks like it changes state (${hint})`;
+  const why = hint === null ? `${method} is a state-changing method` : `This ${method} may change state (${hint})`;
   const id = newId();
   const deadlineAt = new Date(ctx.deps.now() + ctx.deps.gate2TimeoutMs);
   // Agent-authored; test-account credentials are injected as headers by the runner, never into the body.

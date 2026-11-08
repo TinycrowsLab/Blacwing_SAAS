@@ -32,6 +32,13 @@ describe('state-changing GET ask-list', () => {
     ['/api/items/7?action=archive', 'action='],
     ['/index.php?DO=x', 'do='],
     ['/account/Sign-Out', 'sign-out'],
+    ['/api/v1/users?_method=PUT', '_method='],
+    ['/users/v1/admin/promote', 'promote'],
+    ['/api/Feedbacks/1/approve', 'approve'],
+    ['/rest/basket/1/checkout', 'checkout'],
+    ['/rest/user/erasure-request', 'erasure'],
+    ['/rest/wallet/balance?add=100', 'add'],
+    ['/setup.php?create_db=1', 'create'],
   ])('GET %s needs Gate 2 (%s)', (path, word) => {
     expect(stateChangeHint('GET', u(path))).toBe(word);
     expect(classifyMethod('GET', u(path))).toBe('state_changing');
@@ -39,7 +46,7 @@ describe('state-changing GET ask-list', () => {
   });
 
   it('leaves ordinary reads, OPTIONS and calls without a URL alone', () => {
-    for (const path of ['/rest/products/search?q=apple', '/api/Users/1', '/robots.txt']) expect(classifyMethod('GET', u(path))).toBe('active_safe');
+    for (const path of ['/rest/products/search?q=apple', '/api/Users/1', '/robots.txt', '/vulnerabilities/fi/?page=../../../../etc/passwd', '/search?q=change+update', '/api/address', '/rest/order-history/x']) expect(classifyMethod('GET', u(path))).toBe('active_safe');
     expect(classifyMethod('OPTIONS', u('/logout'))).toBe('active_safe');
     expect(classifyMethod('GET')).toBe('active_safe');
     expect(stateChangeHint('POST', u('/logout'))).toBeNull();
@@ -78,6 +85,19 @@ describe('checkScope', () => {
       expect(checkScope(`https://shop.example.com${path}`, scope), path).toEqual({ ok: false, rule: 'excluded_path' });
     }
     expect(checkScope('https://shop.example.com/public;v=1/admin-guide', scope).ok).toBe(true);
+  });
+
+  it('fails closed on malformed or non-UTF-8 escapes and strips trailing dots and spaces', () => {
+    const lab = { allowedOrigins: ['https://shop.example.com'], excludedPaths: ['/admin', '/setup.php'] };
+    for (const path of ['/%61dmin/%ZZ', '/admin%20', '/admin.', '/setup.php.', '/setup%2ephp%20', '/%61dmin%20/x']) {
+      expect(checkScope(`https://shop.example.com${path}`, lab), path).toEqual({ ok: false, rule: 'excluded_path' });
+    }
+    for (const path of ['/%61dmin%ff', '/admin%ff', '/setup%2ephp%ff', '/%c0%aeadmin', '/x/%ff%2f%2e%2e%2fadmin']) {
+      expect(checkScope(`https://shop.example.com${path}`, lab), path).toEqual({ ok: false, rule: 'invalid_path' });
+    }
+    expect(checkScope('https://shop.example.com/caf%C3%A9/x', lab).ok).toBe(true);
+    expect(checkScope('https://shop.example.com/x/%ZZ', lab).ok).toBe(true);
+    expect(checkScope('https://shop.example.com/administrator.', lab).ok).toBe(true);
   });
 
   it('refuses control bytes in any decoded form of the path', () => {

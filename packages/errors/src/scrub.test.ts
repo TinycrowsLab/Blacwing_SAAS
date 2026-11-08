@@ -84,6 +84,30 @@ describe('scrub', () => {
     );
   });
 
+  it('8. replaces prose, config and XML forms an agent writes (DVWA db password, api keys)', () => {
+    const cases: Array<[string, string]> = [
+      ['`db_password` `vulnerables`', '`db_password` `[redacted: password]`'],
+      ['db_user `app` and db_password `vulnerables`', 'db_user `app` and db_password `[redacted: password]`'],
+      ['db_password = vulnerables', 'db_password = [redacted: password]'],
+      ['password: hunter2xyz', 'password: [redacted: password]'],
+      ['the admin password is admin123', 'the admin password is [redacted: password]'],
+      ['{"pwd":"pass1","pass":"pass2"}', '{"pwd":"[redacted: secret]","pass":"[redacted: secret]"}'],
+      ['<password>pass1</password>', '<password>[redacted: password]</password>'],
+      ['api_key: sk-live-abc123', 'api_key: [redacted: secret]'],
+      ['?password_new=bwtestA1&password_conf=bwtestB2&Change=Change', '?password_new=[redacted: secret]&password_conf=[redacted: secret]&Change=Change'],
+    ];
+    for (const [input, output] of cases) expect(scrub(input), input).toBe(output);
+  });
+
+  it('8. leaves prose and evidence that only mention a secret alone', () => {
+    for (const text of [
+      'unrecognized token: "\'1"',
+      'the password is wrong',
+      'Plaintext password: exposed at /users/v1/_debug',
+      'db_user `app`',
+    ]) expect(scrub(text), text).toBe(text);
+  });
+
   it('leaves role placeholders unchanged', () => {
     const text = "curl -H 'Authorization: [redacted: role alice]' http://127.0.0.1:5077/users/v1";
     expect(scrub(text)).toBe(text);
