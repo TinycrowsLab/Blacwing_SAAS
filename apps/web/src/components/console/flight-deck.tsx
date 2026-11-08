@@ -289,11 +289,27 @@ export function TestPlanTab({
   cases,
   waiting,
   ended,
+  filterName = null,
+  total = 0,
+  onClearFilter,
 }: {
   readonly cases: readonly TestCase[];
   readonly waiting: ReadonlySet<string>;
   readonly ended: boolean;
+  /** The agent the run is filtered to, when the filter (not the planner) is why no case shows. */
+  readonly filterName?: string | null;
+  readonly total?: number;
+  readonly onClearFilter?: () => void;
 }) {
+  if (cases.length === 0 && filterName !== null && total > 0)
+    return (
+      <p className="m-0 rounded-[14px] border border-dashed border-border-strong px-5 py-6 text-[13px] text-muted-foreground">
+        {filterName} has no test cases.{' '}
+        <button type="button" onClick={onClearFilter} className="font-medium text-foreground underline underline-offset-2">
+          Show everyone
+        </button>
+      </p>
+    );
   if (cases.length === 0)
     return (
       <p className="m-0 rounded-[14px] border border-dashed border-border-strong px-5 py-6 text-[13px] text-muted-foreground">
@@ -526,7 +542,7 @@ function AgentLanes({
   const scroller = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   const [viewW, setViewW] = useState(0);
-  const [zoom, setZoom] = useState<'window' | 'fit'>(running ? 'window' : 'fit');
+  const [pick, setZoom] = useState<'window' | 'fit' | null>(null);
   const hatch = `fd-hatch${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   useEffect(() => {
     const el = scroller.current;
@@ -544,6 +560,9 @@ function AgentLanes({
 
   const spanMs = Math.max(1000, nowMs - startMs);
   const canZoom = spanMs > LANE_WINDOW_S * 1000;
+  // Until the person picks a scale: the recent window, unless nothing happened in it (then it would look empty).
+  const quietNow = !lanes.some((l) => l.marks.some((m) => m.at >= nowMs - LANE_WINDOW_S * 1000));
+  const zoom = pick ?? (running && !quietNow ? 'window' : 'fit');
   // Under 2 minutes a live run keeps the 2 minute scale (marks stay put as the clock moves); a short finished run fits.
   const fit = canZoom ? zoom === 'fit' : !running;
   const inner = Math.max(1, (viewW === 0 ? 600 : viewW) - 2 * AXIS_PAD);
@@ -829,9 +848,9 @@ const ActivityTable = memo(function ActivityTable({ rows }: { readonly rows: rea
 });
 
 const CASE_PARTS = [
-  { key: 'executed', label: 'Executed', colour: 'var(--text)' },
-  { key: 'executing', label: 'Executing', colour: 'var(--slate)' },
-  { key: 'proposed', label: 'Proposed', colour: 'var(--border2)' },
+  { key: 'executed', label: 'Done', colour: 'var(--text)' },
+  { key: 'executing', label: 'Running', colour: 'var(--slate)' },
+  { key: 'proposed', label: 'Queued', colour: 'var(--border2)' },
   { key: 'skipped', label: 'Skipped', colour: 'var(--faint)' },
   { key: 'blocked', label: 'Blocked', colour: 'var(--warn)' },
   { key: 'model_declined', label: 'Model declined', colour: 'var(--bad)' },
@@ -854,7 +873,7 @@ export const TestCasesSummary = memo(function TestCasesSummary({ cases, bare = f
   const body = (
     <>
       <h2 id={id} className={sectionHead(bare)}>
-        <span className="shrink-0">Test cases</span>
+        <span className="shrink-0">Test plan</span>
         <span className={sectionNote(bare)}>{cases.length === 0 ? 'not recorded yet' : `${cases.length} in plan`}</span>
       </h2>
       {cases.length === 0 ? (
@@ -902,7 +921,7 @@ function candidateVerdict(c: Candidate): { verdict: string; label: string } {
     case 'validating':
       return { verdict: 'validating', label: `Validating, replay ${Math.min(c.replays, VALIDATOR_REPLAYS)} of ${VALIDATOR_REPLAYS}` };
     case 'confirmed':
-      return { verdict: 'confirmed', label: 'Confirmed' };
+      return { verdict: 'confirmed', label: 'Proven' };
     case 'released':
       return { verdict: 'released', label: 'Released' };
     case 'dismissed':

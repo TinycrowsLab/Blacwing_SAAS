@@ -17,6 +17,7 @@ import { getViewer } from '../../../lib/auth';
 import { readDashboard } from '../../../lib/console-data';
 import { objectivePhrase } from '../../../lib/plan-text';
 import { findingSummarySchema, toSidebar } from '../../../lib/schemas';
+import { bySeverity } from '../../../components/console/results/model';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -128,7 +129,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
   });
   const plans = dashboard.requests.filter((r) => r.status === 'pending_gate1');
   const all = findings ?? dashboard.findings;
-  const releases = all.filter((f) => f.status === 'confirmed');
+  const releases = all.filter((f) => f.status === 'confirmed').sort(bySeverity);
   // Exact counts when the API sends them: the lists above are capped.
   const counts = dashboard.pendingCounts;
   const planCount = Math.max(counts?.gate1 ?? 0, plans.length);
@@ -145,7 +146,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-7">
+    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-7">
       {/* A read that failed (an owner not known yet) is tried again on the next poll. */}
       <InboxRefresh waiting={waiting} incomplete={[...runs.values()].some((r) => !r.complete)} />
       <header className="flex flex-col gap-1.5">

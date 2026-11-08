@@ -6,6 +6,7 @@ import { timingSafeEqual } from 'node:crypto';
 import {
   type CallHandler,
   Controller,
+  Delete,
   type ExecutionContext,
   Get,
   Headers,
@@ -17,6 +18,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseFilters,
   UseInterceptors,
 } from '@nestjs/common';
@@ -440,6 +442,11 @@ export class DemoController {
     return this.service.createAsset(await this.actor(headers), body);
   }
 
+  @Delete('assets/:id')
+  async archiveAsset(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+    return this.service.archiveAsset(await this.actor(headers), uuid(id, 'asset'));
+  }
+
   @Post('assets/:id/verify')
   @HttpCode(HttpStatus.OK)
   async verifyAsset(
@@ -635,8 +642,8 @@ export class DemoController {
   }
 
   @Get('audit')
-  async audit(@Headers() headers: RequestHeaders): Promise<unknown> {
+  async audit(@Headers() headers: RequestHeaders, @Query('all') all?: string): Promise<unknown> {
     await this.actor(headers);
-    return this.service.auditLedger();
+    return this.service.auditLedger(all !== undefined);
   }
 }

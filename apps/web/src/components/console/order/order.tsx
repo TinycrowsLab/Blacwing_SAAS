@@ -438,7 +438,7 @@ export function Order({
     { label: 'Site', value: target === null ? null : target.host, warn: refusedHere !== null },
     {
       label: "Proof it's yours",
-      value: verified ? (asset.ownership.method === 'http_token' ? 'File found on the site' : 'Confirmed by you') : null,
+      value: verified ? (asset.ownership.method === 'http_token' ? 'File found on the site' : 'Verified earlier') : null,
     },
     { label: 'What to look for', value: step >= Q.focus ? lookFor : null },
     { label: 'How careful', value: step >= Q.care ? CARE[chosenCare].label : null },

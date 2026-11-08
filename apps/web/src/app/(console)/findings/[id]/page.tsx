@@ -261,8 +261,8 @@ export default async function FindingPage({
                   nothing.
                 </p>
               )}
-              {/* Wrapped, never scrolled sideways: the whole command is readable in the narrow column. */}
-              <pre className="m-0 max-h-60 overflow-y-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
+              {/* Wrapped at spaces, never scrolled sideways (a long token breaks only when it cannot fit): the whole command is readable in the narrow column. */}
+              <pre className="m-0 max-h-60 overflow-y-auto whitespace-pre-wrap break-words rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
                 {finding.reproCurl}
               </pre>
             </section>

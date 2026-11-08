@@ -271,7 +271,9 @@ export default async function LedgerPage({
                 prefetch={false}
                 className="font-medium text-gold-ink underline-offset-2 hover:underline"
               >
-                Show all
+                {items.length < chain.count
+                  ? `Show the newest ${items.length.toLocaleString()}`
+                  : 'Show all'}
               </NavLink>
             </p>
           ) : items.length < chain.count ? (

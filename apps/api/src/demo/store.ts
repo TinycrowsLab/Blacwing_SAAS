@@ -413,7 +413,7 @@ export class DemoStore {
 
   async listAssets(tenantId: string): Promise<AssetRow[]> {
     const r = await this.pool.query<AssetRow>(
-      `${ASSET_SELECT} WHERE a.tenant_id = $1 ORDER BY a.created_at DESC`,
+      `${ASSET_SELECT} WHERE a.tenant_id = $1 AND a.archived_at IS NULL ORDER BY a.created_at DESC`,
       [tenantId],
     );
     return r.rows;
@@ -454,6 +454,20 @@ export class DemoStore {
         row.created_by,
       ],
     );
+  }
+
+  /** Archives an asset that has no live work: no queued, running or paused run and no request still open. */
+  async archiveAsset(tenantId: string, id: string, by: string): Promise<boolean> {
+    const r = await this.pool.query(
+      `UPDATE demo.assets a SET archived_at = now(), archived_by = $3
+       WHERE a.tenant_id = $1 AND a.id = $2 AND a.archived_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM demo.assessment_requests q
+                         WHERE q.asset_id = a.id AND q.status IN ('pending_gate1', 'approved', 'running'))
+         AND NOT EXISTS (SELECT 1 FROM demo.runs u JOIN demo.assessment_requests q ON q.id = u.request_id
+                         WHERE q.asset_id = a.id AND u.state IN ('queued', 'running', 'paused'))`,
+      [tenantId, id, by],
+    );
+    return (r.rowCount ?? 0) === 1;
   }
 
   /** Conditional update: only an unverified asset can be verified (once). */

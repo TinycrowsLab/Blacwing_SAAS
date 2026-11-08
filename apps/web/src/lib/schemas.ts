@@ -481,7 +481,11 @@ export function toSidebar(d: Dashboard): SidebarData {
       .filter((f) => f.status === 'confirmed')
       .map((f) => ({ id: f.id, title: f.title, assetName: f.assetName })),
     live: d.liveRuns ?? d.runs.filter((r) => LIVE_RUN_STATES.includes(r.state)),
-    earlier: d.runs.filter((r) => !LIVE_RUN_STATES.includes(r.state)).slice(0, EARLIER_RUNS),
+    // Newest first by the time the sidebar shows (when it ended), not by when it started.
+    earlier: d.runs
+      .filter((r) => !LIVE_RUN_STATES.includes(r.state))
+      .sort((a, b) => Date.parse(b.finishedAt ?? b.createdAt) - Date.parse(a.finishedAt ?? a.createdAt))
+      .slice(0, EARLIER_RUNS),
     counts:
       d.pendingCounts === undefined
         ? null

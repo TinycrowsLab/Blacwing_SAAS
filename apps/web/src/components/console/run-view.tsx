@@ -577,9 +577,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const shownExchanges = filter === null ? exchanges.items : exchanges.items.filter((x) => x.agent === filter);
   const mapProps = { team: teamMap, gate1, gate3, ended: terminal, filter, onFilter };
   const onOpenPlan = useCallback((): void => {
-    // Phones have no tabs: the plan sits in the "Limits and findings" panel there.
-    if (window.matchMedia('(min-width: 768px)').matches) setTab('plan');
-    else setPanel(true);
+    setTab('plan');
   }, []);
   const showPending = (): void => {
     setFilter(null);
@@ -605,7 +603,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       {/* Beside the flight deck the panel carries its test cases and candidate findings (design 1a), in its words. */}
       {tab === 'deck' ? (
         <>
-          <TestCasesSummary cases={shownCases} bare />
+          <TestCasesSummary cases={cases} bare />
           <CandidatesSummary items={cands} release={autoRelease ? 'auto' : 'hold'} bare />
         </>
       ) : (
@@ -857,8 +855,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               }}
             />
           </div>
-          <div className={`mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 ${filter === null ? 'max-md:hidden' : ''}`}>
-            <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="hidden max-w-full gap-0.5 rounded-[10px] bg-surface-2 p-0.5 md:flex">
+          <div className="mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="flex max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-surface-2 p-0.5">
               {TABS.map((t) => (
                 <button
                   key={t.id}
@@ -874,7 +872,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                   onClick={() => {
                     setTab(t.id);
                   }}
-                  className={`h-8 whitespace-nowrap rounded-lg border px-3.5 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${tab === t.id ? 'border-border bg-surface text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                  className={`h-8 max-md:h-10 whitespace-nowrap rounded-lg border px-3.5 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${tab === t.id ? 'border-border bg-surface text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                 >
                   {t.label}
                 </button>
@@ -937,7 +935,16 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 }
               />
             ) : tab === 'plan' ? (
-              <TestPlanTab cases={shownCases} waiting={heldCases} ended={terminal} />
+              <TestPlanTab
+                cases={shownCases}
+                waiting={heldCases}
+                ended={terminal}
+                filterName={filter === null ? null : agentName(filter)}
+                total={cases.length}
+                onClearFilter={() => {
+                  setFilter(null);
+                }}
+              />
             ) : tab === 'requests' ? (
               <RequestsTab
                 items={shownExchanges}

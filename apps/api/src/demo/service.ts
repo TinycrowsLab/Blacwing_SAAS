@@ -10,7 +10,7 @@ import { newId } from '@blackwing/ids';
 
 import { verifyChain, type AuditPayload, type AuditRef, type ChainState } from './audit.js';
 import { BUDGET_LIMITS, BUDGET_PRESETS, DEFAULT_HUNT_CONCURRENCY, OBJECTIVE_MAX } from './config.js';
-import { defaultLookup, firstRefusal, isLabOrigin, type Lookup, type OriginPolicy } from './ownership.js';
+import { defaultLookup, firstRefusal, isLabOrigin, type Lookup, type OriginPolicy, staticClass } from './ownership.js';
 import {
   BODY_EXCERPT_CHARS,
   type AssetRow,
@@ -578,7 +578,10 @@ export class DemoService {
   }
 
   async assets(): Promise<Record<string, unknown>[]> {
-    return (await this.store.listAssets(this.tenantId)).map((row) => assetDto(row, this.origins));
+    // A leftover row whose address is now refused outright (cloud metadata, link-local) is never listed.
+    return (await this.store.listAssets(this.tenantId))
+      .filter((row) => !row.allowed_origins.some((o) => staticClass(o, this.origins) === 'forbidden'))
+      .map((row) => assetDto(row, this.origins));
   }
 
   async asset(id: string): Promise<Record<string, unknown>> {
@@ -645,6 +648,23 @@ export class DemoService {
       created_by: actor.id,
     });
     return this.asset(id);
+  }
+
+  /** Removes a target from the list (kept in the ledger and for past runs). Refused while an audit of it is open. */
+  async archiveAsset(actor: DemoActor, id: string): Promise<{ audit: AuditRef }> {
+    requireRole(actor, ['appsec-engineer', 'asset-owner'], 'Only an appsec engineer or an asset owner can remove a target.');
+    const asset = await this.assetRow(id);
+    if (!(await this.store.archiveAsset(this.tenantId, id, actor.id)))
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'asset_in_use',
+        'This target has an audit that is still open, or it was already removed. Stop or finish the audit first.',
+      );
+    const audit = await this.audit(actor, 'asset.archived', 'asset', id, {
+      origin: new URL(asset.base_url).origin,
+      ownership: asset.ownership_status,
+    });
+    return { audit };
   }
 
   /** The asset owner proves control by serving the token, or attests authority (lab or owned system). */
@@ -1761,10 +1781,11 @@ export class DemoService {
   }
 
   /** The latest ledger events (newest first) and the verification of the whole chain. */
-  async auditLedger(): Promise<{ items: Record<string, unknown>[]; chain: ChainState }> {
+  /** The newest entries, or every entry with `all` (the chain is always checked over all of them). */
+  async auditLedger(all = false): Promise<{ items: Record<string, unknown>[]; chain: ChainState }> {
     const rows = await this.store.listAudit(this.tenantId);
     const items = rows
-      .slice(-AUDIT_LIST_LIMIT)
+      .slice(all ? 0 : -AUDIT_LIST_LIMIT)
       .reverse()
       .map((r) => ({
         eventId: r.eventId,

@@ -1,7 +1,7 @@
 'use client';
 
 // The findings list with its filters (experience spec §2, §8). The server sends every finding once; filtering happens
-// here, so a filter click is instant (local state, no server round trip). The URL follows with history.replaceState,
+// here, so a filter click is instant (local state, no server round trip). The URL follows with history.pushState,
 // and the list re-reads it whenever the router's URL changes (useSearchParams), so Back, a reload or a shared link all
 // show the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key). Status and
 // severity are chips (few, fixed options); target and audit are menus, because they grow with every audit run (each
@@ -238,7 +238,7 @@ export function FindingsTable({
     const query = new URLSearchParams();
     for (const [k, v] of Object.entries(next)) if (typeof v === 'string') query.set(k, v);
     const text = query.toString();
-    window.history.replaceState(null, '', text === '' ? '/findings' : `/findings?${text}`);
+    window.history.pushState(null, '', text === '' ? '/findings' : `/findings?${text}`);
   };
   const pick = (key: Key, value: string | undefined): void => {
     write({ ...filters, [key]: value });
@@ -257,7 +257,7 @@ export function FindingsTable({
     const at = firstAt.get(id) ?? '';
     // Until the browser formats the time (a moment after load), the short id tells audits apart.
     if (at === '' || clock === null) return `${target} · ${id.slice(0, SHORT_ID)}`;
-    return `${target} · ${(run?.startedAt ?? null) === null ? 'found' : 'started'} ${clock(at)}`;
+    return `${target} · ${clock(at)}`;
   };
 
   return (
@@ -308,7 +308,14 @@ export function FindingsTable({
             onPick={(v) => {
               pick('audit', v);
             }}
-            options={audits.map((a) => ({
+            options={audits
+              .filter(
+                (a) =>
+                  filters.target === undefined ||
+                  a === filters.audit ||
+                  items.some((f) => f.runId === a && f.assetName === filters.target),
+              )
+              .map((a) => ({
               key: a,
               label: auditLabel(a),
               count: countBy('audit', (f) => f.runId === a),
