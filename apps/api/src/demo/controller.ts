@@ -166,6 +166,11 @@ const cloneSchema = z.preprocess(
 );
 
 const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });
+/** A blast radius wider than one run: every run on a target, or every run in the workspace. */
+export const killScopeSchema = z.discriminatedUnion('scope', [
+  z.strictObject({ scope: z.literal('target'), assetId: z.string().regex(UUID), confirm: z.string().max(LIMITS.name) }),
+  z.strictObject({ scope: z.literal('workspace'), confirm: z.string().max(LIMITS.name) }),
+]);
 export const gate2DecisionSchema = z
   .strictObject({
     decision: z.enum(['approve', 'deny']),
@@ -202,6 +207,7 @@ class CloneDto extends createZodDto(cloneSchema) {}
 class TriageManyDto extends createZodDto(triageManySchema) {}
 class WorkspaceDto extends createZodDto(workspaceSchema) {}
 class KillDto extends createZodDto(killSchema) {}
+class KillScopeDto extends createZodDto(killScopeSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
 class TriageDto extends createZodDto(triageSchema) {}
@@ -425,6 +431,12 @@ export class DemoController {
     @ZodBody(KillDto) body: KillDto,
   ): Promise<unknown> {
     return this.service.kill(await this.actor(headers), uuid(id, 'run'), body.confirm);
+  }
+
+  @Post('kill')
+  @HttpCode(HttpStatus.OK)
+  async killScope(@Headers() headers: RequestHeaders, @ZodBody(KillScopeDto) body: KillScopeDto): Promise<unknown> {
+    return this.service.killScope(await this.actor(headers), body);
   }
 
   @Get('gate2/:id')
