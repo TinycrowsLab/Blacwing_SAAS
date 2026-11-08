@@ -26,7 +26,17 @@ import {
 import { Conversation, shortTime } from './conversation';
 import { buttonClass, Icon, VoiceTag } from './design';
 import { PendingButton, useCountdown } from './design-client';
-import { AccountsPanel, FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
+import {
+  AccountsPanel,
+  CandidatesSummary,
+  FlightDeck,
+  FoundPanel,
+  LimitsPanel,
+  PlanPanel,
+  RequestsTab,
+  TestCasesSummary,
+  TestPlanTab,
+} from './flight-deck';
 import { KillButton } from './kill-dialog';
 import { CARE_LABEL, ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
@@ -533,9 +543,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     setTeam(false);
   };
   // The agent filter applies to every tab, so "Showing one agent" is true wherever it shows.
-  const shownCases = filter === null ? cases : cases.filter((c) => c.agent === filter);
-  const shownLanes = filter === null ? lanes : lanes.filter((l) => l.name === filter);
-  const shownRows = filter === null ? rows : rows.filter((r) => r.agent === filter);
+  const shownCases = useMemo(() => (filter === null ? cases : cases.filter((c) => c.agent === filter)), [cases, filter]);
+  // Memoised: the deck redraws its lanes and tables only when the events (or the filter) change, not on every tick.
+  const shownLanes = useMemo(() => (filter === null ? lanes : lanes.filter((l) => l.name === filter)), [lanes, filter]);
+  const shownRows = useMemo(() => (filter === null ? rows : rows.filter((r) => r.agent === filter)), [rows, filter]);
   const shownExchanges = filter === null ? exchanges.items : exchanges.items.filter((x) => x.agent === filter);
   const mapProps = { team: teamMap, gate1, gate3, ended: terminal, filter, onFilter };
   const onOpenPlan = useCallback((): void => {
@@ -557,14 +568,25 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     setTab(next.id);
     tabRefs.current[next.id]?.focus();
   };
+  const autoRelease = release === 'auto' || teamMap.autoReleased;
   const roles = run.pins.request?.testAccounts?.map((a) => a.role) ?? run.coverage?.rolesConfigured ?? [];
   const used = accountUse(events);
   const sidePanel: ReactNode = (
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} />
       <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} />
-      <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
-      <FoundPanel items={cands} ended={terminal} release={release === 'auto' || teamMap.autoReleased ? 'auto' : 'hold'} />
+      {/* Beside the flight deck the panel carries its test cases and candidate findings (design 1a), in its words. */}
+      {tab === 'deck' ? (
+        <>
+          <TestCasesSummary cases={shownCases} bare />
+          <CandidatesSummary items={cands} release={autoRelease ? 'auto' : 'hold'} bare />
+        </>
+      ) : (
+        <>
+          <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
+          <FoundPanel items={cands} ended={terminal} release={autoRelease ? 'auto' : 'hold'} />
+        </>
+      )}
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
         Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
         validator proves them.
@@ -876,7 +898,18 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 }}
               />
             ) : (
-              <FlightDeck lanes={shownLanes} rows={shownRows} nowMs={end} running={!terminal} pausedFrom={pausedFrom} summary={run.summary} startMs={start} />
+              <FlightDeck
+                lanes={shownLanes}
+                rows={shownRows}
+                cases={shownCases}
+                candidates={cands}
+                release={autoRelease ? 'auto' : 'hold'}
+                nowMs={end}
+                running={!terminal}
+                pausedFrom={pausedFrom}
+                summary={run.summary}
+                startMs={start}
+              />
             )}
           </div>
         </div>

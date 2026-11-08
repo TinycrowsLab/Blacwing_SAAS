@@ -12,10 +12,10 @@ import type { Gate2, RunEvent } from '../../lib/schemas';
 export const TERMINAL_STATES: ReadonlySet<string> = new Set(['completed', 'failed', 'killed']);
 export const LANE_WINDOW_S = 120;
 
-/** The kill confirmation is the first 8 characters of the run id (the API enforces the same rule). */
+/** The kill confirmation is the last 8 characters of the run id (the API enforces the same rule). */
 /** UUIDv7 ids start with their timestamp, so the random tail tells runs made in the same minute apart (as the API). */
 export function shortId(id: string): string {
-  return id.replace(/-/g, '').slice(-8).toUpperCase(); // eslint-disable-line @typescript-eslint/no-magic-numbers -- 8 characters, as the API
+  return id.replace(/-/g, '').slice(-8).toUpperCase(); // 8 characters, as the API
 }
 
 export function killConfirmed(typed: string, runId: string): boolean {
@@ -62,6 +62,9 @@ export function pathOf(url: string): string {
   }
 }
 
+/** A response size as the activity table shows it: `512 B`, `2.0 KB`. */
+const byteSize = (bytes: number): string => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`);
+
 export type MarkShape = 'circle' | 'square' | 'ring' | 'diamond';
 type ActivityKind =
   'HTTP' | 'Tool' | 'Policy' | 'Gate 2' | 'Finding' | 'Validator' | 'Agent' | 'Run';
@@ -89,7 +92,7 @@ export function describe(e: RunEvent): Activity | null {
         ...base,
         kind: 'HTTP',
         text: `${str(d.method)} ${pathOf(str(d.url))}`,
-        meta: `${status}, ${num(d.bytes)} B, ${num(d.ms)} ms`,
+        meta: `${status}, ${byteSize(num(d.bytes))}`,
         isError: status >= 400 || status === 0,
         mark: 'circle',
       };
@@ -258,6 +261,16 @@ export function describe(e: RunEvent): Activity | null {
   }
 }
 
+/** A stretch of a lane's time that waited: a Gate 2 ask until its decision, or the whole run while it was paused. */
+export interface LaneWait {
+  readonly from: number;
+  /** Null while it still waits. */
+  readonly to: number | null;
+  readonly title: string;
+  /** The agent stops for it (a pause, or an ask the runner waits on); a non-blocking ask lets the agent carry on. */
+  readonly holds: boolean;
+}
+
 export interface AgentLane {
   readonly name: string;
   readonly turns: number;
@@ -273,6 +286,7 @@ export interface AgentLane {
     readonly shape: MarkShape;
     readonly title: string;
   }[];
+  readonly waits: readonly LaneWait[];
 }
 
 /** The agents named by the `run.started` manifest, in its order. Empty until the run starts: nothing is guessed. */
@@ -283,30 +297,66 @@ export function manifest(events: readonly RunEvent[]): string[] {
     : [];
 }
 
-/** Lanes are the agents named by `run.started`, with the latest turn totals and message. */
+interface LaneAcc {
+  turn?: RunEvent;
+  message?: RunEvent;
+  lastCall?: RunEvent;
+  latestRow?: Activity;
+  readonly marks: AgentLane['marks'][number][];
+  readonly waits: LaneWait[];
+}
+
+/**
+ * Lanes are the agents named by `run.started`, with the latest turn totals and message, every marked event and every
+ * wait (a Gate 2 ask from `gate2.requested` to its `gate2.decided`; a run pause on every lane). One pass over the
+ * events, so a run with thousands of them stays cheap on every poll.
+ */
 export function agentLanes(events: readonly RunEvent[]): AgentLane[] {
-  return manifest(events).map((name) => {
-    const mine = events.filter((e) => (str(e.data.agent) || e.stage) === name);
-    const turn = mine.findLast((e) => e.kind === 'agent.turn');
-    // A subagent's report to the planner is its latest word too (the conversation shows the same text).
-    const message = mine.findLast((e) => e.kind === 'agent.message' || e.kind === 'agent.reply');
-    const marks = mine.flatMap((e) => {
-      const row = describe(e);
-      return row?.mark
-        ? [{ seq: e.seq, at: new Date(e.at).getTime(), shape: row.mark, title: row.text }]
-        : [];
-    });
+  const names = manifest(events);
+  const acc = new Map<string, LaneAcc>(names.map((n) => [n, { marks: [], waits: [] }]));
+  const asks = new Map<string, { agent: string; wait: LaneWait }>();
+  const pauses: LaneWait[] = [];
+  for (const e of events) {
+    const row = describe(e);
+    const at = Date.parse(e.at);
+    const owner = acc.get(str(e.data.agent) || e.stage);
+    if (owner !== undefined) {
+      if (e.kind === 'agent.turn') owner.turn = e;
+      else if (e.kind === 'agent.message' || e.kind === 'agent.reply') owner.message = e;
+      else if (e.kind === 'http.sent') owner.lastCall = e;
+      if (row?.mark) owner.marks.push({ seq: e.seq, at, shape: row.mark, title: row.text });
+    }
+    // The validator's latest word is its latest row, whatever lane the event was filed under.
+    const rowOwner = row === null ? undefined : acc.get(row.agent);
+    if (rowOwner !== undefined && row !== null) rowOwner.latestRow = row;
+    const gate2Id = str(e.data.gate2Id);
+    if (e.kind === 'gate2.requested' && acc.has(str(e.data.agent))) {
+      const title = `Waiting for your decision on ${str(e.data.method)} ${pathOf(str(e.data.url))}`;
+      asks.set(gate2Id, { agent: str(e.data.agent), wait: { from: at, to: null, title, holds: e.data.blocking !== false } });
+    } else if (e.kind === 'gate2.decided') {
+      const ask = asks.get(gate2Id);
+      asks.delete(gate2Id);
+      if (ask !== undefined) acc.get(ask.agent)?.waits.push({ ...ask.wait, to: at });
+    } else if (e.kind === 'run.paused' && pauses.at(-1)?.to !== null) {
+      pauses.push({ from: at, to: null, title: 'Run paused', holds: true });
+    } else if (e.kind === 'run.resumed') {
+      const open = pauses.at(-1);
+      if (open?.to === null) pauses[pauses.length - 1] = { ...open, to: at };
+    }
+  }
+  for (const { agent, wait } of asks.values()) acc.get(agent)?.waits.push(wait);
+  return names.map((name) => {
+    const a = acc.get(name) ?? { marks: [], waits: [] };
     const deterministic = name === 'validator';
-    const latest = deterministic ? events.findLast((e) => describe(e)?.agent === name) : undefined;
-    const lastCall = mine.findLast((e) => e.kind === 'http.sent');
     return {
       name,
-      turns: num(turn?.data.turns),
-      costUsd: num(turn?.data.costUsd),
-      task: deterministic ? ((latest && describe(latest)?.text) ?? '') : str(message?.data.text),
-      last: lastCall === undefined ? '' : (describe(lastCall)?.text ?? ''),
+      turns: num(a.turn?.data.turns),
+      costUsd: num(a.turn?.data.costUsd),
+      task: deterministic ? (a.latestRow?.text ?? '') : str(a.message?.data.text),
+      last: a.lastCall === undefined ? '' : (describe(a.lastCall)?.text ?? ''),
       deterministic,
-      marks,
+      marks: a.marks,
+      waits: [...a.waits, ...pauses].sort((x, y) => x.from - y.from),
     };
   });
 }
@@ -368,7 +418,7 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
   return [...byId.values()];
 }
 
-export type CaseStatus = 'executed' | 'executing' | 'proposed' | 'skipped' | 'blocked';
+export type CaseStatus = 'executed' | 'executing' | 'proposed' | 'skipped' | 'blocked' | 'model_declined';
 
 export interface TestCase {
   readonly id: string;
@@ -412,7 +462,7 @@ export function testCases(events: readonly RunEvent[]): {
   counts: Record<CaseStatus, number>;
 } {
   const list = caseList(events);
-  const counts = { executed: 0, executing: 0, proposed: 0, skipped: 0, blocked: 0 };
+  const counts = { executed: 0, executing: 0, proposed: 0, skipped: 0, blocked: 0, model_declined: 0 };
   for (const c of list) if (c.status in counts) counts[c.status as CaseStatus] += 1;
   return { total: list.length, counts };
 }

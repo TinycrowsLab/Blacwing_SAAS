@@ -45,13 +45,15 @@ const ev = (
 
 suite('kill confirmation', () => {
   const runId = '0194ab12-3456-7890-abcd-ef0123456789';
-  it('accepts the first 8 characters, any case', () => {
-    expect(killConfirmed('0194AB12', runId)).toBe(true);
-    expect(killConfirmed(' 0194ab12 ', runId)).toBe(true);
+  it('accepts the last 8 characters (the random tail of a UUIDv7), any case', () => {
+    expect(killConfirmed('23456789', runId)).toBe(true);
+    expect(killConfirmed(' 23456789 ', runId)).toBe(true);
+    expect(killConfirmed('ABCDEF12', '0194ab12-3456-7890-abcd-0000abcdef12')).toBe(true);
   });
   it('refuses anything else', () => {
     expect(killConfirmed('', runId)).toBe(false);
-    expect(killConfirmed('0194ab1', runId)).toBe(false);
+    expect(killConfirmed('0194AB12', runId)).toBe(false);
+    expect(killConfirmed('3456789', runId)).toBe(false);
     expect(killConfirmed(runId, runId)).toBe(false);
   });
 });
@@ -107,6 +109,55 @@ suite('event mapping', () => {
     ]);
     expect(lanes.map((l) => l.name)).toEqual(['orchestrator', 'recon']);
     expect(lanes[1]).toMatchObject({ turns: 5, costUsd: 0.3 });
+  });
+  it('shows a sent request with its status and size', () => {
+    const sent = (bytes: number) => ev(2, 'http.sent', 'recon', { agent: 'recon', method: 'GET', url: 'https://a.example/', status: 404, bytes, ms: 9 });
+    expect(describe(sent(204))?.meta).toBe('404, 204 B');
+    expect(describe(sent(2048))?.meta).toBe('404, 2.0 KB');
+  });
+  it('puts each Gate 2 wait on the asking lane and a pause on every lane', () => {
+    const at = (s: number): string => new Date(Date.UTC(2026, 10, 5, 10, 0, s)).toISOString();
+    const t = (s: number): number => Date.parse(at(s));
+    const lanes = agentLanes([
+      ev(1, 'run.started', 'plan', { agents: ['recon', 'web-api-specialist'] }, at(0)),
+      ev(2, 'gate2.requested', 'gate2', { agent: 'web-api-specialist', gate2Id: 'g1', method: 'POST', url: 'https://a.example/admin?x=1', blocking: false }, at(10)),
+      ev(3, 'gate2.requested', 'gate2', { agent: 'web-api-specialist', gate2Id: 'g2', method: 'PUT', url: 'https://a.example/p' }, at(12)),
+      ev(4, 'gate2.decided', 'gate2', { gate2Id: 'g1', status: 'denied' }, at(40)),
+      ev(5, 'run.paused', 'control', {}, at(50)),
+      ev(6, 'run.paused', 'control', {}, at(51)),
+      ev(7, 'run.resumed', 'control', {}, at(70)),
+      ev(8, 'run.paused', 'control', {}, at(80)),
+    ]);
+    const [recon, web] = lanes;
+    const pauses = [
+      { from: t(50), to: t(70), title: 'Run paused', holds: true },
+      { from: t(80), to: null, title: 'Run paused', holds: true },
+    ];
+    expect(recon?.waits).toEqual(pauses);
+    expect(web?.waits).toEqual([
+      { from: t(10), to: t(40), title: 'Waiting for your decision on POST /admin?x=1', holds: false },
+      { from: t(12), to: null, title: 'Waiting for your decision on PUT /p', holds: true },
+      ...pauses,
+    ]);
+  });
+  it('keeps building lanes in one pass on a run with thousands of events', () => {
+    const many = [
+      ev(0, 'run.started', 'plan', { agents: ['orchestrator', 'recon', 'web-api-specialist', 'authz-specialist', 'validator'] }),
+      ...Array.from({ length: 5000 }, (_, i) =>
+        ev(i + 1, i % 3 === 0 ? 'agent.tool' : 'http.sent', ['recon', 'web-api-specialist', 'authz-specialist'][i % 3] ?? 'recon', {
+          agent: ['recon', 'web-api-specialist', 'authz-specialist'][i % 3],
+          tool: 'Read',
+          method: 'GET',
+          url: `https://a.example/${i}`,
+          status: 200,
+          bytes: 10,
+        }),
+      ),
+    ];
+    const started = performance.now();
+    const lanes = agentLanes(many);
+    expect(performance.now() - started).toBeLessThan(250);
+    expect(lanes.reduce((n, l) => n + l.marks.length, 0)).toBe(5000);
   });
   it('tracks a candidate from submission to confirmation', () => {
     const list = candidates([
@@ -191,7 +242,7 @@ suite('gate 3 and test plan', () => {
     ];
     expect(testCases(events)).toEqual({
       total: 4,
-      counts: { executed: 1, executing: 0, proposed: 3, skipped: 0, blocked: 0 },
+      counts: { executed: 1, executing: 0, proposed: 3, skipped: 0, blocked: 0, model_declined: 0 },
     });
     expect(describe(plan)?.text).toBe('Recorded 3 test cases (3 in plan)');
     expect(describe(executed)).toMatchObject({
