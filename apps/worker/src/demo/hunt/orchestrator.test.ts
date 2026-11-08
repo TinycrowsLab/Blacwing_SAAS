@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EventLog, newHuntState, type HuntContext } from './context.js';
 import { FakeStore } from './fake-store.js';
-import { caseOutcome, coverageOf, settle, toolGate } from './orchestrator.js';
+import { caseOutcome, coverageOf, holdForAsks, nextRound, settle, toolGate } from './orchestrator.js';
 
 import type { HuntRun } from './types.js';
 
@@ -93,6 +93,64 @@ describe('coverage', () => {
     ctx.state.cases.set('email', { ...base, status: 'executing' });
     ctx.state.asks.set('g1', { id: 'g1', key: 'k', label: 'PUT /x as reader1', agent: 'authz-specialist', caseId: 'email', deadlineAt: 0, status: 'denied', closedUnanswered: true });
     expect(coverageOf(ctx, null).cases).toMatchObject([{ status: 'blocked', note: 'Gate 2 got no answer before the audit ended: PUT /x as reader1' }]);
+  });
+});
+
+describe('runner-owned rounds', () => {
+  const base = { title: 'SQLi in search', agent: 'web-api-specialist', target: '/search', note: null, requests: 0, candidates: 0, status: 'proposed' };
+  const at = { round: 1, spentUsd: 0.1, elapsedS: 10 };
+  const big = { ...run, budgetRequests: 1000, budgetSeconds: 900, costCapUsd: 8 };
+  const withRun = (r: HuntRun): HuntContext => ({ ...context(), run: r });
+
+  it('hands untried cases and approved-but-unsent asks back to the team', () => {
+    const ctx = withRun(big);
+    ctx.state.requestsUsed = 400;
+    ctx.state.cases.set('sqli', { ...base });
+    ctx.state.cases.set('xss', { ...base, title: 'XSS', requests: 3 });
+    ctx.state.asks.set('g1', { id: 'g1', key: 'k', label: 'POST /login as no test account', agent: 'web-api-specialist', caseId: 'sqli', deadlineAt: 0, status: 'approved' });
+    const next = nextRound(ctx, at);
+    expect(next?.cases).toEqual(['sqli']);
+    expect(next?.prompt).toContain('- sqli (web-api-specialist): SQLi in search at /search');
+    expect(next?.prompt).toContain('POST /login as no test account (case sqli): approved by a person');
+    expect(next?.prompt).not.toContain('record_test_cases');
+  });
+
+  it('widens a narrow first round, then ends when nothing is untried', () => {
+    const ctx = withRun(big);
+    ctx.state.requestsUsed = 40;
+    ctx.state.cases.set('xss', { ...base, requests: 3 });
+    expect(nextRound(ctx, at)?.prompt).toContain('record_test_cases');
+    expect(nextRound(ctx, { ...at, round: 2 })).toBeNull();
+  });
+
+  it('never starts a round without budget or past the round cap', () => {
+    const ctx = withRun(big);
+    ctx.state.cases.set('sqli', { ...base });
+    expect(nextRound(ctx, { ...at, round: 3 })).toBeNull();
+    expect(nextRound(ctx, { ...at, spentUsd: 7.5 })).toBeNull();
+    expect(nextRound(ctx, { ...at, elapsedS: 870 })).toBeNull();
+    ctx.state.requestsUsed = 950;
+    expect(nextRound(ctx, at)).toBeNull();
+  });
+
+  it('holds the run open until a pending ask is decided, and stops holding when halted', async () => {
+    let sleeps = 0;
+    const ctx = context(() => {
+      sleeps += 1;
+      const entry = (ctx.store as FakeStore).gate2.get('g1');
+      if (sleeps === 2 && entry !== undefined) entry.status = 'approved';
+      return Promise.resolve();
+    });
+    const row = { id: 'g1', agent: 'authz-specialist', method: 'POST', url: 'https://t.example/x', pathKey: 'k', reason: 'r', whyOutside: 'w', deadlineAt: new Date(8.64e15), body: null, asRole: null };
+    await ctx.store.insertGate2(run, row);
+    ctx.state.asks.set('g1', { id: 'g1', key: 'k', label: 'POST /x as alice', agent: 'authz-specialist', caseId: null, deadlineAt: Number.MAX_SAFE_INTEGER, status: 'pending' });
+    await holdForAsks(ctx, () => false);
+    expect(sleeps).toBe(2);
+    expect(ctx.state.asks.get('g1')?.status).toBe('approved');
+    const stuck = context();
+    stuck.state.asks.set('g2', { id: 'g2', key: 'k', label: 'POST /y', agent: 'a', caseId: null, deadlineAt: Number.MAX_SAFE_INTEGER, status: 'pending' });
+    await holdForAsks(stuck, () => true);
+    expect(stuck.state.asks.get('g2')?.status).toBe('pending');
   });
 });
 

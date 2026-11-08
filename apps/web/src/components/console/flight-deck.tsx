@@ -503,7 +503,7 @@ function AgentLanes({
                 <span className="min-w-0 truncate text-[13px] font-medium">{agentName(lane.name)}</span>
                 <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground lg:inline">
                   {lane.deterministic
-                    ? 'replay, no model'
+                    ? 'deterministic replay'
                     : `${lane.turns} turns, $${lane.costUsd.toFixed(2)}`}
                 </span>
               </span>

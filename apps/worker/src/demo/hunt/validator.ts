@@ -57,7 +57,8 @@ export const candidateSchema = z.object({
   /** The model's fix suggestion, shown labelled "not verified". Optional: the console hides the block when absent. */
   remediation: z.string().max(MAX_REMEDIATION_CHARS).optional(),
   probe: probeSchema,
-  control: probeSchema,
+  /** Leave it out only for data open to everyone (exposure template): the probe is then sent signed out and replayed. */
+  control: probeSchema.optional(),
   oracle: oracleSchema,
 });
 export type Candidate = z.infer<typeof candidateSchema>;
@@ -72,7 +73,7 @@ export interface ReplayRecord {
 }
 
 /** The one part of the request the negative control changes. */
-export type Delta = 'query' | 'body' | 'header' | 'role' | 'path_segment';
+export type Delta = 'query' | 'body' | 'header' | 'role' | 'path_segment' | 'none';
 
 export interface Verdict {
   readonly confirmed: boolean;
@@ -151,6 +152,43 @@ export function controlDelta(probe: HttpRequest, control: HttpRequest): { ok: tr
   return { ok: false, differs: differs.length === 0 ? 'nothing (the control is the probe)' : differs.join(', ') };
 }
 
+/** CWE numbers of broken access control: a signed-out control only shows a page needs a sign-in, never that a role should be refused. */
+const ACCESS_CONTROL_CWES = new Set('269 284 285 425 566 639 732 862 863 1220'.split(' '));
+const ACCESS_CONTROL_WORDS = /\b(idor|bola|bfla|access control|authori[sz]ation|privilege|forced browsing)\b/i;
+/** CWE numbers of data open to anyone: no control request can differ in one part, so the probe is replayed alone. */
+const EXPOSURE_CWES = new Set('200 201 209 213 215 256 260 306 312 359 497 522 527 528 530 532 538 540 548 552 615'.split(' '));
+const EXPOSURE_WORDS = /\b(exposure|exposed|disclosure|leak|directory listing|unauthenticated|missing authentication|backup file)\b/i;
+const CREDENTIAL_HEADER = /^(authorization|cookie|x-api-key|x-auth-token|x-access-token|api-key)$/i;
+const NOT_FOUND = 404;
+const GONE = 410;
+const MISSING_PAGE = new Set([NOT_FOUND, GONE]);
+
+type ClassOf = Partial<Pick<Candidate, 'cwe' | 'vulnClass' | 'title'>>;
+const cweNumber = (c: ClassOf): string => /\d+/.exec(c.cwe ?? '')?.[0]?.replace(/^0+/, '') ?? '';
+const classText = (c: ClassOf): string => `${c.vulnClass ?? ''} ${c.title ?? ''}`;
+const isAccessControl = (c: ClassOf): boolean => ACCESS_CONTROL_CWES.has(cweNumber(c)) || ACCESS_CONTROL_WORDS.test(classText(c));
+const isExposure = (c: ClassOf): boolean => EXPOSURE_CWES.has(cweNumber(c)) || EXPOSURE_WORDS.test(classText(c));
+const signedOut = (r: HttpRequest): boolean => r.as_role === undefined && !Object.keys(r.headers ?? {}).some((name) => CREDENTIAL_HEADER.test(name));
+
+/**
+ * Class templates on top of the single-delta rule: an access-control finding needs two signed-in identities (or the
+ * same identity on another object), never "role vs signed out"; a candidate without a control is accepted only for an
+ * exposure class, sent signed out, with a check on the content (a status alone proves nothing). Null when it may run.
+ */
+export function templateRefusal(candidate: Pick<Candidate, 'probe' | 'control' | 'oracle'> & ClassOf): string | null {
+  const { probe, control, oracle } = candidate;
+  if (control === undefined) {
+    if (!isExposure(candidate)) return 'no_control: only data open to everyone may be proven without a control';
+    if (!signedOut(probe)) return 'no_control_signed_in: data open to everyone is proven signed out';
+    if (oracle.type === 'status_equals') return 'no_control_status_only: a status code alone does not show exposed data';
+    return null;
+  }
+  if (isAccessControl(candidate) && signedOut(control) !== signedOut(probe)) {
+    return 'access_control_signed_out_control: a signed-out control shows only that a sign-in is needed';
+  }
+  return null;
+}
+
 /** GET/HEAD/OPTIONS that do not look state-changing are replayed 3 times; anything that may change data, once. */
 export function replaysFor(probe: HttpRequest): number {
   try {
@@ -160,10 +198,16 @@ export function replaysFor(probe: HttpRequest): number {
   }
 }
 
-/** Checks the control is single-delta (nothing sent otherwise), replays the probe, then sends the control once. */
-export async function validateCandidate(candidate: Pick<Candidate, 'probe' | 'control' | 'oracle'>, hooks: ValidatorHooks): Promise<Verdict> {
-  const shape = controlDelta(candidate.probe, candidate.control);
-  if (!shape.ok) return { confirmed: false, reason: `control_not_single_delta: ${shape.differs} differ`, delta: null, replays: [], probe: null, control: null, controlMatched: null };
+/**
+ * Checks the class template and that the control is single-delta (nothing sent otherwise), replays the probe, then
+ * sends the control once. Without a control (exposure template) the replays alone decide.
+ */
+export async function validateCandidate(candidate: Pick<Candidate, 'probe' | 'control' | 'oracle'> & ClassOf, hooks: ValidatorHooks): Promise<Verdict> {
+  const refused = (reason: string): Verdict => ({ confirmed: false, reason, delta: null, replays: [], probe: null, control: null, controlMatched: null });
+  const template = templateRefusal(candidate);
+  if (template !== null) return refused(template);
+  const shape = candidate.control === undefined ? ({ ok: true, delta: 'none' } as const) : controlDelta(candidate.probe, candidate.control);
+  if (!shape.ok) return refused(`control_not_single_delta: ${shape.differs} differ`);
   const { delta } = shape;
   const replays: ReplayRecord[] = [];
   let probe: Sent | null = null;
@@ -177,11 +221,18 @@ export async function validateCandidate(candidate: Pick<Candidate, 'probe' | 'co
     await hooks.replay(n, result.status, matched);
     if (!matched) return { confirmed: false, reason: `probe replay ${n} did not match the oracle`, delta, replays, probe, control: null, controlMatched: null };
   }
+  if (candidate.control === undefined) {
+    return { confirmed: true, reason: 'all probe replays matched; no control is possible for data open to everyone', delta, replays, probe, control: null, controlMatched: null };
+  }
   const control = await hooks.send(candidate.control);
   if (!control.ok) return { confirmed: false, reason: `negative control not sent: ${control.refusal}`, delta, replays, probe, control: null, controlMatched: null };
   const controlMatched = oracleMatches(candidate.oracle, control);
   await hooks.control(control.status, controlMatched);
   if (controlMatched) return { confirmed: false, reason: 'the negative control also matched the oracle', delta, replays, probe, control, controlMatched };
+  // A page that does not exist never matches anything: it is not a control for another path.
+  if (delta === 'path_segment' && MISSING_PAGE.has(control.status)) {
+    return { confirmed: false, reason: 'control_page_missing: the control asked for a page that does not exist', delta, replays, probe, control, controlMatched };
+  }
   return { confirmed: true, reason: 'all probe replays matched and the negative control did not', delta, replays, probe, control, controlMatched };
 }
 
@@ -268,17 +319,21 @@ export interface FindingRowInput {
 export function buildFindingRow(input: FindingRowInput): { proven: boolean; row: Omit<FindingRow, 'id' | 'status'> } {
   const { run, candidate, verdict } = input;
   const { probe, control } = verdict;
-  const proven = verdict.confirmed && probe !== null && control !== null;
+  const proven = verdict.confirmed && probe !== null && (control !== null || verdict.delta === 'none');
   const trigger = probe?.request ?? unsentRequest(candidate.probe, input.credentialHeader);
   const identity = identityKey(run.assetId, candidate);
   const description = scrub(candidate.description);
-  const sides = { ...(probe === null ? {} : { probe: sideEvidence(probe) }), ...(control === null ? {} : { control: sideEvidence(control) }) };
+  // A probe refused before it was sent still shows what Claude asked for (request only, no response).
+  const sides = {
+    probe: probe === null ? { request: scrubDeep(trigger) } : sideEvidence(probe),
+    ...(control === null ? {} : { control: sideEvidence(control) }),
+  };
   const evidence: Record<string, unknown> = proven
     ? {
         ...sides,
         oracle: candidate.oracle,
         replays: verdict.replays,
-        proof: { kind: 'differential_replay', replays: verdict.replays.length, delta: verdict.delta, proposedBy: 'claude' },
+        proof: { kind: verdict.delta === 'none' ? 'exposure_replay' : 'differential_replay', replays: verdict.replays.length, delta: verdict.delta, proposedBy: 'claude' },
         description,
         ...remediationOf(candidate),
       }
@@ -356,9 +411,10 @@ export async function retestFinding(job: RetestJob, send: (request: HttpRequest)
   const roles = job.run.testAccounts.map((a) => a.role);
   const probe = replayableRequest(job.probe, roles);
   if (!('request' in probe)) return inconclusive(probe.reason);
-  const control = replayableRequest(job.control, roles);
-  if (!('request' in control)) return inconclusive(control.reason);
-  const verdict = await validateCandidate({ probe: probe.request, control: control.request, oracle: oracle.data }, {
+  // Proven without a control (exposure template): the retest replays the probe alone, as the proof did.
+  const control = job.control === null || job.control === undefined ? null : replayableRequest(job.control, roles);
+  if (control !== null && !('request' in control)) return inconclusive(control.reason);
+  const verdict = await validateCandidate({ probe: probe.request, ...(control === null ? { cwe: 'CWE-200' } : { control: control.request }), oracle: oracle.data }, {
     send,
     replay: () => Promise.resolve(),
     control: () => Promise.resolve(),

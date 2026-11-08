@@ -5,6 +5,7 @@ import {
   canonicalOwasp,
   candidateSchema,
   controlDelta,
+  templateRefusal,
   identityKey,
   normalisedPath,
   oracleMatches,
@@ -213,7 +214,7 @@ describe('buildFindingRow', () => {
     const leaky: Candidate = {
       ...candidate,
       probe: { ...candidate.probe, as_role: 'alice' },
-      control: { ...candidate.control, as_role: 'alice' },
+      control: { method: 'GET', url: 'https://t.example/search?q=hello', as_role: 'alice' },
       owasp: 'A03:2021-Injection',
       description: `Found $_DVWA[ 'db_password' ] = 'vulnerables'; token ${JWT}`,
       remediation: 'Rotate "password": "pass1" now',
@@ -254,7 +255,7 @@ describe('buildFindingRow', () => {
     const probe = { method: 'post', url: 'https://t.example/api?token=abc', body: '{"password":"x"}', as_role: 'bob' };
     const { proven, row } = buildFindingRow({ run, candidate: { ...candidate, probe }, verdict, agent: 'a', testCaseId: null, credentialHeader: 'X-Api-Key' });
     expect(proven).toBe(false);
-    expect(row.evidence).toEqual({ reason: verdict.reason, replays: [], oracle: candidate.oracle });
+    expect(row.evidence).toMatchObject({ reason: verdict.reason, replays: [], oracle: candidate.oracle, probe: { request: { method: 'POST', asRole: 'bob' } } });
     expect(row.reproCurl).toBe(
       `curl -sS -i -X POST -H 'x-api-key: <bob credential>' --data-raw '{"password":"[redacted: password]"}' 'https://t.example/api?token=[redacted: secret]'`,
     );
@@ -313,5 +314,46 @@ describe('retest', () => {
     });
     const old = job(stored('https://t.example/search?q=bwmark'), stored('https://t.example/other'));
     expect(await retestFinding(old, () => Promise.reject(new Error('must not send')))).toMatchObject({ result: 'inconclusive' });
+  });
+});
+
+describe('class templates', () => {
+  const page = (body: string, status = 200) => (request: HttpRequest): HttpResult => ok(request, body, status);
+  const bola: Candidate = {
+    ...candidate,
+    title: 'BOLA on books',
+    vulnClass: 'idor',
+    cwe: 'CWE-639',
+    owasp: 'A01:2021',
+    probe: { method: 'GET', url: 'https://t.example/books/2', as_role: 'reader1' },
+    control: { method: 'GET', url: 'https://t.example/books/2' },
+    oracle: { type: 'body_contains', value: 'secret' },
+  };
+
+  it('refuses a signed-out control for access-control classes before sending anything', async () => {
+    const { hooks: h, calls } = hooks(page('secret'));
+    const verdict = await validateCandidate(bola, h);
+    expect(verdict).toMatchObject({ confirmed: false, delta: null });
+    expect(verdict.reason).toMatch(/^access_control_signed_out_control/);
+    expect(calls).toEqual([]);
+    expect(templateRefusal({ ...bola, control: { ...bola.probe, as_role: 'reader2' } })).toBeNull();
+  });
+
+  it('proves data open to everyone without a control, signed out, on the content', async () => {
+    const exposure: Candidate = { ...candidate, title: 'Debug endpoint lists users', vulnClass: 'exposure', cwe: 'CWE-200', probe: { method: 'GET', url: 'https://t.example/users/v1/_debug' }, oracle: { type: 'body_contains', value: '"username"' } };
+    delete (exposure as { control?: unknown }).control;
+    const verdict = await validateCandidate(exposure, hooks(page('{"username":"a"}')).hooks);
+    expect(verdict).toMatchObject({ confirmed: true, delta: 'none', control: null });
+    expect(buildFindingRow({ run: { id: 'r', assetId: 'a' }, candidate: exposure, verdict, agent: 'a', testCaseId: null, credentialHeader: undefined }).row.evidence.proof).toMatchObject({ kind: 'exposure_replay', delta: 'none' });
+    expect(templateRefusal({ ...exposure, probe: { ...exposure.probe, as_role: 'r' } })).toMatch(/^no_control_signed_in/);
+    expect(templateRefusal({ ...exposure, oracle: { type: 'status_equals', value: '200' } })).toMatch(/^no_control_status_only/);
+    expect(templateRefusal({ ...exposure, cwe: 'CWE-89', vulnClass: 'sqli', title: 'SQLi' })).toMatch(/^no_control:/);
+  });
+
+  it('never accepts a missing page as the control of a path-segment delta', async () => {
+    const phpinfo: Candidate = { ...candidate, probe: { method: 'GET', url: 'https://t.example/phpinfo.php' }, control: { method: 'GET', url: 'https://t.example/phpinfo-nonexistent.php' }, oracle: { type: 'body_contains', value: 'PHP Version' } };
+    const verdict = await validateCandidate(phpinfo, hooks((request) => (request.url.includes('nonexistent') ? ok(request, 'Not Found', 404) : ok(request, 'PHP Version 8'))).hooks);
+    expect(verdict.confirmed).toBe(false);
+    expect(verdict.reason).toMatch(/^control_page_missing/);
   });
 });

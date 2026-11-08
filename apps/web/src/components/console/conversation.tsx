@@ -4,7 +4,7 @@
 // The conversation (experience spec §5.2 item 5): the agents' real exchange, read from the run's events. The planner
 // delegates (Planner → specialist, its instruction in a bubble), the specialist's turns, calls and Gate 2 requests nest
 // under it, and its report closes the thread. Three voices are never blurred: Claude (slate tag, its own words, not
-// verified), Blackwing (crow tile, template lines from host-lines.ts) and the validator (green, replay, no model).
+// verified), Blackwing (crow tile, template lines from host-lines.ts) and the validator (green, deterministic replay).
 // It follows the newest item while the reader is at the bottom; otherwise "Jump to latest" shows. A new decision that
 // arrives while following holds the view at its card (the clock and buttons stay on screen) until it is answered or
 // the reader scrolls away.

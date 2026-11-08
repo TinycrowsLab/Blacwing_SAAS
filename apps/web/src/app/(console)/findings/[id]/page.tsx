@@ -179,7 +179,7 @@ export default async function FindingPage({
           </div>
 
           <Card aria-labelledby="replays-h">
-            <CardHeader id="replays-h" title="Every replay" meta="Blackwing · no model" />
+            <CardHeader id="replays-h" title="Every replay" meta="Blackwing · deterministic replay" />
             <ol className="m-0 flex list-none flex-col divide-y divide-border p-0">
               {replays.length === 0 ? (
                 <li className="px-4 py-3 text-[13px] text-muted-foreground">
