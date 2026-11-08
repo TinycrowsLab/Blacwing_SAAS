@@ -923,7 +923,7 @@ export const CandidatesSummary = memo(function CandidatesSummary({
     <>
       <h2 id={id} className={sectionHead(bare)}>
         <span className="shrink-0">Candidate findings</span>
-        <span className={sectionNote(bare)}>{release === 'auto' ? 'confirmed issues release themselves' : 'released only after your review'}</span>
+        <span className={sectionNote(bare)}>{release === 'auto' ? 'proven issues release themselves' : 'private until you release'}</span>
       </h2>
       {sorted.length === 0 ? (
         <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">None yet. Every candidate is replayed by the validator before it counts.</p>
