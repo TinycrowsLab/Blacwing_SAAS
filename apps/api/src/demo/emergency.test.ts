@@ -66,13 +66,13 @@ describe('emergency links: administration', () => {
     const created = await service.createEmergencyLink(admin, '24h', 'SOC on-call');
     expect(created.token).toMatch(EMERGENCY_TOKEN);
     expect(Buffer.from(created.token, 'base64url')).toHaveLength(32);
-    const inserted = store.insertEmergencyLink.mock.calls[0]?.[0] as Record<string, unknown>;
+    const inserted = store.insertEmergencyLink.mock.calls[0]?.[0] ?? {};
     expect(inserted.token_hash).toEqual(sha(created.token));
     expect(JSON.stringify(inserted)).not.toContain(created.token);
     expect((inserted.expires_at as Date).getTime() - before).toBeGreaterThanOrEqual(24 * HOUR_MS - 1000);
     expect(store.appendAudit).toHaveBeenCalledWith(
       't1',
-      expect.objectContaining({ action: 'emergency_link.created', payload: expect.objectContaining({ label: 'SOC on-call', validity: '24h' }) }),
+      expect.objectContaining({ action: 'emergency_link.created', payload: expect.objectContaining({ label: 'SOC on-call', validity: '24h' }) as unknown }),
     );
     expect(JSON.stringify(store.appendAudit.mock.calls)).not.toContain(created.token);
   });
