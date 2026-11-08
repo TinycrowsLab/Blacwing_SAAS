@@ -115,6 +115,9 @@ async function appendLedger(
   );
 }
 
+/** Why an older copy of an issue left the Gate 3 queue: the same issue was proven again, newer evidence waits instead. */
+const SUPERSEDED_REASON = 'Superseded: the same issue was proven again in a newer audit';
+
 export function pgHuntStore(pool: pg.Pool): HuntStore {
   const gate2Status = async (id: string): Promise<{ status: Gate2Status; decidedBy: string | null }> => {
     const r = await pool.query<{ status: Gate2Status; decided_by: string | null }>('SELECT status, decided_by FROM demo.gate2_requests WHERE id = $1', [id]);
@@ -275,6 +278,27 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         ],
       );
       return r.rows[0]?.id ?? null;
+    },
+    async supersedeCopies(run: HuntRun, findingId: string, identityKey: string): Promise<string[]> {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const r = await client.query<{ id: string; run_id: string }>(
+          `UPDATE demo.findings SET status = 'dismissed', triaged_at = now(), triage_reason = $5
+           WHERE tenant_id = $1 AND asset_id = $2 AND identity_key = $3 AND id <> $4 AND status = 'confirmed' RETURNING id, run_id`,
+          [run.tenantId, run.assetId, identityKey, findingId, SUPERSEDED_REASON],
+        );
+        for (const row of r.rows) {
+          await appendLedger(client, run.tenantId, 'finding.superseded', 'finding', row.id, { runId: row.run_id, by: findingId, byRunId: run.id, reason: SUPERSEDED_REASON });
+        }
+        await client.query('COMMIT');
+        return r.rows.map((row) => row.id);
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
     },
     async recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void> {
       await pool.query('UPDATE demo.findings SET delivery_status = $2, delivery_detail = $3, delivered_at = now() WHERE id = $1', [findingId, status, detail]);

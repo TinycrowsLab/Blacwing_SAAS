@@ -177,7 +177,8 @@ function AddTarget({
             placeholder="api.example.com, cdn.example.com"
           />
           <p className="m-0 text-[12.5px] text-muted-foreground">
-            Claude may send requests to these too, for example the app&apos;s API on its own address.
+            Claude may send requests to these too, for example the app&apos;s API on its own address. Each one must
+            serve the same verification file before testing starts.
           </p>
         </div>
       )}

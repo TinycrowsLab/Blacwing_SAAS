@@ -40,6 +40,8 @@ export async function recordProven(ctx: HuntContext, row: Omit<FindingRow, 'stat
   const findingId = await ctx.store.insertFinding(ctx.run, { ...row, status: auto ? 'released' : 'confirmed' });
   if (findingId === null) return null;
   ctx.state.findings += 1;
+  // One issue waits at Gate 3 once: earlier audits' unreleased copies of it give way to this newer proof.
+  if (row.identityKey !== null) await ctx.store.supersedeCopies(ctx.run, findingId, row.identityKey);
   await ctx.log.emit('finding.confirmed', 'validator', `Confirmed: ${row.title}`, { ...summary, findingId });
   if (!auto) return findingId;
   await ctx.log.emit('finding.released', 'validator', `Released automatically: ${row.title} (proven by deterministic replay)`, { ...summary, findingId, auto: true });

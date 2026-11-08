@@ -109,6 +109,21 @@ describe('verifyAsset http_token', () => {
     expect(store.markAssetVerified).not.toHaveBeenCalled();
   });
 
+  it('needs the token on every allowed origin: proving one site never brings another into scope', async () => {
+    const row = { ...asset('abc123'), allowed_origins: ['https://app.example.com', 'https://victim.example.org'] };
+    const store = { getAsset: vi.fn().mockResolvedValue(row), markAssetVerified: vi.fn().mockResolvedValue(true), appendAudit: vi.fn() };
+    const fetchImpl = vi.fn((url: string) => Promise.resolve(url.startsWith('https://app.example.com/') ? new Response('abc123') : new Response('no', { status: 404 })));
+    const service = new DemoService(store as unknown as DemoStore, 't1', fetchImpl as unknown as typeof fetch, webhookOff, options);
+    await expect(service.verifyAsset(owner, 'a1', { method: 'http_token' })).rejects.toMatchObject({
+      response: { code: 'verification_failed', detail: expect.stringContaining('https://victim.example.org/.well-known/') as unknown },
+    });
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      'https://app.example.com/.well-known/blackwing-verification.txt',
+      'https://victim.example.org/.well-known/blackwing-verification.txt',
+    ]);
+    expect(store.markAssetVerified).not.toHaveBeenCalled();
+  });
+
   it('only an asset owner may verify', async () => {
     const { service } = serviceWith(asset('abc123'), new Response('abc123'));
     const engineer = { ...owner, roles: ['appsec-engineer'] };
@@ -512,6 +527,7 @@ describe('workspace (B1)', () => {
       listPendingGate1: vi.fn().mockResolvedValue([]),
       listRuns: vi.fn().mockResolvedValue([]),
       listFindings: vi.fn().mockResolvedValue([]),
+      listAwaitingFindings: vi.fn().mockResolvedValue([]),
       listPendingGate2: vi.fn().mockResolvedValue([]),
       pendingCounts: vi.fn().mockResolvedValue({ gate1: 3, gate2: 1, gate3: 56, keptBack: 7, live: 2 }),
       listLiveRuns: vi.fn().mockResolvedValue([]),

@@ -547,6 +547,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   'gate2.deny': 'Denied a request',
   'finding.release': 'Released a finding',
   'finding.dismiss': 'Dismissed a finding',
+  'finding.superseded': 'Merged a repeated finding into its newer proof',
   'run.kill': 'Stopped an audit',
 };
 

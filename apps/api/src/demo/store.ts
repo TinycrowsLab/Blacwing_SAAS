@@ -814,6 +814,15 @@ export class DemoStore {
     return r.rows;
   }
 
+  /** The newest findings that wait for a Gate 3 decision (status `confirmed`), whatever came after them. */
+  async listAwaitingFindings(tenantId: string, limit: number): Promise<FindingRow[]> {
+    const r = await this.pool.query<FindingRow>(
+      `${FINDING_SELECT} WHERE f.tenant_id = $1 AND f.status = 'confirmed' ORDER BY f.created_at DESC LIMIT $2`,
+      [tenantId, limit],
+    );
+    return r.rows;
+  }
+
   async listFindingsForRun(
     tenantId: string,
     runId: string,

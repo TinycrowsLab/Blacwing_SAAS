@@ -97,6 +97,15 @@ describe('recordProven (release mode)', () => {
     expect(store.findings.map((f) => [f.id, f.status])).toEqual([['old', 'confirmed']]);
     expect(await recordProven(ctx, { ...row, id: 'again' }, summary)).toBeNull();
   });
+
+  it('an earlier audit\'s unreleased copy of the same issue gives way to the newer proof (ledgered, never released)', async () => {
+    const { ctx, store } = setup('hold');
+    store.findings.push({ ...row, id: 'older', fingerprint: 'other-run', identityKey: 'ik', status: 'confirmed' });
+    store.findings.push({ ...row, id: 'kept', fingerprint: 'released-run', identityKey: 'ik', status: 'released' });
+    expect(await recordProven(ctx, { ...row, identityKey: 'ik' }, summary)).toBe('f1');
+    expect(store.findings.map((f) => [f.id, f.status])).toEqual([['kept', 'released'], ['f1', 'confirmed']]);
+    expect(store.ledger).toEqual([{ action: 'finding.superseded', targetId: 'older', payload: { by: 'f1' } }]);
+  });
 });
 
 type ToolName = 'http_request' | 'record_test_cases' | 'update_test_case' | 'submit_candidate' | 'list_exchanges' | 'await_decision';
@@ -164,5 +173,13 @@ describe('Gate 2 notices on tool results', () => {
     const mine = await call(ctx, 'list_exchanges', { agent: 'authz-specialist' });
     expect(mine.startsWith('notices: ["Gate 2 denied: PUT /api/Users/1 as no test account. It was not sent; do not ask for it again."]\n')).toBe(true);
     expect(await call(ctx, 'list_exchanges', { agent: 'authz-specialist' })).not.toContain('notices');
+  });
+
+  it('await_decision refuses to wait while the agent still has cases to run', async () => {
+    const { ctx } = setup('hold');
+    await call(ctx, 'record_test_cases', { cases: [{ id: 'a', title: 'A', agent: 'authz-specialist', target: '/a' }, { id: 'b', title: 'B', agent: 'authz-specialist', target: '/b' }] });
+    await call(ctx, 'http_request', { method: 'POST', url: 'https://t.example/api/a', body: '{}', purpose: 'p', case_id: 'a', agent: 'authz-specialist' });
+    const id = [...ctx.state.asks.keys()][0] ?? '';
+    expect(await call(ctx, 'await_decision', { gate2Id: id, max_seconds: 1, agent: 'authz-specialist' })).toContain('Not waiting: you still have test cases to run (b)');
   });
 });

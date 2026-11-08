@@ -494,6 +494,20 @@ const emergencyRunDto = (row: RunRow): Record<string, unknown> => ({
 const planChanged = (): DemoRefusal =>
   new DemoRefusal(HttpStatus.CONFLICT, 'plan_changed', 'The plan changed in another tab. Reload to see it.');
 
+/**
+ * The dashboard is read by every console render and every tab's sidebar poll: one answer per user is reused for
+ * DASHBOARD_TTL_MS. Any write through this API bumps the generation (controller interceptor), so a click never reads
+ * its own stale state; only the worker's changes can lag, by at most the TTL.
+ */
+const DASHBOARD_TTL_MS = 1000;
+let dashboardGeneration = 0;
+const dashboardCache = new Map<string, { at: number; generation: number; value: Promise<Record<string, unknown>> }>();
+
+export function dashboardChanged(): void {
+  dashboardGeneration += 1;
+  dashboardCache.clear();
+}
+
 export class DemoService {
   private readonly logger = new Logger('DemoService');
   private readonly emergencyLimiter = new InProcessRateLimiter();
@@ -685,12 +699,23 @@ export class DemoService {
       : 'an owner attestation covers listed labs only, and this site is not one';
   }
 
-  /** What is wrong with the well-known proof of `asset`, in plain words, or null when it holds. */
+  /**
+   * What is wrong with the well-known proof of `asset`, in plain words, or null when it holds. Every allowed origin
+   * must serve the token: proving one site never brings another address into scope.
+   */
   private async wellKnownProblem(asset: AssetRow): Promise<string | null> {
-    const url = `${new URL(asset.base_url).origin}${WELL_KNOWN_PATH}`;
+    const base = new URL(asset.base_url).origin;
+    for (const origin of [base, ...asset.allowed_origins.filter((o) => o !== base)]) {
+      const problem = await this.tokenProblem(asset, origin);
+      if (problem !== null) return origin === base ? problem : `${origin}${WELL_KNOWN_PATH}: ${problem}`;
+    }
+    return null;
+  }
+
+  private async tokenProblem(asset: AssetRow, origin: string): Promise<string | null> {
     let response: Response;
     try {
-      response = await this.fetchImpl(url, { redirect: 'manual', signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) });
+      response = await this.fetchImpl(`${origin}${WELL_KNOWN_PATH}`, { redirect: 'manual', signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) });
     } catch {
       return 'the site did not answer';
     }
@@ -712,20 +737,37 @@ export class DemoService {
     }
   }
 
-  async dashboard(actor: DemoActor): Promise<Record<string, unknown>> {
+  dashboard(actor: DemoActor): Promise<Record<string, unknown>> {
+    const key = `${this.tenantId}|${actor.id}|${actor.roles.join(',')}`;
+    const now = Date.now();
+    const hit = dashboardCache.get(key);
+    if (hit?.generation === dashboardGeneration && now - hit.at < DASHBOARD_TTL_MS) return hit.value;
+    const generation = dashboardGeneration;
+    const value = this.readDashboard(actor);
+    dashboardCache.set(key, { at: now, generation, value });
+    value.catch(() => dashboardCache.delete(key));
+    return value;
+  }
+
+  private async readDashboard(actor: DemoActor): Promise<Record<string, unknown>> {
     const analyst = actorHasRole(actor, 'appsec-engineer');
-    const [tenant, counts, assets, requests, runs, findings, pending, pendingCounts, live] = await Promise.all([
+    const [tenant, counts, assets, requests, runs, recent, awaiting, pending, pendingCounts, live] = await Promise.all([
       this.store.getTenant(this.tenantId),
       this.store.dashboardCounts(this.tenantId),
       this.store.listAssets(this.tenantId),
       this.store.listPendingGate1(this.tenantId),
       this.store.listRuns(this.tenantId, RECENT_ITEMS),
       this.store.listFindings(this.tenantId, RECENT_ITEMS, analyst),
+      // "Waiting on you" lists what awaits release even when newer findings were already decided.
+      this.store.listAwaitingFindings(this.tenantId, RECENT_ITEMS),
       this.store.listPendingGate2(this.tenantId),
       this.store.pendingCounts(this.tenantId, analyst),
       this.store.listLiveRuns(this.tenantId),
     ]);
     const now = new Date();
+    const findings = [...new Map([...awaiting, ...recent].map((row) => [row.id, row])).values()].sort(
+      (a, b) => b.created_at.getTime() - a.created_at.getTime(),
+    );
     return {
       tenant: { id: this.tenantId, name: tenant === null || tenant.name === '' ? null : tenant.name },
       actor: { id: actor.id, name: actor.name, roles: actor.roles },

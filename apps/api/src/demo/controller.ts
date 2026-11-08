@@ -4,17 +4,23 @@
 import { timingSafeEqual } from 'node:crypto';
 
 import {
+  type CallHandler,
   Controller,
+  type ExecutionContext,
   Get,
   Headers,
   HttpCode,
   HttpStatus,
   Inject,
+  Injectable,
+  type NestInterceptor,
   Param,
   Patch,
   Post,
   UseFilters,
+  UseInterceptors,
 } from '@nestjs/common';
+import { finalize, type Observable } from 'rxjs';
 import { z } from 'zod';
 
 import { BUDGET_LIMITS, OBJECTIVE_MAX, type DemoConfig } from './config.js';
@@ -28,6 +34,7 @@ import {
 } from './report.js';
 import {
   ALL_ROLES,
+  dashboardChanged,
   DemoRefusal,
   EMERGENCY_VALIDITIES,
   INTRUSIVENESS,
@@ -257,9 +264,21 @@ function tokenMatches(presented: string | undefined, expected: string): boolean 
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** Every write drops the cached dashboards, before and after it runs (service `dashboardChanged`). */
+@Injectable()
+class DashboardFreshness implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const { method } = context.switchToHttp().getRequest<{ method?: string }>();
+    if (method === 'GET' || method === 'HEAD') return next.handle();
+    dashboardChanged();
+    return next.handle().pipe(finalize(dashboardChanged));
+  }
+}
+
 @PublicRoute()
 @RateLimit({ rps: 20, burst: 60 })
 @UseFilters(DemoRefusalFilter)
+@UseInterceptors(DashboardFreshness)
 @Controller('demo')
 export class DemoController {
   constructor(
