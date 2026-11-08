@@ -87,6 +87,13 @@ export default async function ResultsPage({
 }): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
+  // The workspace-wide reads do not depend on the run: they start with it instead of after it.
+  const ledgerRead = readApi('/audit')
+    .then((b) => ledgerSchema.parse(b))
+    .catch(() => null);
+  const workspaceRead = readApi('/workspace')
+    .then((b) => workspaceSchema.parse(b))
+    .catch(() => null);
   const run = await loadRun((await params).id);
   if (run === null) notFound();
 
@@ -96,12 +103,8 @@ export default async function ResultsPage({
   // The side calls are optional: a failure leaves its line out (or says so) instead of failing the page.
   const [rawRequest, ledger, workspace, firstDetail] = await Promise.all([
     readApi(`/requests/${encodeURIComponent(run.requestId)}`).catch(() => null),
-    readApi('/audit')
-      .then((b) => ledgerSchema.parse(b))
-      .catch(() => null),
-    readApi('/workspace')
-      .then((b) => workspaceSchema.parse(b))
-      .catch(() => null),
+    ledgerRead,
+    workspaceRead,
     first === undefined
       ? Promise.resolve(null)
       : readApi(`/findings/${encodeURIComponent(first.id)}`)
