@@ -73,7 +73,8 @@ function Row({
         prefetch={false}
         className="flex min-h-14 items-center gap-3 rounded-[14px] border border-border bg-card px-4 py-3 hover:border-gold-line hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
       >
-        {lead}
+        {/* One fixed lead column: Low, Medium and Critical rows start their titles at the same x. */}
+        {lead === undefined ? null : <span className="flex w-[84px] shrink-0">{lead}</span>}
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           {/* Phones wrap to two lines: the objective and the time are what tell two plans apart. */}
           <span className="line-clamp-2 text-[14px] font-medium text-foreground md:line-clamp-1">
