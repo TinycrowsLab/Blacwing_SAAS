@@ -29,7 +29,6 @@ import {
 import {
   ALL_ROLES,
   DemoRefusal,
-  EMERGENCY_VALIDITIES,
   INTRUSIVENESS,
   RELEASE_MODES,
   type DemoActor,
@@ -59,9 +58,6 @@ const LIMITS = {
   headerValue: 4096,
   reasonMin: 8,
   batchIds: 200,
-  emergencyLabel: 80,
-  emergencyToken: 128,
-  clientKey: 64,
 } as const;
 
 const SECONDS_PER_MINUTE = 60;
@@ -170,24 +166,6 @@ const cloneSchema = z.preprocess(
 );
 
 const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });
-export const emergencyLinkSchema = z.strictObject({
-  validity: z.enum(EMERGENCY_VALIDITIES),
-  /** Who the link is for (e.g. "SOC on-call"); empty means none. */
-  label: z.string().trim().max(LIMITS.emergencyLabel).optional(),
-});
-export const emergencyContactSchema = z.strictObject({
-  contact: z
-    .strictObject({
-      name: z.string().trim().min(1).max(LIMITS.emergencyLabel),
-      phone: z.string().trim().regex(/^\+?[0-9][0-9 ()./-]{2,38}$/, 'Use digits, spaces and + ( ) - . only.'),
-    })
-    .nullable(),
-});
-/** The no-login page's calls: the token travels in the body, never in a URL the API could log. */
-const emergencyTokenSchema = z.strictObject({ token: z.string().max(LIMITS.emergencyToken) });
-const emergencyRunsSchema = emergencyTokenSchema.extend({
-  runIds: z.array(z.string().regex(UUID)).max(LIMITS.batchIds),
-});
 export const gate2DecisionSchema = z
   .strictObject({
     decision: z.enum(['approve', 'deny']),
@@ -224,10 +202,6 @@ class CloneDto extends createZodDto(cloneSchema) {}
 class TriageManyDto extends createZodDto(triageManySchema) {}
 class WorkspaceDto extends createZodDto(workspaceSchema) {}
 class KillDto extends createZodDto(killSchema) {}
-class EmergencyLinkDto extends createZodDto(emergencyLinkSchema) {}
-class EmergencyContactDto extends createZodDto(emergencyContactSchema) {}
-class EmergencyTokenDto extends createZodDto(emergencyTokenSchema) {}
-class EmergencyRunsDto extends createZodDto(emergencyRunsSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
 class TriageDto extends createZodDto(triageSchema) {}
@@ -261,8 +235,8 @@ export class DemoController {
     @Inject(DEMO_SERVICE) private readonly service: DemoService,
   ) {}
 
-  /** The internal hop only (the web server's token), with no signed-in user: the emergency page's calls. */
-  private internal(headers: RequestHeaders): void {
+  /** Resolves the acting user from the internal hop: token, then the e-mail Google verified for the web session. */
+  private async actor(headers: RequestHeaders): Promise<DemoActor> {
     const token = headers['x-bw-demo-token'];
     if (!tokenMatches(typeof token === 'string' ? token : undefined, this.config.internalToken)) {
       throw new DemoRefusal(
@@ -271,17 +245,6 @@ export class DemoController {
         'The internal token is missing or wrong.',
       );
     }
-  }
-
-  /** The visitor's address as the web server saw it: the emergency page's rate-limit key. */
-  private clientKey(headers: RequestHeaders): string {
-    const ip = headers['x-bw-client-ip'];
-    return typeof ip === 'string' && ip !== '' ? ip.slice(0, LIMITS.clientKey) : 'unknown';
-  }
-
-  /** Resolves the acting user from the internal hop: token, then the e-mail Google verified for the web session. */
-  private async actor(headers: RequestHeaders): Promise<DemoActor> {
-    this.internal(headers);
     const email = headers['x-bw-demo-user'];
     if (typeof email !== 'string' || email === '') {
       throw new DemoRefusal(
@@ -330,66 +293,6 @@ export class DemoController {
     @ZodBody(WorkspaceDto) body: WorkspaceDto,
   ): Promise<unknown> {
     return this.service.renameWorkspace(await this.actor(headers), body.name);
-  }
-
-  @Post('workspace/emergency-contact')
-  @HttpCode(HttpStatus.OK)
-  async setEmergencyContact(
-    @Headers() headers: RequestHeaders,
-    @ZodBody(EmergencyContactDto) body: EmergencyContactDto,
-  ): Promise<unknown> {
-    return this.service.setEmergencyContact(await this.actor(headers), body.contact);
-  }
-
-  @Get('emergency-links')
-  async emergencyLinks(@Headers() headers: RequestHeaders): Promise<unknown> {
-    return this.service.emergencyLinks(await this.actor(headers));
-  }
-
-  @Post('emergency-links')
-  async createEmergencyLink(
-    @Headers() headers: RequestHeaders,
-    @ZodBody(EmergencyLinkDto) body: EmergencyLinkDto,
-  ): Promise<unknown> {
-    const label = body.label === undefined || body.label === '' ? null : body.label;
-    return this.service.createEmergencyLink(await this.actor(headers), body.validity, label);
-  }
-
-  @Post('emergency-links/:id/revoke')
-  @HttpCode(HttpStatus.OK)
-  async revokeEmergencyLink(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
-    return this.service.revokeEmergencyLink(await this.actor(headers), uuid(id, 'emergency link'));
-  }
-
-  /** The no-login emergency page: internal token only, the link's token in the body. */
-  @Post('emergency/view')
-  @HttpCode(HttpStatus.OK)
-  async emergencyView(
-    @Headers() headers: RequestHeaders,
-    @ZodBody(EmergencyTokenDto) body: EmergencyTokenDto,
-  ): Promise<unknown> {
-    this.internal(headers);
-    return this.service.emergencyView(body.token, this.clientKey(headers));
-  }
-
-  @Post('emergency/stop')
-  @HttpCode(HttpStatus.OK)
-  async emergencyStop(
-    @Headers() headers: RequestHeaders,
-    @ZodBody(EmergencyTokenDto) body: EmergencyTokenDto,
-  ): Promise<unknown> {
-    this.internal(headers);
-    return this.service.emergencyStop(body.token, this.clientKey(headers));
-  }
-
-  @Post('emergency/runs')
-  @HttpCode(HttpStatus.OK)
-  async emergencyRuns(
-    @Headers() headers: RequestHeaders,
-    @ZodBody(EmergencyRunsDto) body: EmergencyRunsDto,
-  ): Promise<unknown> {
-    this.internal(headers);
-    return this.service.emergencyRuns(body.token, this.clientKey(headers), body.runIds);
   }
 
   @Get('dashboard')

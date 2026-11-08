@@ -80,34 +80,6 @@ export async function toResult<T>(call: () => Promise<T>): Promise<ActionResult<
   }
 }
 
-/**
- * The no-login emergency page's calls (`/emergency/...`): the internal token, no user, the link's token in the body
- * and the visitor's address for the API's rate limit. Throws ApiError on refusal.
- */
-export async function callEmergencyApi<T = unknown>(path: string, body: unknown, clientIp: string): Promise<T> {
-  const token = process.env.BW_DEMO_INTERNAL_TOKEN ?? '';
-  if (token === '')
-    throw new ApiError(HTTP_SERVICE_UNAVAILABLE, 'api_not_configured', 'BW_DEMO_INTERNAL_TOKEN is not set.');
-  const origin = process.env.BW_DEMO_API_ORIGIN ?? DEFAULT_API_ORIGIN;
-  const response = await fetch(new URL(`/v1/demo/emergency${path}`, origin), {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/json',
-      'x-bw-demo-token': token,
-      'x-bw-client-ip': clientIp,
-    },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-    redirect: 'manual',
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-  const text = await response.text();
-  const parsed: unknown = text === '' ? {} : JSON.parse(text);
-  if (!response.ok) throw problemOf(response.status, parsed);
-  return parsed as T;
-}
-
 /** Calls the API as the signed-in user. Throws ApiError with the registered code on refusal. */
 export async function callApi<T = unknown>(
   session: Viewer,

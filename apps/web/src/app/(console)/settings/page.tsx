@@ -1,13 +1,6 @@
 // Settings (experience spec §2, §8): the workspace name (editable by an administrator), your account and theme, and
 // the settings your administrator sets on the server, shown read-only with where they come from.
-import { z } from 'zod';
-
 import { Chip, Icon, InlineMessage } from '../../../components/console/design';
-import {
-  EmergencyContactForm,
-  EmergencyLinkCreator,
-  EmergencyLinkList,
-} from '../../../components/console/emergency-links';
 import { HashFocus } from '../../../components/console/results/hash-focus';
 import { HIGHLIGHT_CLASS } from '../../../components/console/results/highlight';
 import { readApi } from '../../../components/console/results/load';
@@ -18,8 +11,7 @@ import {
 } from '../../../components/console/results/settings-form';
 import { getViewer } from '../../../lib/auth';
 import { usd } from '../../../lib/plan-text';
-import { emergencyLinkSchema, workspaceSchema } from '../../../lib/schemas';
-
+import { workspaceSchema } from '../../../lib/schemas';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -28,7 +20,6 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Settings' };
 
 const S_PER_MIN = 60;
-const emergencyLinksSchema = z.object({ items: z.array(emergencyLinkSchema) });
 
 function Section({
   id,
@@ -85,11 +76,6 @@ export default async function SettingsPage(): Promise<ReactNode> {
     .then((b) => workspaceSchema.parse(b))
     .catch(() => null);
   const isAdmin = session.roles.includes('org-admin');
-  const links = isAdmin
-    ? await readApi('/emergency-links')
-        .then((b) => emergencyLinksSchema.parse(b).items)
-        .catch(() => null)
-    : [];
   const s = workspace?.settings;
   const minutes = s === undefined ? 0 : Math.max(1, Math.round(s.gate2TimeoutS / S_PER_MIN));
 
@@ -113,44 +99,6 @@ export default async function SettingsPage(): Promise<ReactNode> {
       ) : (
         <Section title="Workspace">
           <WorkspaceNameForm current={workspace.name ?? ''} canEdit={isAdmin} />
-        </Section>
-      )}
-
-      {workspace === null ? null : (
-        <Section
-          id="emergency"
-          title="Emergency stop links"
-          note={
-            <Chip tone="muted" icon="lock">
-              No login needed to use
-            </Chip>
-          }
-        >
-          <p className="m-0 text-[13.5px] leading-[21px] text-muted-foreground">
-            A time-limited link someone without a Blackwing account can open to stop every audit in this workspace.
-            They press and hold one button; each use is recorded in the ledger.
-          </p>
-          {isAdmin ? (
-            <>
-              <EmergencyLinkCreator />
-              <div className="flex flex-col gap-2 border-t border-border pt-4">
-                <h3 className="m-0 text-[13.5px] font-semibold text-foreground">Links that work now</h3>
-                {links === null ? (
-                  <InlineMessage tone="bad">
-                    We couldn&rsquo;t load the links. <RetryButton />
-                  </InlineMessage>
-                ) : (
-                  <EmergencyLinkList links={links} />
-                )}
-              </div>
-            </>
-          ) : (
-            <p className="m-0 text-[13px] text-muted-foreground">Only an administrator can create or revoke a link.</p>
-          )}
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <h3 className="m-0 text-[13.5px] font-semibold text-foreground">Emergency contact</h3>
-            <EmergencyContactForm current={workspace.settings.emergencyContact} canEdit={isAdmin} />
-          </div>
         </Section>
       )}
 

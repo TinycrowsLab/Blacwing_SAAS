@@ -393,13 +393,6 @@
       "when": 1794139200000,
       "tag": "20261108120000_demo_client_ready",
       "breakpoints": true
-    },
-    {
-      "idx": 56,
-      "version": "7",
-      "when": 1794160800000,
-      "tag": "20261108180000_demo_emergency_links",
-      "breakpoints": true
     }
   ]
 }
