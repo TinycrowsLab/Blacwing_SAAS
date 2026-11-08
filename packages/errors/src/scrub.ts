@@ -11,7 +11,9 @@ export type ScrubKind = 'token' | 'credential' | 'secret' | 'password' | 'cookie
 /** What a scrubbed value becomes. */
 export const scrubbed = (kind: ScrubKind): string => `[redacted: ${kind}]`;
 
-const isPlaceholder = (value: string): boolean => /^\s*\[redacted(?::[^\]]*)?\]/i.test(value);
+/** `[redacted: ...]`, or the `<role credential>` placeholder Blackwing prints in a repro curl. */
+const isPlaceholder = (value: string): boolean =>
+  /^\s*(?:\[redacted(?::[^\]]*)?\]|<[^<>\r\n]{1,80} credential>)/i.test(value);
 const norm = (key: string): string => key.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const SECRET_SUFFIXES = [

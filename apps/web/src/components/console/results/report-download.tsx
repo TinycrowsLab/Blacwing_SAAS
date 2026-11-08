@@ -4,6 +4,7 @@
 // on the page ("Your findings are safe") instead of a broken download, and a success says "Report downloaded". Under
 // 768 px the download button sticks to the bottom of the screen and says there what happened. A finding offers the two
 // formats its route renders.
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { InlineMessage } from '../design';
@@ -169,36 +170,48 @@ export function ReportDownload({
   );
 }
 
-/** "Run this audit again": a new pending audit with the same answers, opened at its plan. */
-export function RunAgain({ requestId }: { readonly requestId: string }) {
+/**
+ * "Run this audit again": a new pending audit with the same answers, opened at its plan. With `untriedFromRunId` it is
+ * "Continue with untried cases": the copy's objective names the cases that run left untried.
+ */
+export function RunAgain({
+  requestId,
+  untriedFromRunId = null,
+  label = 'Run this audit again',
+  variant = 'secondary',
+}: {
+  readonly requestId: string;
+  readonly untriedFromRunId?: string | null;
+  readonly label?: string;
+  readonly variant?: 'primary' | 'secondary';
+}) {
+  const router = useRouter();
   const nudge = useNudge();
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-2">
       <PendingButton
-        variant="secondary"
+        variant={variant}
         icon="repeat"
         pendingLabel="Preparing the plan…"
         stayPending
         className="h-10 self-start"
         onAction={async () => {
           setError(null);
-          const from = window.location.pathname;
-          // The action redirects to the new plan; until React shows it, keep nudging, then tell the sidebar.
-          nudge(() => {
-            const moved = window.location.pathname !== from;
-            if (moved) window.dispatchEvent(new Event('bw:refresh'));
-            return moved;
-          });
-          const result = await runAgainAction(requestId);
+          const result = await runAgainAction(requestId, untriedFromRunId);
           if (!result.ok) {
             setError(`We couldn't copy this audit: ${result.message}`);
             return false;
           }
+          const to = `/audits/${encodeURIComponent(result.data.id)}`;
+          window.dispatchEvent(new Event('bw:refresh'));
+          router.push(to);
+          // Until React shows the plan, keep nudging (see nudge.ts).
+          nudge(() => window.location.pathname === to);
           return true;
         }}
       >
-        Run this audit again
+        {label}
       </PendingButton>
       {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
     </div>

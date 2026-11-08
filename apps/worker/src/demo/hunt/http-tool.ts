@@ -7,9 +7,8 @@ import { z } from 'zod';
 import { scrub, scrubHeaders } from '@blackwing/errors/scrub';
 import { newId } from '@blackwing/ids';
 
-import { isDisallowedAddress } from '../../run/preflight/address-guard.js';
-
 import { checkScope, classifyMethod, gateKey, stateChangeHint } from './scope.js';
+import { isDisallowedAddress } from '../../run/preflight/address-guard.js';
 
 import type { Gate2Ask, HuntContext } from './context.js';
 import type { Gate2Status } from './types.js';
@@ -41,12 +40,10 @@ const DROPPED_REQUEST_HEADERS = new Set(['host', 'content-length', 'connection',
 
 /** Never reachable, not even for an operator-listed lab origin: link-local (cloud metadata), unspecified, provider metadata IPs. */
 const ALWAYS_REFUSED = new BlockList();
-ALWAYS_REFUSED.addSubnet('169.254.0.0', 16, 'ipv4');
-ALWAYS_REFUSED.addSubnet('0.0.0.0', 8, 'ipv4');
-ALWAYS_REFUSED.addAddress('100.100.100.200', 'ipv4');
-ALWAYS_REFUSED.addSubnet('fe80::', 10, 'ipv6');
-ALWAYS_REFUSED.addAddress('::', 'ipv6');
-ALWAYS_REFUSED.addAddress('fd00:ec2::254', 'ipv6');
+for (const cidr of ['169.254.0.0/16', '0.0.0.0/8', '100.100.100.200/32', 'fe80::/10', '::/128', 'fd00:ec2::254/128']) {
+  const [net = '', prefix = ''] = cidr.split('/');
+  ALWAYS_REFUSED.addSubnet(net, Number(prefix), isIPv4(net) ? 'ipv4' : 'ipv6');
+}
 const V4_MAPPED = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i;
 
 export const probeSchema = z.object({

@@ -55,6 +55,11 @@ function useMounted(): boolean {
 export const shortTime = (iso: string): string =>
   new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
 
+function SentAt({ at }: { readonly at: string }) {
+  const mounted = useMounted();
+  return <time dateTime={at}>{mounted ? shortTime(at) : ''}</time>;
+}
+
 function Time({ at }: { readonly at: string }) {
   const mounted = useMounted();
   return (
@@ -284,7 +289,7 @@ function ValidatorTurn({ v, onOpenCall }: { readonly v: ValidatorItem; readonly 
           <p className="m-0 flex items-start gap-2 rounded-[10px] bg-ok-soft px-3 py-[7px] text-[13px] text-ok">
             <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-current" />
             <span>
-              <b className="font-semibold">Proven.</b> Replayed {v.matched} of {VALIDATOR_REPLAYS} times; the control behaved as expected.{' '}
+              <b className="font-semibold">Proven.</b> Replayed {v.matched} of {Math.max(v.replays, v.matched)} times; the control behaved as expected.{' '}
               {v.autoReleased ? 'Released automatically.' : 'Waits for your release.'}
             </span>
           </p>
@@ -314,12 +319,14 @@ function HostLine({
   // The run's last line carries the one next step (spec §5.2): gold for a finished run, quiet for a stopped one.
   const finished = item.kind === 'run.completed';
   const end = END_KINDS.has(item.kind);
+  // The runner's own warning (no request used the test accounts): amber, so it is seen while the run goes on.
+  const warn = item.kind === 'accounts.unused';
   return (
     <div
       className={`flex items-start gap-2.5 text-[12.5px] leading-[19px] ${finished ? 'rounded-[12px] border border-gold-line bg-gold-soft p-3' : end ? 'rounded-[12px] border border-border bg-surface-2 p-3' : ''}`}
     >
       <CrowTile />
-      <span className={end ? 'flex flex-1 flex-wrap items-center gap-3 font-medium text-foreground' : 'text-muted-foreground'}>
+      <span className={end ? 'flex flex-1 flex-wrap items-center gap-3 font-medium text-foreground' : warn ? 'font-medium text-warn' : 'text-muted-foreground'}>
         {item.text}
         {item.kind === 'plan.cases' && onOpenPlan !== null ? (
           <>
@@ -364,6 +371,19 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
         return (
           <div data-gate2-row={row.id} data-gate2-pending={row.status === 'pending' ? row.id : undefined}>
             <Gate2Card gate2={row} body={item.body} asRole={item.asRole} viewerName={p.viewerName} />
+            {/* The runner did not wait on this ask: say whether the allowed request was actually sent, and when. */}
+            {item.nonBlocking && row.status === 'approved' ? (
+              <p className="m-0 ml-8 mt-1.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                <Icon name={item.sentAt === null ? 'clock' : 'check'} size={12} className="shrink-0" />
+                {item.sentAt === null ? (
+                  item.runEnded ? 'Allowed · not used before the audit ended' : 'Allowed · not used yet'
+                ) : (
+                  <>
+                    Allowed · sent at <SentAt at={item.sentAt} />
+                  </>
+                )}
+              </p>
+            ) : null}
           </div>
         );
       return item.decided === null ? null : (

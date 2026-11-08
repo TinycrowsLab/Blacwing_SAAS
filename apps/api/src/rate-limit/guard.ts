@@ -1,3 +1,5 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
+
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { trace } from '@opentelemetry/api';
@@ -19,6 +21,7 @@ import {
   RATE_LIMITER,
 } from './tokens.js';
 import { requestLogger } from '../bootstrap/request-context.js';
+import { loadDemoConfig, type DemoConfig } from '../demo/config.js';
 import { API_LOGGER } from '../bootstrap/tokens.js';
 import { isEntryPoint, replyOf, requestOf } from '../bootstrap/transport.js';
 import { tenantContextOf } from '../tenant/guard.js';
@@ -35,6 +38,22 @@ const MS_PER_SECOND = 1000;
 
 /** Keys of anonymous (unauthenticated) traffic: a reserved prefix no tenant key can collide with. */
 const ANONYMOUS_PREFIX = 'rl:_anon:ip';
+/** Keys of the console's signed internal hop (BW_DEMO_MODE=1): one bucket per signed-in user. */
+const DEMO_PREFIX = 'rl:_demo';
+const DEMO_KEY_HEX = 32;
+
+const header = (request: FastifyRequest, name: string): string | undefined => {
+  const value = request.headers[name];
+  return typeof value === 'string' ? value : undefined;
+};
+
+/** Constant-time comparison of the internal token (never logged). */
+function tokenMatches(presented: string | undefined, expected: string): boolean {
+  if (presented === undefined || expected === '') return false;
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 /**
  * Global guard (APP_GUARD, mounted after the tenant guard): charges every request to its token or user bucket
@@ -55,6 +74,23 @@ export class RateLimitGuard implements CanActivate {
     @Inject(IN_PROCESS_RATE_LIMITER) private readonly fallback: RateLimiter,
     @Inject(RATE_LIMIT_METRICS) private readonly metrics: RateLimitMetrics,
   ) {}
+
+  /** Read once: the console's internal hop is charged per user only in demo mode with the right token. */
+  private readonly demo: DemoConfig = loadDemoConfig();
+
+  /**
+   * The hashed e-mail of the console user on a signed internal hop (demo mode, matching `x-bw-demo-token`), or
+   * undefined. The console's server calls the API for every user from one address, so the IP bucket would make all
+   * of them share one limit. The e-mail itself is never logged or used as a key.
+   */
+  private demoPrincipal(request: FastifyRequest): string | undefined {
+    if (!this.demo.enabled || !tokenMatches(header(request, 'x-bw-demo-token'), this.demo.internalToken)) {
+      return undefined;
+    }
+    const email = header(request, 'x-bw-demo-user')?.trim().toLowerCase();
+    if (email === undefined || email === '') return undefined;
+    return createHash('sha256').update(email).digest('hex').slice(0, DEMO_KEY_HEX);
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const handlers = [context.getHandler(), context.getClass()] as const;
@@ -100,6 +136,16 @@ export class RateLimitGuard implements CanActivate {
     override: RateLimitOptions | undefined,
   ): BucketSpecs {
     const tenant = tenantContextOf(request);
+    const demoUser = tenant === undefined ? this.demoPrincipal(request) : undefined;
+    if (demoUser !== undefined) {
+      return [
+        this.spec(
+          `${DEMO_PREFIX}:${demoUser}:${routeClass}`,
+          'principal',
+          this.policy.limitsFor({ scope: 'principal', routeClass, tenantId: this.demo.tenantId }, override),
+        ),
+      ];
+    }
     if (tenant === undefined) {
       // `request.ip` honours X-Forwarded-For only behind a trusted proxy (API_TRUST_PROXY).
       return [
@@ -154,7 +200,7 @@ export class RateLimitGuard implements CanActivate {
     requestLogger(this.logger).info(
       {
         'rl.tenant': tenant === undefined ? undefined : hashTenantId(tenant.tenantId),
-        'rl.principal': tenant === undefined ? 'anonymous' : tenant.actor.id,
+        'rl.principal': tenant?.actor.id ?? this.demoPrincipal(request) ?? 'anonymous',
         'rl.routeClass': routeClass,
         'rl.remaining': decision.remaining,
         'rl.scope': decision.blockedBy,

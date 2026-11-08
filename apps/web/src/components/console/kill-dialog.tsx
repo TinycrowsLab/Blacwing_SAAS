@@ -69,9 +69,12 @@ export function KillButton({
   // What the dialog was opened for: it stays mounted after the halt, when `run` becomes null.
   const [target, setTarget] = useState<StoppableRun | 'pick' | null>(run);
   const [open, setOpen] = useState(false);
+  // Each opening of the picker starts fresh: nothing picked, no earlier halt on show.
+  const [opens, setOpens] = useState(0);
   const can = run !== null || choices.length > 0;
   const openNow = (): void => {
     setTarget(run ?? 'pick');
+    if (run === null) setOpens((n) => n + 1);
     setOpen(true);
   };
 
@@ -135,7 +138,7 @@ export function KillButton({
       {trigger}
       {target === null ? null : (
         <KillDialog
-          key={target === 'pick' ? 'pick' : target.id}
+          key={target === 'pick' ? `pick-${opens}` : target.id}
           runs={target === 'pick' ? choices : [target]}
           pick={target === 'pick'}
           open={open}
@@ -191,13 +194,13 @@ async function postKill(run: StoppableRun): Promise<KillAnswer> {
 }
 
 const time = (iso: string | null | undefined): string =>
-  iso === null || iso === undefined ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(new Date(iso));
+  iso === null || iso === undefined ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
 
-/** "Run 01A1B9 · started 10:31 by Avery": the line that tells two audits of one target apart. */
-function runLine(run: StoppableRun, seconds = false): string {
-  const at = run.startedAt === undefined || run.startedAt === null ? '' : ` · started ${seconds ? new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(run.startedAt)) : time(run.startedAt)}`;
-  const by = run.mine === true ? ' by you' : run.startedBy === undefined || run.startedBy === null ? '' : ` by ${run.startedBy}`;
-  return `Run ${shortId(run.id)}${at === '' ? (run.startedAt === null ? ' · queued' : '') : at}${by}`;
+/** "Run 01A1B9 · started 10:31:05 by Avery": what tells two audits of one target apart. */
+function runLine(run: StoppableRun): string {
+  const at = time(run.startedAt);
+  const by = run.mine === true ? 'you' : (run.startedBy ?? null);
+  return `Run ${shortId(run.id)}${at === '' ? ' · not started yet' : ` · started ${at}`}${by === null ? '' : ` by ${by}`}`;
 }
 
 function KillDialog({
@@ -235,7 +238,7 @@ function KillDialog({
     setRequestedAt(new Date().toISOString());
     setPhase('stopping');
     try {
-      const answers = await Promise.all(list.map(postKill));
+      const answers = await Promise.all(list.map((r) => postKill(r)));
       const sent = answers.filter((a) => a.ok);
       const refused = answers.find((a) => !a.ok);
       if (sent.length === 0) {
@@ -284,19 +287,28 @@ function KillDialog({
     if (phase === 'halted') document.querySelector<HTMLElement>('dialog[open] [data-autofocus]')?.focus();
   }, [phase]);
 
-  const time = (iso: string | null): string =>
-    iso === null ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
   const halted = phase === 'halted';
+  const many = targets.length > 1;
+  const read = targets.flatMap((t) => halts.get(t.id) ?? []);
   // Only decisions the stop closed count: one already answered by hand before it was never "pending at stop".
   const since = requestedAt === null ? Number.POSITIVE_INFINITY : Date.parse(requestedAt) - SKEW_MS;
-  const atStop = (halt?.gate2 ?? []).filter((g) => g.status === 'pending' || (g.decidedAt !== null && Date.parse(g.decidedAt) >= since));
+  const atStop = read
+    .flatMap((h) => h.gate2)
+    .filter((g) => g.status === 'pending' || (g.decidedAt !== null && Date.parse(g.decidedAt) >= since));
+  const measured = read.length === targets.length && read.every((h) => h.haltMs !== null);
+  const slowest = Math.max(0, ...read.map((h) => h.haltMs ?? 0));
+  const ended = read.filter((h) => ENDED.includes(h.state)).length;
   const steps = [
     { label: 'Stop requested', detail: time(requestedAt), done: requestedAt !== null },
-    { label: 'Agents halted', detail: halted ? 'No new request is sent' : 'Waiting for the runner…', done: halted },
+    {
+      label: 'Agents halted',
+      detail: halted ? 'No new request is sent' : many ? `${ended} of ${targets.length} audits halted` : 'Waiting for the runner…',
+      done: halted,
+    },
     {
       label: 'Pending decisions denied',
       detail:
-        halt === null
+        read.length === 0
           ? ''
           : atStop.length === 0
             ? 'None were waiting'
@@ -304,22 +316,31 @@ function KillDialog({
       done: halted && atStop.every((g) => g.status !== 'pending'),
     },
     {
-      label: halt?.haltMs === null || halt?.haltMs === undefined ? 'Halt measured' : `Halt measured in ${halt.haltMs.toLocaleString()} ms`,
+      label: measured ? `Halt measured in ${slowest.toLocaleString()} ms${many ? ' (the slowest)' : ''}` : 'Halt measured',
       detail: '',
-      done: halted && halt?.haltMs !== null,
+      done: halted && measured,
     },
   ];
+  const name = targets.length === 1 ? targets[0]?.assetName : (single?.assetName ?? 'this audit');
+  const title =
+    phase !== 'confirm'
+      ? halted
+        ? many
+          ? `Testing stopped on ${targets.length} audits`
+          : 'Testing stopped'
+        : 'Stopping…'
+      : pick
+        ? 'Which audit should stop?'
+        : `Stop testing ${name ?? 'this audit'}?`;
 
   return (
-    <Modal open={open} onClose={onClose} label={`Stop testing ${run.assetName}`} className="max-w-[520px]">
+    <Modal open={open} onClose={onClose} label={pick ? 'Stop an audit' : `Stop testing ${name ?? 'this audit'}`} className="max-w-[520px]">
       <div className="flex flex-col gap-5 p-6 sm:p-7">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-kill-soft text-kill">
             <Icon name="kill" size={20} />
           </span>
-          <h2 className="m-0 min-w-0 break-words text-[20px] font-semibold leading-7">
-            {phase === 'confirm' ? `Stop testing ${run.assetName}?` : halted ? 'Testing stopped' : 'Stopping…'}
-          </h2>
+          <h2 className="m-0 min-w-0 break-words text-[20px] font-semibold leading-7">{title}</h2>
         </div>
         {phase === 'confirm' ? (
           <>
@@ -328,33 +349,78 @@ function KillDialog({
               <li>Pending decisions are denied.</li>
               <li>Findings so far are kept.</li>
             </ul>
-            <div className="flex items-center gap-3 rounded-xl border-[1.5px] border-kill bg-kill-soft px-3.5 py-3">
-              <Icon name="check" size={16} className="text-kill" />
-              <span className="flex min-w-0 flex-col">
-                <span className="text-[13.5px] font-semibold">This audit</span>
-                <span className="truncate text-xs text-muted-foreground">{run.assetName}</span>
-                {/* Two audits of one target read the same by name: the run id and start time tell them apart. */}
-                <span className="text-xs text-muted-foreground">
-                  Run <span className="font-mono">{shortId(run.id)}</span>
-                  {run.startedAt === undefined || run.startedAt === null ? '' : ` · started ${time(run.startedAt)}`}
+            {pick ? (
+              runs.length === 0 ? (
+                <p className="m-0 text-[13.5px] text-muted-foreground">No audit is running now. Nothing to stop.</p>
+              ) : (
+                // Nothing is preselected: the person names the audit, so a stop never lands on someone else's by default.
+                <div role="radiogroup" aria-label="Live audits" className="flex max-h-[45dvh] flex-col gap-2 overflow-y-auto">
+                  {runs.map((r, n) => {
+                    const on = r.id === picked;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        data-autofocus={n === 0 ? '' : undefined}
+                        onClick={() => {
+                          setPicked(r.id);
+                        }}
+                        className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${on ? 'border-[1.5px] border-kill bg-kill-soft' : 'border border-border bg-card hover:bg-surface-2'}`}
+                      >
+                        {on ? (
+                          <Icon name="check" size={16} className="shrink-0 text-kill" />
+                        ) : (
+                          <span aria-hidden="true" className="size-4 shrink-0 rounded-full border-[1.5px] border-border-strong" />
+                        )}
+                        <span className="flex min-w-0 flex-col">
+                          <span className="truncate text-[13.5px] font-semibold">{r.assetName}</span>
+                          <span className="text-xs text-muted-foreground">{runLine(r)}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            ) : single === undefined ? null : (
+              <div className="flex items-center gap-3 rounded-xl border-[1.5px] border-kill bg-kill-soft px-3.5 py-3">
+                <Icon name="check" size={16} className="text-kill" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-[13.5px] font-semibold">This audit</span>
+                  <span className="truncate text-xs text-muted-foreground">{single.assetName}</span>
+                  {/* Two audits of one target read the same by name: the run id and start time tell them apart. */}
+                  <span className="text-xs text-muted-foreground">{runLine(single)}</span>
                 </span>
-              </span>
-            </div>
+              </div>
+            )}
             {error === null ? null : (
               <p role="alert" className="m-0 text-[13px] text-bad">
                 {error}
               </p>
             )}
-            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               <span className="text-xs text-muted-foreground sm:mr-auto">Recorded in the ledger</span>
               <button type="button" onClick={onClose} className={buttonClass('secondary', 'h-11 px-5')}>
                 Keep running
               </button>
+              {pick && mine.length > 0 && runs.length > 1 ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void stop(mine)}
+                  className={buttonClass('secondary', 'h-11 px-5 text-kill')}
+                >
+                  Stop all of mine ({mine.length})
+                </button>
+              ) : null}
+              {/* On an audit's own page Stop has the focus (Enter stops it); in the picker nothing stops by default. */}
               <button
                 type="button"
-                data-autofocus
-                disabled={busy}
-                onClick={() => void stop()}
+                data-autofocus={pick ? undefined : ''}
+                disabled={busy || (pick && chosen === undefined)}
+                title={pick && chosen === undefined ? 'Pick the audit to stop first' : undefined}
+                onClick={() => void stop(pick ? (chosen === undefined ? [] : [chosen]) : runs.slice(0, 1))}
                 className={buttonClass('kill', 'h-11 px-5 text-[14px]')}
               >
                 {busy ? (
@@ -363,12 +429,15 @@ function KillDialog({
                   <Icon name="kill" size={16} />
                 )}
                 {busy ? 'Stopping…' : 'Stop testing'}
-                <Kbd>Enter</Kbd>
+                {pick ? null : <Kbd>Enter</Kbd>}
               </button>
             </div>
           </>
         ) : (
           <>
+            {many ? (
+              <p className="m-0 text-[13px] text-muted-foreground">{targets.map((t) => t.assetName).join(', ')}</p>
+            ) : null}
             <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-live="polite">
               {steps.map((s) => (
                 <li key={s.label} className="flex items-center gap-3">
@@ -388,6 +457,11 @@ function KillDialog({
                 </li>
               ))}
             </ol>
+            {error === null ? null : (
+              <p role="alert" className="m-0 text-[13px] text-bad">
+                {error}
+              </p>
+            )}
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
               <span className="mr-auto text-xs text-muted-foreground">
                 Recorded in the ledger

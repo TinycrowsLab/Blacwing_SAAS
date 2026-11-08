@@ -1,6 +1,9 @@
 import { describe as suite, expect, it } from 'vitest';
 
 import {
+  accountUse,
+  blockingAsks,
+  caseTally,
   chipGroups,
   agentLanes,
   auditLine,
@@ -514,6 +517,51 @@ suite('teamNodes', () => {
     ]);
     expect(team.autoReleased).toBe(false);
     expect(teamNodes([...RUN, ev(26, 'finding.released', 'gate3', { findingId: 'f1', auto: true })], [], T0, false).autoReleased).toBe(true);
+  });
+});
+
+suite('client-ready run view', () => {
+  const free = (e: RunEvent): RunEvent => (e.kind === 'gate2.requested' ? { ...e, data: { ...e.data, blocking: false } } : e);
+  it('a non-blocking ask leaves the agent testing, and says it asked', () => {
+    const team = teamNodes(RUN.map(free), [G1], T0 + 20_000, false);
+    expect(team.specialists[2]).toMatchObject({ id: 'authz-specialist', state: 'working' });
+    expect(team.specialists[2]?.sub).toMatch(/^asked you · /);
+    expect(blockingAsks(RUN.map(free), [G1])).toEqual([]);
+    expect(blockingAsks(RUN, [G1])).toEqual([G1]);
+  });
+  it('stops every ring while paused', () => {
+    expect(teamNodes(RUN, [], T0 + 20_000, false, false, true).specialists[1]).toMatchObject({ state: 'working', spinning: false });
+  });
+  it('keeps a proven issue proven after a person dismisses it', () => {
+    const dismissed = [...RUN, ev(26, 'finding.dismissed', 'gate3', { findingId: 'f1' }, at(30))];
+    expect(teamNodes(dismissed, [], T0 + 40_000, true).proven).toBe(1);
+    expect(candidates(dismissed)[0]).toMatchObject({ status: 'dismissed', proven: true });
+    // Released by hand without proof: never counted as proven.
+    const handReleased = [
+      ...RUN.slice(0, 16),
+      ev(17, 'finding.suspected', 'validator', { candidateId: 'c1', findingId: 'f9', reason: 'no match' }, at(17)),
+      ev(18, 'finding.released', 'gate3', { findingId: 'f9' }, at(18)),
+    ];
+    expect(teamNodes(handReleased, [], T0 + 40_000, true).proven).toBe(0);
+  });
+  it('counts the cases from the runner coverage, and the requests sent as each role', () => {
+    expect(caseTally(RUN)).toEqual({ executed: 1, total: 2 });
+    const cov = ev(30, 'coverage.summary', 'done', { cases: [{ status: 'executed' }, { status: 'not_run' }, { status: 'not_run' }] });
+    expect(caseTally([...RUN, cov])).toEqual({ executed: 1, total: 3 });
+    expect([...accountUse(RUN)]).toEqual([['customer_a', 1]]);
+    const done = conversationItems([...RUN, cov, ev(31, 'run.completed', 'done', {}, at(40))], []);
+    expect(done.at(-1)).toMatchObject({ type: 'host', text: 'Finished: Claude ended the audit early: it ran 1 of 3 planned test cases. Your results are ready.' });
+  });
+  it('says when an allowed non-blocking request was actually sent', () => {
+    const events = [
+      ...RUN.map(free),
+      ev(26, 'gate2.decided', 'gate2', { gate2Id: 'g1', status: 'approved', by: 'u1' }, at(25)),
+      ev(27, 'http.sent', 'authz-specialist', { agent: 'authz-specialist', method: 'POST', url: `${URL0}/api/Users`, status: 201, gate2Id: 'g1' }, at(26)),
+    ];
+    const find = (items: ReturnType<typeof conversationItems>) =>
+      items.flatMap((i) => (i.type === 'thread' ? i.children : [i])).find((c) => c.type === 'gate2');
+    expect(find(conversationItems(events, [G1]))).toMatchObject({ nonBlocking: true, sentAt: at(26), runEnded: false });
+    expect(find(conversationItems(events.slice(0, -1), [G1]))).toMatchObject({ sentAt: null });
   });
 });
 

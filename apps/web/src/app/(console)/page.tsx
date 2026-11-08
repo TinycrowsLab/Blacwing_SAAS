@@ -2,17 +2,16 @@
 // returning person also sees what waits for them, what is in progress and the latest findings (each hidden when empty).
 import Link from 'next/link';
 
-import { retryOnce } from './audits/load';
 import { Icon, type IconName, SeverityChip, StatusChip, VoiceTag } from '../../components/console/design';
 import { Countdown } from '../../components/console/design-client';
 import { HomeAsk } from '../../components/console/order/home-ask';
 import { HomeRetry } from '../../components/console/order/home-retry';
 import { LocalMoment } from '../../components/console/order/local-time';
 import { greetingFor } from '../../components/console/order/shared';
-import { callApi } from '../../lib/api';
 import { getViewer } from '../../lib/auth';
+import { readDashboard } from '../../lib/console-data';
 import { decisionTitle, objectivePhrase } from '../../lib/plan-text';
-import { type Dashboard, dashboardSchema, LIVE_RUN_STATES } from '../../lib/schemas';
+import { type Dashboard, LIVE_RUN_STATES } from '../../lib/schemas';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -69,7 +68,7 @@ function Section({ id, title, more, children }: { readonly id: string; readonly 
 function Row({ href, dot, title, sub, end }: { readonly href: string; readonly dot: string; readonly title: ReactNode; readonly sub: ReactNode; readonly end?: ReactNode }) {
   return (
     <li>
-      <Link href={href} className="flex min-h-14 items-center gap-3 px-4 py-2.5 no-underline hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus">
+      <Link href={href} prefetch={false} className="flex min-h-14 items-center gap-3 px-4 py-2.5 no-underline hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus">
         <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${dot}`} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-[14px] font-medium text-foreground">{title}</span>
@@ -87,12 +86,25 @@ function Returning({ d }: { readonly d: Dashboard }) {
   const releases = d.findings.filter((f) => f.status === 'confirmed').sort(bySeverity);
   // Recent findings leaves out what "Waiting on you" already lists.
   const recent = d.findings.filter((f) => f.status !== 'confirmed').slice(0, RECENT_FINDINGS);
-  const live = d.runs.filter((r) => LIVE_RUN_STATES.includes(r.state));
-  const waiting = d.pendingGate2.length + plans.length + releases.length;
+  const live = d.liveRuns ?? d.runs.filter((r) => LIVE_RUN_STATES.includes(r.state));
+  const listed = d.pendingGate2.length + plans.length + releases.length;
+  // The lists are capped; the count is exact when the API sends it.
+  const c = d.pendingCounts;
+  const waiting = c === undefined ? listed : Math.max(listed, c.gate1 + c.gate2 + c.gate3);
   return (
     <>
       {waiting === 0 ? null : (
-        <Section id="home-waiting" title="Waiting on you">
+        <Section
+          id="home-waiting"
+          title="Waiting on you"
+          more={
+            waiting > listed ? (
+              <Link href="/decisions" prefetch={false} className="text-[12.5px] font-medium text-gold-ink hover:underline">
+                And {(waiting - listed).toLocaleString()} more
+              </Link>
+            ) : undefined
+          }
+        >
           {d.pendingGate2.map((g) => (
             <Row
               key={g.id}
@@ -156,7 +168,7 @@ function Returning({ d }: { readonly d: Dashboard }) {
           id="home-findings"
           title="Recent findings"
           more={
-            <Link href="/findings" className="text-[12.5px] font-medium text-gold-ink hover:underline">
+            <Link href="/findings" prefetch={false} className="text-[12.5px] font-medium text-gold-ink hover:underline">
               All findings
             </Link>
           }
@@ -223,13 +235,14 @@ export default async function HomePage({
   if (session === null) return null;
   const [params, dashboard] = await Promise.all([
     searchParams,
-    // One busy moment (a 429 under load) is tried once more before Home says it couldn't load.
-    retryOnce(async () => dashboardSchema.parse(await callApi(session, '/dashboard'))).catch(() => null),
+    // The layout's read of this render; a busy moment (a 429) is retried before Home says it couldn't load.
+    readDashboard().catch(() => null),
   ]);
   // Nothing live, waiting or found yet: explain how an audit works instead of empty lists.
   const firstVisit =
     dashboard !== null &&
     dashboard.pendingGate2.length === 0 &&
+    (dashboard.liveRuns ?? []).length === 0 &&
     dashboard.requests.every((r) => r.status !== 'pending_gate1') &&
     dashboard.runs.every((r) => !LIVE_RUN_STATES.includes(r.state)) &&
     dashboard.findings.length === 0;

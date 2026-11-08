@@ -5,7 +5,7 @@ import { cache, Fragment, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
-import { YourDecisions } from '../../../../../components/console/results/decisions';
+import { NotTestedList, YourDecisions } from '../../../../../components/console/results/decisions';
 import {
   IssueList,
   KeptBack,
@@ -19,6 +19,7 @@ import {
   gate2Outcome,
   headline,
   ledgerSchema,
+  notTested,
   splitFindings,
   stopLine,
   testCases,
@@ -138,6 +139,12 @@ export default async function ResultsPage({
       ? `The team ran ${ran} and sent ${plural(run.requestsUsed, 'request', 'requests')}.`
       : `The team sent ${plural(run.requestsUsed, 'request', 'requests')}.`;
   const initial: FindingDetail[] = firstDetail === null ? [] : [firstDetail];
+  const gaps = notTested({
+    coverage: run.coverage,
+    endReason: run.coverage?.endReason ?? null,
+    excludedPaths: request?.excludedPaths ?? [],
+  });
+  const untried = run.coverage?.cases.filter((c) => c.status === 'not_run').length ?? 0;
 
   return (
     <div className="grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
@@ -238,7 +245,7 @@ export default async function ResultsPage({
           />
         ) : (
           <>
-            <ReleaseAll ids={awaiting.map((f) => f.id)} />
+            <ReleaseAll ids={awaiting.map((f) => f.id)} runId={run.id} />
             <IssueList
               items={proven}
               initial={initial}
@@ -249,6 +256,7 @@ export default async function ResultsPage({
           </>
         )}
         <KeptBack items={kept} viewerName={session.user.name} />
+        {live || !gaps.recorded ? null : <NotTestedList data={gaps} />}
         <YourDecisions rows={rows} chain={ledger?.chain ?? null} />
       </section>
 
@@ -269,6 +277,7 @@ export default async function ResultsPage({
           gate2={gate2Outcome(run.gate2)}
           webhook={workspace?.settings.webhook ?? null}
           ledgerHead={ledger?.items[0]?.hash ?? null}
+          untried={live ? 0 : untried}
         />
       </aside>
       {live ? <LiveRefresh /> : null}

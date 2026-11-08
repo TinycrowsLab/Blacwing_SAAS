@@ -329,7 +329,7 @@ describe('issue proof copy', () => {
   it('states the replay count and the control from stored evidence', () => {
     expect(proofSentence(detail)).toEqual({
       proven: true,
-      text: 'Proven: replayed 3 of 3 times, the control behaved as expected. No model involved.',
+      text: 'Proven: replayed 3 of 3 times, the control behaved as expected. Blackwing replayed it deterministically; Claude proposed the check and the control.',
     });
     expect(requestLine(detail.evidence.probe)).toBe('GET /metrics?a=1');
     expect(requestLine(detail.evidence.control)).toBeNull();

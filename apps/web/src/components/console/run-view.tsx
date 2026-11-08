@@ -26,13 +26,15 @@ import {
 import { Conversation, shortTime } from './conversation';
 import { buttonClass, Icon, VoiceTag } from './design';
 import { PendingButton, useCountdown } from './design-client';
-import { FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
+import { AccountsPanel, FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
 import { KillButton } from './kill-dialog';
 import { CARE_LABEL, ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
   type Exchange,
   TERMINAL_STATES,
+  accountUse,
   agentLanes,
+  blockingAsks,
   candidates,
   caseList,
   conversationItems,
@@ -445,12 +447,19 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const items = useMemo(() => conversationItems(events, gate2, viewerName), [events, gate2, viewerName]);
   const shownItems = useMemo(() => (filter === null ? items : filterConversation(items, filter)), [items, filter]);
   const spine = useMemo(() => stages(events, { terminal, approvedBy, stopped }), [events, terminal, approvedBy, stopped]);
-  const teamMap = useMemo(() => teamNodes(events, gate2, nowMs, terminal, stopped), [events, gate2, nowMs, terminal, stopped]);
+  const teamMap = useMemo(
+    () => teamNodes(events, gate2, nowMs, terminal, stopped, run.paused),
+    [events, gate2, nowMs, terminal, stopped, run.paused],
+  );
   const cases = useMemo(() => caseList(events), [events]);
   const cands = useMemo(() => candidates(events), [events]);
   const pending = run.gate2.filter((g) => isOpenGate2(g, nowMs));
   const pendingIds = pending.map((g) => g.id).join(',');
-  const waitingAgents = useMemo(() => new Set(pendingIds === '' ? [] : run.gate2.filter((g) => pendingIds.includes(g.id)).map((g) => g.agent)), [pendingIds, run.gate2]);
+  // Only an ask the runner waits on holds its agent; a non-blocking ask leaves it testing other cases.
+  const waitingAgents = useMemo(
+    () => new Set(pendingIds === '' ? [] : blockingAsks(events, run.gate2.filter((g) => pendingIds.includes(g.id))).map((g) => g.agent)),
+    [pendingIds, run.gate2, events],
+  );
   // The sidebar's "Waiting on you" polls every 5 s: when this run's open decisions change, it refreshes now, so the two
   // counts never disagree on screen.
   const firstPending = useRef(true);
@@ -464,10 +473,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const stopping = !terminal && events.some((e) => e.kind === 'kill.requested');
   const model = events.find((e) => e.kind === 'run.started')?.data.model;
 
-  const start = new Date(run.startedAt ?? run.createdAt).getTime();
-  const end = run.finishedAt === null ? (mounted ? nowMs : start) : new Date(run.finishedAt).getTime();
+  // Every clock starts when the run started: a queued run has no elapsed time and is never "quiet".
+  const queued = run.state === 'queued';
+  const startedMs = run.startedAt === null ? null : new Date(run.startedAt).getTime();
+  const end = run.finishedAt === null ? (mounted ? nowMs : (startedMs ?? 0)) : new Date(run.finishedAt).getTime();
+  const start = startedMs ?? end;
   const elapsedS = Math.max(0, (end - start) / 1000);
-  const lastEvent = events.at(-1);
+  const lastEvent = events.findLast((e) => startedMs === null || Date.parse(e.at) >= startedMs);
   const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk);
   // Paused is not "live": no new request goes out. A failing poll still says so first.
   const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests', short: 'Paused' } : polled;
@@ -485,7 +497,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         : 'Stopped with an error'
     : stopping
       ? 'Stopping…'
-      : run.state === 'queued'
+      : queued
         ? 'Queued'
         : run.paused
           ? pending.length > 0
@@ -505,7 +517,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const rows = useMemo(() => events.flatMap((e) => describe(e) ?? []), [events]);
   const lastPause = events.findLast((e) => e.kind === 'run.paused');
   const pausedFrom = (agent: string): number | null => {
-    const g = pending.find((x) => x.agent === agent);
+    const g = waitingAgents.has(agent) ? pending.find((x) => x.agent === agent) : undefined;
     if (g !== undefined) return g.createdAt === undefined ? end : new Date(g.createdAt).getTime();
     return run.paused && lastPause !== undefined ? new Date(lastPause.at).getTime() : null;
   };
@@ -545,9 +557,12 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     setTab(next.id);
     tabRefs.current[next.id]?.focus();
   };
+  const roles = run.pins.request?.testAccounts?.map((a) => a.role) ?? run.coverage?.rolesConfigured ?? [];
+  const used = accountUse(events);
   const sidePanel: ReactNode = (
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} />
+      <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} />
       <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
       <FoundPanel items={cands} ended={terminal} release={release === 'auto' || teamMap.autoReleased ? 'auto' : 'hold'} />
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
@@ -556,7 +571,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       </p>
     </>
   );
-  const liveShown = !terminal && mounted && synced;
+  const liveShown = !terminal && !queued && mounted && synced;
   const statePillEl: ReactNode =
     pending.length > 0 && !terminal ? (
       <button
@@ -719,6 +734,18 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       </header>
 
       <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)} resultsHref={terminal ? resultsHref : null} />
+
+      {queued && !stopping ? (
+        <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">
+          <Icon name="clock" size={14} className="shrink-0 text-foreground" />
+          <span>
+            <b className="font-semibold text-foreground">Waiting to start.</b>{' '}
+            {run.queue === null
+              ? 'Nothing has been sent to the site yet.'
+              : `${run.queue.ahead === 0 ? 'No audit is ahead of this one' : `${run.queue.ahead} ${run.queue.ahead === 1 ? 'audit is' : 'audits are'} ahead`}. Blackwing runs ${run.queue.concurrency} at a time. Nothing has been sent to the site yet.`}
+          </span>
+        </p>
+      ) : null}
 
       {run.paused && !terminal && !stopping ? (
         <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">

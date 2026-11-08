@@ -270,7 +270,7 @@ export function IssueList({
 }
 
 /** "Release all proven": one triage call per awaiting finding with the shared reason (one ledger event each). */
-export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
+export function ReleaseAll({ ids, runId = null }: { readonly ids: readonly string[]; readonly runId?: string | null }) {
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState(PROVEN_REASON);
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +281,7 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
     if (settling || !reasonEnough(reason)) return;
     setError(null);
     await run(async () => {
-      const result = await releaseFindingsAction(ids, reason);
+      const result = await releaseFindingsAction(ids, reason, runId);
       startTransition(() => {
         if (!result.ok) setError(result.message);
         else if (result.data.failed > 0)

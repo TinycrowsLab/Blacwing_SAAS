@@ -9,11 +9,13 @@ import { useNudge } from './nudge';
 
 import type { ComponentProps } from 'react';
 
-export function NavLink({ onClick, ...props }: ComponentProps<typeof Link>) {
+/** No prefetch unless asked: a list of these links would otherwise render every target page at once (the 429s). */
+export function NavLink({ onClick, prefetch = false, ...props }: ComponentProps<typeof Link>) {
   const nudge = useNudge();
   return (
     <Link
       {...props}
+      prefetch={prefetch}
       onClick={(e) => {
         onClick?.(e);
         // A new tab, a download or a cancelled click is not a navigation of this page.

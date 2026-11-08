@@ -136,6 +136,8 @@ function ensureEnvFile() {
       ENV_FILE,
       `# Local Blackwing settings, written by scripts/blackwing.mjs. Gitignored: holds secrets.\n` +
         `# AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET: the Google OAuth client; BW_ADMIN_EMAILS: who may sign in (comma list).\n` +
+        `# BW_LAB_ORIGINS (optional, empty by default): comma list of private or local origins you run as labs, e.g.\n` +
+        `# http://127.0.0.1:3001. Only these private addresses can be registered and tested.\n` +
         `${body}\n`,
       { mode: 0o600 },
     );
@@ -161,6 +163,8 @@ function stackEnv(local, dbName = DB_NAME, apiPort = API_PORT, workerHealthPort 
     MIGRATION_DATABASE_URL: dbUrl(base.MIGRATION_DATABASE_URL),
     PGDATABASE: dbName,
     API_PORT: String(apiPort),
+    // The API serves the console's server only: bind it to loopback.
+    API_HOST: '127.0.0.1',
     WORKER_HEALTH_PORT: String(workerHealthPort),
     WEB_ORIGIN: CONSOLE_ORIGIN,
     BW_CONSOLE_ORIGIN: CONSOLE_ORIGIN,
@@ -171,6 +175,8 @@ function stackEnv(local, dbName = DB_NAME, apiPort = API_PORT, workerHealthPort 
     BW_DEMO_API_ORIGIN: `http://127.0.0.1:${apiPort}`,
     BW_DEMO_TENANT_ID: local.BW_DEMO_TENANT_ID ?? '',
     BW_GATE2_TIMEOUT_S: GATE2_TIMEOUT_S,
+    BW_HUNT_CONCURRENCY:
+      process.env.BW_HUNT_CONCURRENCY ?? base.BW_HUNT_CONCURRENCY ?? local.BW_HUNT_CONCURRENCY ?? '3',
     // Auth.js (web): Google sign-in, JWT session cookie, callback at <AUTH_URL>/api/auth/callback/google.
     AUTH_URL: CONSOLE_ORIGIN,
     AUTH_TRUST_HOST: 'true',

@@ -11,12 +11,13 @@ import {
   HttpStatus,
   Inject,
   Param,
+  Patch,
   Post,
   UseFilters,
 } from '@nestjs/common';
 import { z } from 'zod';
 
-import { BUDGET_LIMITS, type DemoConfig } from './config.js';
+import { BUDGET_LIMITS, OBJECTIVE_MAX, type DemoConfig } from './config.js';
 import { DemoRefusalFilter } from './filter.js';
 import {
   REPORT_FORMATS,
@@ -34,6 +35,7 @@ import {
   type DemoService,
 } from './service.js';
 import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
+import { RateLimit } from '../rate-limit/policy.js';
 import { PublicRoute } from '../tenant/public-route.js';
 import { createZodDto, ZodBody, ZodQuery } from '../validation/index.js';
 
@@ -44,7 +46,7 @@ const LIMITS = {
   url: 2048,
   path: 512,
   listItems: 50,
-  objective: 2000,
+  objective: OBJECTIVE_MAX,
   reason: 500,
   statement: 1000,
   workspaceNameMin: 2,
@@ -55,6 +57,7 @@ const LIMITS = {
   headerName: 64,
   headerValue: 4096,
   reasonMin: 8,
+  batchIds: 200,
 } as const;
 
 const SECONDS_PER_MINUTE = 60;
@@ -65,7 +68,8 @@ const RESERVED_HEADERS = ['host', 'content-length', 'connection', 'transfer-enco
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const webUrl = z.url({ protocol: /^https?$/ }).max(LIMITS.url);
-const excludedPaths = z.array(z.string().min(1).max(LIMITS.path).startsWith('/')).max(LIMITS.listItems).default([]);
+const pathList = z.array(z.string().min(1).max(LIMITS.path).startsWith('/')).max(LIMITS.listItems);
+const excludedPaths = pathList.default([]);
 
 const createAssetSchema = z.strictObject({
   name: z.string().trim().min(1).max(LIMITS.name),
@@ -93,8 +97,11 @@ const testAccountSchema = z.strictObject({
   headerValue: z.string().min(1).max(LIMITS.headerValue),
 });
 
-const createRequestSchema = z.strictObject({
-  assetId: z.string().regex(UUID),
+const uniqueRoles = (accounts: readonly { role: string }[]): boolean =>
+  new Set(accounts.map((a) => a.role.toLowerCase())).size === accounts.length;
+
+/** The plan fields with the same limits for a new request and for an edit. */
+const planFields = {
   objective: z.string().trim().min(1).max(LIMITS.objective),
   intrusiveness: z.enum(INTRUSIVENESS),
   budgetRequests: z.int().min(BUDGET_LIMITS.requests.min).max(BUDGET_LIMITS.requests.max),
@@ -103,17 +110,43 @@ const createRequestSchema = z.strictObject({
     .min(BUDGET_LIMITS.minutes.min * SECONDS_PER_MINUTE)
     .max(BUDGET_LIMITS.minutes.max * SECONDS_PER_MINUTE),
   costCapUsd: z.number().min(BUDGET_LIMITS.costUsd.min).max(BUDGET_LIMITS.costUsd.max),
-  excludedPaths,
   /** Gate 3: `hold` keeps proven findings for a human release; `auto` releases them as the validator proves them. */
-  releaseProven: z.enum(RELEASE_MODES).default('hold'),
+  releaseProven: z.enum(RELEASE_MODES),
+};
+
+const createRequestSchema = z.strictObject({
+  assetId: z.string().regex(UUID),
+  ...planFields,
+  excludedPaths,
+  releaseProven: planFields.releaseProven.default('hold'),
   testAccounts: z
     .array(testAccountSchema)
     .max(LIMITS.testAccounts)
     .default([])
-    .refine((accounts) => new Set(accounts.map((a) => a.role.toLowerCase())).size === accounts.length, {
-      message: 'Test account roles must be unique.',
-    }),
+    .refine(uniqueRoles, { message: 'Test account roles must be unique.' }),
 });
+
+/** PATCH /requests/:id: the version the editor saw, plus at least one plan field. */
+export const amendRequestSchema = z
+  .strictObject({
+    version: z.int().min(1),
+    objective: planFields.objective.optional(),
+    intrusiveness: planFields.intrusiveness.optional(),
+    budgetRequests: planFields.budgetRequests.optional(),
+    budgetSeconds: planFields.budgetSeconds.optional(),
+    costCapUsd: planFields.costCapUsd.optional(),
+    excludedPaths: pathList.optional(),
+    releaseProven: planFields.releaseProven.optional(),
+    /** Omitted = unchanged; an account without `headerValue` keeps the value stored for that role. */
+    testAccounts: z
+      .array(testAccountSchema.extend({ headerValue: testAccountSchema.shape.headerValue.optional() }))
+      .max(LIMITS.testAccounts)
+      .refine(uniqueRoles, { message: 'Test account roles must be unique.' })
+      .optional(),
+  })
+  .refine((body) => Object.keys(body).some((key) => key !== 'version'), {
+    message: 'Change at least one plan field.',
+  });
 
 export const workspaceSchema = z.strictObject({
   name: z.string().trim().min(LIMITS.workspaceNameMin).max(LIMITS.workspaceNameMax),
@@ -122,7 +155,15 @@ export const workspaceSchema = z.strictObject({
 const decisionSchema = z.strictObject({
   decision: z.enum(['approve', 'reject']),
   reason: z.string().max(LIMITS.reason).nullable().default(null),
+  /** The plan version the approver saw: a newer plan is refused (`plan_changed`). */
+  version: z.int().min(1).optional(),
 });
+
+/** Optional body: an empty request keeps the plain clone. */
+const cloneSchema = z.preprocess(
+  (body) => body ?? {},
+  z.strictObject({ untriedFromRunId: z.string().regex(UUID).optional() }),
+);
 
 const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });
 export const gate2DecisionSchema = z
@@ -138,6 +179,15 @@ const triageSchema = z.strictObject({
   decision: z.enum(['release', 'dismiss']),
   reason: z.string().trim().min(LIMITS.reasonMin).max(LIMITS.reason),
 });
+export const triageManySchema = triageSchema.extend({
+  ids: z
+    .array(z.string().regex(UUID))
+    .min(1)
+    .max(LIMITS.batchIds)
+    .refine((ids) => new Set(ids.map((id) => id.toLowerCase())).size === ids.length, {
+      message: 'Each finding may be listed once.',
+    }),
+});
 
 const afterSeqQuerySchema = z.object({ afterSeq: z.coerce.number().int().min(0).default(0) });
 const reportQuerySchema = z.object({ format: z.enum(REPORT_FORMATS).default('html') });
@@ -147,6 +197,9 @@ class CreateAssetDto extends createZodDto(createAssetSchema) {}
 class VerifyAssetDto extends createZodDto(verifyAssetSchema) {}
 class CreateRequestDto extends createZodDto(createRequestSchema) {}
 class DecisionDto extends createZodDto(decisionSchema) {}
+class AmendRequestDto extends createZodDto(amendRequestSchema) {}
+class CloneDto extends createZodDto(cloneSchema) {}
+class TriageManyDto extends createZodDto(triageManySchema) {}
 class WorkspaceDto extends createZodDto(workspaceSchema) {}
 class KillDto extends createZodDto(killSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
@@ -172,6 +225,7 @@ function tokenMatches(presented: string | undefined, expected: string): boolean 
 }
 
 @PublicRoute()
+@RateLimit({ rps: 20, burst: 60 })
 @UseFilters(DemoRefusalFilter)
 @Controller('demo')
 export class DemoController {
@@ -295,13 +349,36 @@ export class DemoController {
     @ZodBody(DecisionDto) body: DecisionDto,
   ): Promise<unknown> {
     const actor = await this.actor(headers);
-    return this.service.decideGate1(actor, uuid(id, 'request'), body.decision, body.reason);
+    return this.service.decideGate1(actor, uuid(id, 'request'), body.decision, body.reason, body.version ?? null);
   }
 
-  /** Retest: a new pending request with the same answers. Test-account secrets are copied here, never sent to the browser. */
+  /** Edits a pending plan in place. Test-account values the browser does not resend are kept server-side. */
+  @Patch('requests/:id')
+  @HttpCode(HttpStatus.OK)
+  async amendRequest(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @ZodBody(AmendRequestDto) body: AmendRequestDto,
+  ): Promise<unknown> {
+    return this.service.amendRequest(await this.actor(headers), uuid(id, 'request'), body);
+  }
+
+  /**
+   * Retest: a new pending request with the same answers (optionally plus the test cases a run left untried).
+   * Test-account secrets are copied here, never sent to the browser.
+   */
   @Post('requests/:id/clone')
-  async cloneRequest(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
-    return this.service.cloneRequest(await this.actor(headers), uuid(id, 'request'));
+  async cloneRequest(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @ZodBody(CloneDto) body: CloneDto,
+  ): Promise<unknown> {
+    const runId = body.untriedFromRunId;
+    return this.service.cloneRequest(
+      await this.actor(headers),
+      uuid(id, 'request'),
+      runId === undefined ? undefined : uuid(runId, 'run'),
+    );
   }
 
   @Post('requests/:id/runs')
@@ -352,8 +429,7 @@ export class DemoController {
 
   @Get('gate2/:id')
   async gate2(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
-    await this.actor(headers);
-    return this.service.gate2(uuid(id, 'Gate 2 request'));
+    return this.service.gate2(uuid(id, 'Gate 2 request'), await this.actor(headers));
   }
 
   @Post('gate2/:id/decision')
@@ -379,6 +455,16 @@ export class DemoController {
   @Get('findings/:id')
   async finding(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
     return this.service.findingDetail(await this.actor(headers), uuid(id, 'finding'));
+  }
+
+  /** Batch Gate 3: one call for "Release all" / "Dismiss all". */
+  @Post('findings/triage')
+  @HttpCode(HttpStatus.OK)
+  async triageMany(
+    @Headers() headers: RequestHeaders,
+    @ZodBody(TriageManyDto) body: TriageManyDto,
+  ): Promise<unknown> {
+    return this.service.triageMany(await this.actor(headers), body.ids, body.decision, body.reason);
   }
 
   @Post('findings/:id/triage')

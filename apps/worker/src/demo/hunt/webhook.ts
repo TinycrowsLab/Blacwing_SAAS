@@ -1,4 +1,6 @@
 // Optional delivery of a released finding to a Slack-compatible webhook. No webhook configured means nothing happens.
+import { scrubDeep } from '@blackwing/errors/scrub';
+
 import type { HuntContext } from './context.js';
 
 const WEBHOOK_TIMEOUT_MS = 5000;
@@ -28,7 +30,8 @@ export async function deliverRelease(ctx: HuntContext, finding: ReleasedFinding)
     const response = await ctx.deps.fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      // Leaves Blackwing: scrubbed again even though the stored fields already are.
+      body: JSON.stringify(scrubDeep(body)),
       redirect: 'manual',
       signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     });

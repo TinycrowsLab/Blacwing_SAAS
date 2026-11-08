@@ -1,9 +1,12 @@
 // DEMO-STORY report renderer: one finding, or one run's released findings, as a standalone HTML page, Markdown,
 // JSON or SARIF. Pure functions, no IO.
-// Every value from the target (bodies, headers) is escaped before it reaches HTML (it is untrusted).
+// Every value from the target (bodies, headers) is escaped before it reaches HTML (it is untrusted), and every
+// finding and summary is scrubbed of secrets first (rows stored before store-time scrubbing too).
 import { z } from 'zod';
 
-import { assetDto, findingDto, requestDto, runDto, shortId } from './service.js';
+import { scrub, scrubDeep } from '@blackwing/errors/scrub';
+
+import { assetDto, findingDto, owaspLabel, requestDto, runDto, scrubFinding, shortId } from './service.js';
 
 import type { AssetRow, FindingRow, RequestRow, RunRow } from './store.js';
 
@@ -18,6 +21,12 @@ export interface RunReportInput {
   readonly request: RequestRow;
   /** Released findings only. */
   readonly findings: readonly FindingRow[];
+  /** The run's last `coverage.summary` data (null for old or unfinished runs). */
+  readonly coverage?: Record<string, unknown> | null;
+  /** How the run ended (`run.completed|failed|killed` event data), null while it runs. */
+  readonly endReason?: string | null;
+  /** The console's origin: SARIF `informationUri`. */
+  readonly consoleOrigin?: string;
 }
 
 export interface ReportInput {
@@ -79,11 +88,49 @@ const controlOf = (ev: Evidence): Exchange | undefined => (ev.reason === undefin
 const LIMITATIONS = [
   'Proof of concept: severity is the model-proposed label, not a computed CVSS score.',
   'The description is written by the agent and is not verified. The replays, oracle and negative control are.',
-  'Detection only: probes are the minimum needed to prove the issue and no data was extracted.',
+  'Detection only: probes are the minimum needed to prove the issue.',
 ];
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'] as const;
 const SARIF_LEVEL: Record<string, string> = { critical: 'error', high: 'error', medium: 'warning' };
+/** GitHub code scanning's `security-severity` per level (critical..info). */
+const SECURITY_SEVERITY: Record<string, string> = { critical: '9.5', high: '8.0', medium: '5.5', low: '3.0', info: '0.0' };
+const severityRank = (level: string): number => {
+  const index = (SEVERITIES as readonly string[]).indexOf(level);
+  return index < 0 ? SEVERITIES.length : index;
+};
+
+/** One SARIF rule per CWE: its first finding's title, the CWE page, the OWASP tag and the highest severity seen. */
+function sarifRules(findings: readonly FindingRow[]): Record<string, unknown>[] {
+  return [...new Set(findings.map((f) => f.cwe_id))].map((id) => {
+    const same = findings.filter((f) => f.cwe_id === id);
+    const top = [...same].sort((a, b) => severityRank(severityOf(a.severity)) - severityRank(severityOf(b.severity)))[0];
+    const number = /(\d+)/.exec(id)?.[1];
+    return {
+      id,
+      name: id,
+      shortDescription: { text: same[0]?.title ?? id },
+      ...(number === undefined ? {} : { helpUri: `https://cwe.mitre.org/data/definitions/${number}.html` }),
+      properties: {
+        tags: [owaspLabel(same[0]?.owasp_category ?? ''), 'security'].filter((t) => t !== ''),
+        'security-severity': SECURITY_SEVERITY[top === undefined ? 'info' : severityOf(top.severity)] ?? '0.0',
+      },
+    };
+  });
+}
+
+/** A location relative to the target's base (`TARGET`), or the absolute URL when it is on another origin. */
+function sarifLocation(url: string, base: string): Record<string, unknown> {
+  try {
+    const parsed = new URL(url);
+    if (parsed.origin === base) {
+      return { artifactLocation: { uri: `${parsed.pathname.replace(/^\//, '')}${parsed.search}`, uriBaseId: 'TARGET' } };
+    }
+  } catch {
+    // Not a URL: reported as stored.
+  }
+  return { artifactLocation: { uri: url } };
+}
 
 /** Description, oracle, reproduction, replays and evidence of one finding; `h` is the heading prefix. */
 function findingMarkdown(finding: FindingRow, ev: Evidence, h: string): string[] {
@@ -183,7 +230,8 @@ const limitationsHtml = `<h2>Limitations</h2>
 `;
 
 export function renderReport(input: ReportInput, format: ReportFormat): RenderedReport {
-  const { finding, run, asset, request } = input;
+  const { run, asset, request } = input;
+  const finding = scrubFinding(input.finding);
   const ev = evidenceOf(finding);
   const severity = severityOf(finding.severity);
   const base = `finding-${finding.id.slice(0, ID_PREFIX_LENGTH)}`;
@@ -195,7 +243,7 @@ export function renderReport(input: ReportInput, format: ReportFormat): Rendered
       `# ${finding.title}`,
       '',
       `Status: **${finding.status}**  `,
-      `Severity: ${severity}  CWE: ${finding.cwe_id}  OWASP: ${finding.owasp_category}  Agent: ${finding.agent ?? 'n/a'}  `,
+      `Severity: ${severity}  CWE: ${finding.cwe_id}  OWASP: ${owaspLabel(finding.owasp_category)}  Agent: ${finding.agent ?? 'n/a'}  `,
       `Asset: ${asset.name} (${asset.base_url}), ownership ${asset.ownership_status}  `,
       `Run: ${run_}  `,
       `Gate 1: ${gate1}  `,
@@ -205,7 +253,7 @@ export function renderReport(input: ReportInput, format: ReportFormat): Rendered
       '## Scope and pins',
       '',
       '```json',
-      JSON.stringify(run.pins, null, 2),
+      JSON.stringify(scrubDeep(run.pins), null, 2),
       '```',
       '',
       '## Limitations',
@@ -220,7 +268,7 @@ export function renderReport(input: ReportInput, format: ReportFormat): Rendered
     finding.title,
     `<h1>${esc(finding.title)}</h1>
 <p class="meta">Blackwing report. Generated ${esc(finding.created_at.toISOString())}.</p>
-<p><span class="badge">${esc(finding.status)}</span><span class="badge">${esc(severity)}</span><span class="badge">${esc(finding.cwe_id)}</span><span class="badge">${esc(finding.owasp_category)}</span></p>
+<p><span class="badge">${esc(finding.status)}</span><span class="badge">${esc(severity)}</span><span class="badge">${esc(finding.cwe_id)}</span><span class="badge">${esc(owaspLabel(finding.owasp_category))}</span></p>
 <table>
 <tr><th>Asset</th><td>${esc(asset.name)} (${esc(asset.base_url)}), ownership ${esc(asset.ownership_status)}</td></tr>
 <tr><th>Run</th><td>${esc(run_)}</td></tr>
@@ -228,7 +276,7 @@ export function renderReport(input: ReportInput, format: ReportFormat): Rendered
 <tr><th>Agent</th><td>${esc(finding.agent ?? 'n/a')}</td></tr>
 </table>
 ${findingHtml(finding, ev, 'h2')}<h2>Scope and pins</h2>
-<pre><code>${esc(JSON.stringify(run.pins, null, 2))}</code></pre>
+<pre><code>${esc(JSON.stringify(scrubDeep(run.pins), null, 2))}</code></pre>
 ${limitationsHtml}`,
   );
   return { contentType: 'text/html; charset=utf-8', filename: `${base}.html`, body };
@@ -236,7 +284,8 @@ ${limitationsHtml}`,
 
 /** One run: the released findings only, as HTML, Markdown, JSON or SARIF. */
 export function renderRunReport(input: RunReportInput, format: RunReportFormat): RenderedReport {
-  const { run, asset, request, findings } = input;
+  const { run, asset, request } = input;
+  const findings = input.findings.map(scrubFinding);
   const base = `run-${run.id.slice(0, ID_PREFIX_LENGTH)}`;
   const counts = Object.fromEntries(
     SEVERITIES.map((s) => [s, findings.filter((f) => severityOf(f.severity) === s).length]),
@@ -247,10 +296,11 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
     const assetInfo = { ...assetDto(asset), verification: undefined };
     const body = JSON.stringify(
       {
-        run: runDto(run),
+        run: { ...runDto(run), endReason: input.endReason ?? null },
         asset: assetInfo,
         request: requestDto(request),
         counts,
+        coverage: input.coverage ?? null,
         findings: findings.map((f) => findingDto(f)),
       },
       null,
@@ -260,21 +310,27 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
   }
 
   if (format === 'sarif') {
-    const rules = [...new Set(findings.map((f) => f.cwe_id))].map((id) => ({ id }));
+    const target = new URL(asset.base_url).origin;
     const results = findings.map((f) => ({
       ruleId: f.cwe_id,
       level: SARIF_LEVEL[severityOf(f.severity)] ?? 'note',
       message: { text: f.title },
-      locations:
-        f.location.url === undefined
-          ? []
-          : [{ physicalLocation: { artifactLocation: { uri: f.location.url } } }],
+      partialFingerprints: { 'blackwingIdentity/v1': f.identity_key ?? f.fingerprint },
+      properties: { findingId: f.id },
+      locations: f.location.url === undefined ? [] : [{ physicalLocation: sarifLocation(f.location.url, target) }],
     }));
+    const runner = (run.pins as { runner?: { version?: unknown } }).runner;
+    const driver = {
+      name: 'Blackwing',
+      ...(typeof runner?.version === 'string' ? { version: runner.version } : {}),
+      ...(input.consoleOrigin === undefined ? {} : { informationUri: input.consoleOrigin }),
+      rules: sarifRules(findings),
+    };
     const body = JSON.stringify(
       {
         version: '2.1.0',
         $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
-        runs: [{ tool: { driver: { name: 'Blackwing', rules } }, results }],
+        runs: [{ tool: { driver }, originalUriBaseIds: { TARGET: { uri: `${target}/` } }, results }],
       },
       null,
       2,
@@ -292,9 +348,9 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
     ['Cost', `$${Number(run.cost_usd).toFixed(2)}`],
   ];
   const countsLine = SEVERITIES.map((s) => `${s} ${counts[s]}`).join(', ');
-  const summary = run.summary ?? 'No summary recorded.';
+  const summary = run.summary === null ? 'No summary recorded.' : scrub(run.summary);
   const meta = (f: FindingRow): string =>
-    `Severity: ${severityOf(f.severity)}  CWE: ${f.cwe_id}  OWASP: ${f.owasp_category}  Agent: ${f.agent ?? 'n/a'}`;
+    `Severity: ${severityOf(f.severity)}  CWE: ${f.cwe_id}  OWASP: ${owaspLabel(f.owasp_category)}  Agent: ${f.agent ?? 'n/a'}`;
   const title = `Run ${shortId(run.id)} report`;
 
   if (format === 'md') {

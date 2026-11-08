@@ -11,7 +11,7 @@ const MIN_TOKEN_LENGTH = 32;
 /** Same variable and default as the worker (apps/worker/src/demo/main.ts); the launcher passes it to both. */
 const DEFAULT_GATE2_TIMEOUT_S = 300;
 /** Same variable and default as the worker (apps/worker/src/demo/main.ts): runs the hunt engine starts at once. */
-const DEFAULT_HUNT_CONCURRENCY = 3;
+export const DEFAULT_HUNT_CONCURRENCY = 3;
 /** The launcher's smoke API port (scripts/blackwing.mjs SMOKE_API_PORT): also Blackwing itself, never a target. */
 const SMOKE_API_PORT = 13401;
 const DEFAULT_API_PORT = 3000;

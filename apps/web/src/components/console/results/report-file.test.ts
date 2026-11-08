@@ -77,9 +77,69 @@ describe('run report file', () => {
   });
   it('names the file after the target and the day', () => {
     expect(reportFilename(source, 'html')).toBe('blackwing-report-local-shop-2026-11-06.html');
-    expect(reportLede(list)).toBe(
-      'Claude proved 2 issues that you released to this report: 1 high and 1 low.',
-    );
+    expect(reportLede(list)).toBe('2 issues were released to this report, all 2 proven by replay: 1 high and 1 low.');
     expect(reportLede([])).toContain('no issues');
+  });
+  it('splits proven from hand-released issues and never claims what did not happen', () => {
+    const unproven = { ...finding('u', 'medium', 'Unproven'), evidence: { ...finding('u', 'medium', 'x').evidence, reason: 'probe replay 2 did not match the oracle' } };
+    const src = reportSourceSchema.parse({ ...raw, findings: [finding('h', 'high', 'High'), unproven] });
+    expect(reportLede(ordered(src))).toBe(
+      '2 issues were released to this report (1 proven, 1 released without proof): 1 high and 1 medium.',
+    );
+    const md = renderMarkdown(source, list);
+    expect(md).not.toMatch(/no data was taken/i);
+    expect(md).toContain('No browser is used, so DOM-based XSS is not tested.');
+    expect(md).toContain(
+      'Blackwing did not record test-case coverage for this audit, so it cannot list the cases that did not run.',
+    );
+  });
+  it('reports the roles actually used and the cases that did not run', () => {
+    const src = reportSourceSchema.parse({
+      ...raw,
+      run: { ...raw.run, endReason: 'duration_budget', summary: 'Tested A.\n\n## Not covered\nThe payment flow, token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abcdefgh' },
+      request: { ...raw.request, testAccounts: [{ role: 'alice' }, { role: 'bob' }], excludedPaths: ['/setup.php'] },
+      coverage: {
+        cases: [
+          { id: 'a', title: 'Search SQLi', agent: 'web-api-specialist', status: 'executed' },
+          { id: 'b', title: 'Basket IDOR', agent: 'authz-specialist', status: 'not_run' },
+          { id: 'c', title: 'Admin page', agent: 'web-api-specialist', status: 'blocked', note: 'needed a denied POST' },
+        ],
+        rolesConfigured: ['alice', 'bob'],
+        rolesUsed: { alice: 14 },
+      },
+    });
+    const md = renderMarkdown(src, ordered(src));
+    expect(md).toContain('**Signed-in testing:** Configured: alice, bob · used in 14 requests (alice 14, bob 0)');
+    expect(md).toContain('**Test cases:** 1 of 3 planned test cases ran');
+    expect(md).toContain('- **Basket IDOR:** Not tried: the time limit came first');
+    expect(md).toContain('- **Admin page:** Blocked: needed a denied POST');
+    expect(md).toContain('- **/setup.php:** Left out on purpose: the plan excluded these paths');
+    expect(md).toContain('Claude’s own note (not verified):');
+    expect(md).not.toContain('eyJhbGciOiJIUzI1NiJ9');
+    expect(md).not.toContain('Tested A.');
+    const none = reportSourceSchema.parse({ ...raw, request: { ...raw.request, testAccounts: [{ role: 'alice' }] }, coverage: { cases: [], rolesUsed: {} } });
+    expect(renderMarkdown(none, [])).toContain('Configured: alice · not used in any request');
+  });
+  it('scrubs secrets the site gave the agents, at render time too', () => {
+    const leaky = {
+      ...finding('s', 'high', 'Config leak'),
+      reproCurl: "curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abcdefgh' http://127.0.0.1:3082/x",
+      evidence: {
+        ...finding('s', 'high', 'x').evidence,
+        probe: {
+          request: { method: 'GET', url: 'http://127.0.0.1:3082/config/config.inc.php.bak' },
+          response: { status: 200, bodyExcerpt: "$_DVWA[ 'db_password' ] = 'vulnerables';" },
+        },
+      },
+    };
+    const src = reportSourceSchema.parse({ ...raw, findings: [leaky] });
+    const html = renderHtml(src, ordered(src), '2026-11-07T00:00:00.000Z');
+    const md = renderMarkdown(src, ordered(src));
+    const json = renderJson({ ...raw, findings: [leaky] }, ordered(src));
+    for (const out of [html, md, json]) {
+      expect(out).not.toContain('vulnerables');
+      expect(out).not.toContain('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0');
+    }
+    expect(md).toContain('[redacted:');
   });
 });

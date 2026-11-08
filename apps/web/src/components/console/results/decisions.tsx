@@ -6,7 +6,7 @@ import { Icon } from '../design';
 import { LocalTime } from './local-time';
 import { NavLink } from './nav-link';
 
-import type { DecisionRow, Ledger } from './model';
+import type { DecisionRow, Ledger, NotTested } from './model';
 
 /** A request line in mono that wraps only after a "/", "?" or "&", never in the middle of a word. */
 export function Path({
@@ -119,6 +119,32 @@ export function YourDecisions({
             Chain check failed at #{chain.brokenAtSeq}. Open the ledger
           </NavLink>
         )}
+      </p>
+    </section>
+  );
+}
+
+/** "What was not tested and why" (results/model `notTested`): every case that did not run, and what the plan left out. */
+export function NotTestedList({ data }: { readonly data: NotTested }) {
+  if (data.rows.length === 0) return null;
+  return (
+    <section aria-labelledby="not-tested-h" className="flex flex-col gap-1">
+      <h2 id="not-tested-h" className="m-0 mb-1 text-[17px] font-semibold text-foreground">
+        What was not tested and why
+      </h2>
+      <ul className="m-0 list-none p-0">
+        {data.rows.map((r) => (
+          <li
+            key={`${r.what}-${r.why}`}
+            className="grid gap-x-4 gap-y-0.5 border-b border-border py-2.5 text-[13.5px] leading-[21px] sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
+          >
+            <span className="min-w-0 break-words font-medium text-foreground">{r.what}</span>
+            <span className="min-w-0 break-words text-muted-foreground">{r.why}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="m-0 mt-1.5 text-[12.5px] leading-5 text-muted-foreground">
+        No browser is used, so DOM-based XSS is not tested. The downloaded report lists the same.
       </p>
     </section>
   );

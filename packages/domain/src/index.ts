@@ -254,6 +254,7 @@ export {
   isKnownCwe,
   isKnownOwaspTop10,
   isKnownWstg,
+  owaspTop10Title,
 } from './testcases/standards.js';
 export {
   INFRA_CATALOGUE,

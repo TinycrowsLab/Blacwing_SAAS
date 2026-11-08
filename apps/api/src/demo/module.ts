@@ -27,7 +27,11 @@ export class DemoModule {
           useFactory: (store: DemoStore) => new DemoService(store, config.tenantId, fetch, {
               webhookUrl: config.webhookUrl,
               consoleOrigin: config.consoleOrigin,
-            }, { gate2TimeoutS: config.gate2TimeoutS }),
+            }, {
+              gate2TimeoutS: config.gate2TimeoutS,
+              huntConcurrency: config.huntConcurrency,
+              origins: config.origins,
+            }),
         },
       ],
     };

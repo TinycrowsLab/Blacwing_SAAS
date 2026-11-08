@@ -88,6 +88,8 @@ describe('scrub', () => {
     const text = "curl -H 'Authorization: [redacted: role alice]' http://127.0.0.1:5077/users/v1";
     expect(scrub(text)).toBe(text);
     expect(scrub('{"token":"[redacted: role bob]"}')).toBe('{"token":"[redacted: role bob]"}');
+    const curl = "curl -H 'authorization: <alice credential>' http://127.0.0.1:5077/me";
+    expect(scrub(curl)).toBe(curl);
   });
 
   it('is idempotent', () => {

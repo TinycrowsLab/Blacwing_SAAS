@@ -6,8 +6,10 @@ import {
   grantScope,
   inboxOrder,
   type InboxItem,
+  intentLabel,
   plainWhy,
   roleFromPathKey,
+  whoseAudit,
 } from './gate2-view';
 
 import type { Gate2 } from '../../lib/schemas';
@@ -92,11 +94,29 @@ describe('Gate 2 memory and plain words', () => {
 
   it('says what an allow really covers: every agent, any body, no further question', () => {
     expect(grantScope({ method: 'POST', url: 'http://x.test/api/Users?x=1' }, null)).toBe(
-      "Allowing covers every POST /api/Users sent without signing in, from any agent and with any body, until this audit ends. Claude won't ask about it again.",
+      "Allowing covers every POST /api/Users sent without signing in, from any agent and with any body, until this audit ends. Claude won't ask about it again. If this becomes a finding, Blackwing sends it once more to check it.",
     );
     expect(
       grantScope({ method: 'POST', url: 'http://x.test/rest/basket' }, 'customer_a'),
     ).toContain('sent as customer_a');
+  });
+});
+
+describe('Gate 2 card labels', () => {
+  it('names a sign-in as one, not as a data change', () => {
+    expect(intentLabel('POST', 'http://x.test/rest/user/login')).toBe('Signs in');
+    expect(intentLabel('POST', 'http://x.test/users/v1/login?next=/')).toBe('Signs in');
+    expect(intentLabel('POST', 'http://x.test/oauth/token')).toBe('Signs in');
+    expect(intentLabel('POST', 'http://x.test/api/Users')).toBe('May change data');
+    expect(intentLabel('DELETE', 'http://x.test/api/Users/3')).toBe('May change data');
+    expect(intentLabel('POST', 'http://x.test/api/authors')).toBe('May change data');
+    expect(intentLabel('GET', 'http://x.test/rest/products')).toBeNull();
+  });
+
+  it('never invents an owner for an audit it could not read', () => {
+    expect(whoseAudit({ mine: true, requester: 'Avery' })).toBe('your audit');
+    expect(whoseAudit({ mine: false, requester: 'Avery' })).toBe('Avery’s audit');
+    expect(whoseAudit({ mine: false, requester: null })).toBe('an audit (owner unknown)');
   });
 });
 

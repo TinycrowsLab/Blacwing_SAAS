@@ -87,6 +87,45 @@ export function LimitsPanel({
   );
 }
 
+/**
+ * "Account use": requests actually sent as each test account (from `http.sent.asRole`), so signed-in testing is seen to
+ * happen, or seen not to. `warned`: the runner said no request has used them yet.
+ */
+export function AccountsPanel({
+  roles,
+  used,
+  warned,
+}: {
+  readonly roles: readonly string[];
+  readonly used: ReadonlyMap<string, number>;
+  readonly warned: boolean;
+}) {
+  if (roles.length === 0) return null;
+  const total = roles.reduce((n, r) => n + (used.get(r) ?? 0), 0);
+  return (
+    <section aria-labelledby="accounts-h">
+      <h2 id="accounts-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+        Account use
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">requests sent as</span>
+      </h2>
+      <dl className="m-0 flex flex-col gap-[3px] text-[12px] text-muted-foreground">
+        {roles.map((r) => (
+          <div key={r} className="flex items-center gap-1.5">
+            <dt className="min-w-0 truncate font-mono text-foreground">{r}</dt>
+            <dd className="m-0 ml-auto font-semibold tabular-nums text-foreground">{(used.get(r) ?? 0).toLocaleString('en-US')}</dd>
+          </div>
+        ))}
+      </dl>
+      {total === 0 && warned ? (
+        <p className="m-0 mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-4 text-warn">
+          <Icon name="warn" size={12} className="mt-0.5 shrink-0" />
+          No request has used your test accounts yet.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 const PLAN_PARTS = [
   { key: 'done', label: 'Done', colour: 'var(--text)' },
   { key: 'running', label: 'Running', colour: 'var(--slate)' },
@@ -218,7 +257,7 @@ export function FoundPanel({
               {c.findingId === null ? (
                 <span>{c.title}</span>
               ) : (
-                <Link href={`/findings/${c.findingId}`} className="text-foreground no-underline hover:underline">
+                <Link href={`/findings/${c.findingId}`} prefetch={false} className="text-foreground no-underline hover:underline">
                   {c.title}
                 </Link>
               )}

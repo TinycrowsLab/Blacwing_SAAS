@@ -20,7 +20,7 @@ import {
 
 import { Icon, type IconName, Kbd } from './design';
 import { Countdown } from './design-client';
-import { KillButton } from './kill-dialog';
+import { KillButton, type StoppableRun } from './kill-dialog';
 import { MobileBar } from './mobile-bar';
 import { useDarkTheme } from './theme-toggle';
 import { useNow } from './use-now';
@@ -62,13 +62,40 @@ const typing = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
+type LiveRun = SidebarData['live'][number];
+
+const stoppable = (r: LiveRun, actorId: string | null): StoppableRun => ({
+  id: r.id,
+  assetName: r.assetName ?? 'this audit',
+  startedAt: r.startedAt,
+  startedBy: r.startedBy?.name ?? null,
+  mine: actorId !== null && r.startedBy?.id === actorId,
+});
+
 /**
- * The audit Stop acts on (button, Ctrl+Shift+. and the phone's red icon): on an audit's own page that audit, or none
- * once it ended (never another audit behind the one on screen); elsewhere the newest live one.
+ * What Stop acts on (button, Ctrl+Shift+. and the phone's red icon). On an audit's own page: that audit, or nothing once
+ * it ended (never another audit behind the one on screen). Elsewhere nothing is preselected: Stop lists the live
+ * audits, with who started each and when, and the person picks. Exported for the unit test.
  */
-function stopTarget<T extends { readonly id: string }>(live: readonly T[], path: string): T | undefined {
+export function stopTarget(
+  data: Pick<SidebarData, 'live' | 'actorId'> | null,
+  path: string,
+): { readonly run: StoppableRun | null; readonly choices: readonly StoppableRun[]; readonly onRunPage: boolean } {
+  const live = data?.live ?? [];
+  const actorId = data?.actorId ?? null;
   const onRun = /^\/runs\/([^/]+)/.exec(path)?.[1];
-  return onRun === undefined ? live[0] : live.find((r) => r.id === decodeURIComponent(onRun));
+  if (onRun !== undefined) {
+    const here = live.find((r) => r.id === decodeURIComponent(onRun));
+    return { run: here === undefined ? null : stoppable(here, actorId), choices: [], onRunPage: true };
+  }
+  return { run: null, choices: live.map((r) => stoppable(r, actorId)), onRunPage: false };
+}
+
+/** What waits on people: exact when the API counts it, else what the (capped) lists hold. */
+export function waitingCount(data: SidebarData | null): number {
+  if (data === null) return 0;
+  const listed = data.gate2.length + data.plans.length + data.releases.length;
+  return data.counts === null ? listed : Math.max(listed, data.counts.gate1 + data.counts.gate2 + data.counts.gate3);
 }
 
 function hostOf(url: string): string {
@@ -187,7 +214,7 @@ function Row({
   return (
     <Link
       href={href}
-      prefetch
+      prefetch={false}
       aria-current={current ? 'page' : undefined}
       className={`grid grid-cols-[14px_minmax(0,1fr)] gap-x-2 rounded-[9px] px-2.5 py-2 text-foreground no-underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${current ? 'bg-card shadow-[inset_0_0_0_1px_var(--border)]' : 'hover:bg-surface-2'}`}
     >
@@ -299,10 +326,11 @@ function SidebarBody({
   const path = usePathname();
   const now = useNow(true, 30_000);
   const drafts = useDrafts();
-  const decisions = data === null ? 0 : data.gate2.length + data.plans.length + data.releases.length;
+  const router = useRouter();
+  const decisions = waitingCount(data);
+  const listed = data === null ? 0 : data.gate2.length + data.plans.length + data.releases.length;
   const live = data?.live ?? [];
-  const newest = stopTarget(live, path);
-  const onNewestPage = newest !== undefined && path.startsWith(`/runs/${newest.id}`);
+  const stop = stopTarget(data, path);
   const name = data?.workspaceName ?? workspaceName;
   const empty =
     data !== null &&
@@ -353,6 +381,14 @@ function SidebarBody({
             <Link
               key={item.href}
               href={item.href}
+              // Each prefetch renders a page on the server: only the place the pointer or focus is about to open.
+              prefetch={false}
+              onMouseEnter={() => {
+                router.prefetch(item.href);
+              }}
+              onFocus={() => {
+                router.prefetch(item.href);
+              }}
               aria-current={current ? 'page' : undefined}
               className={`flex h-[38px] items-center gap-[11px] rounded-[9px] px-2.5 text-[13.5px] text-foreground no-underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${current ? 'bg-gold-soft font-medium' : 'hover:bg-surface-2'}`}
             >
@@ -370,13 +406,14 @@ function SidebarBody({
       </nav>
       {inSheet ? null : (
         // Stays mounted when the run ends, so the open dialog can show the halt it measured.
-        <div className={newest === undefined ? 'contents' : 'mt-3'}>
+        <div className={stop.choices.length === 0 ? 'contents' : 'mt-3'}>
           <KillButton
-            run={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit', startedAt: newest.startedAt }}
+            run={stop.run}
+            choices={stop.choices}
             variant="pill"
             label={`${live.length} ${live.length === 1 ? 'audit' : 'audits'} running`}
             shortcut
-            hideTrigger={onNewestPage}
+            hideTrigger={stop.onRunPage}
           />
         </div>
       )}
@@ -425,6 +462,15 @@ function SidebarBody({
                 sub={`Proven · release or dismiss${f.assetName === null ? '' : ` · ${f.assetName}`}`}
               />
             ))}
+            {decisions > listed ? (
+              <Link
+                href="/decisions"
+                prefetch={false}
+                className="rounded-[9px] px-2.5 py-1.5 pl-[30px] text-[12px] font-medium text-gold-ink no-underline hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                And {(decisions - listed).toLocaleString()} more on Decisions
+              </Link>
+            ) : null}
           </Section>
         ) : null}
         {live.length === 0 ? null : (
@@ -479,6 +525,15 @@ function SidebarBody({
         ) : null}
       </div>
       <div className="border-t border-border pt-2">
+        <Link
+          href="/help"
+          prefetch={false}
+          className="mb-1 flex h-8 items-center gap-2.5 rounded-[9px] px-2.5 text-[12.5px] text-muted-foreground no-underline hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+        >
+          <Icon name="help" size={15} />
+          How this works
+          {inSheet ? null : <Kbd className="ml-auto">?</Kbd>}
+        </Link>
         <UserMenu viewer={viewer} />
       </div>
     </div>
@@ -498,7 +553,7 @@ export function ConsoleSidebar({
   const { data, failed, refresh } = useSidebarData(initial);
   const router = useRouter();
   const path = usePathname();
-  useTitlePrefix(data?.gate2.length ?? 0);
+  useTitlePrefix(data === null ? 0 : Math.max(data.gate2.length, data.counts?.gate2 ?? 0));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -520,13 +575,10 @@ export function ConsoleSidebar({
   }, [router]);
 
   const props = { data, failed, refresh, workspaceName, viewer };
-  const newest = stopTarget(data?.live ?? [], path);
+  const stop = stopTarget(data, path);
   return (
     <>
-      <MobileBar
-        pending={data === null ? 0 : data.gate2.length + data.plans.length + data.releases.length}
-        live={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit', startedAt: newest.startedAt }}
-      >
+      <MobileBar pending={waitingCount(data)} run={stop.run} choices={stop.choices}>
         <SidebarBody {...props} inSheet />
       </MobileBar>
       <aside

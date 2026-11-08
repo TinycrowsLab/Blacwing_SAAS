@@ -13,12 +13,15 @@ import { KillButton, type StoppableRun } from './kill-dialog';
 
 export function MobileBar({
   pending,
-  live,
+  run,
+  choices,
   children,
 }: {
   /** Decisions waiting (Gate 1, 2 and 3). */
   readonly pending: number;
-  readonly live: StoppableRun | null;
+  /** On an audit's own page: that audit. Elsewhere `choices`, the live audits Stop lets the person pick from. */
+  readonly run: StoppableRun | null;
+  readonly choices: readonly StoppableRun[];
   /** The sidebar content shown in the menu sheet. */
   readonly children: ReactNode;
 }) {
@@ -66,7 +69,7 @@ export function MobileBar({
           <span className="tabular-nums">{pending}</span>
         </Link>
       ) : null}
-      <KillButton run={live} variant="icon" />
+      <KillButton run={run} choices={choices} variant="icon" />
     </header>
   );
 }

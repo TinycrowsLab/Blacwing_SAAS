@@ -89,6 +89,8 @@ export function ReportCard(props: {
   /** null: the workspace settings could not be read, so the line links to Settings rather than guess. */
   readonly webhook: { configured: boolean; host: string | null } | null;
   readonly ledgerHead: string | null;
+  /** Planned test cases the run never tried (the runner's coverage): offers "Continue with untried cases". */
+  readonly untried: number;
 }) {
   const n = props.severities.length;
   const counts = SEVERITIES.map(
@@ -236,6 +238,17 @@ export function ReportCard(props: {
           <div className="pt-1.5">
             <RunAgain requestId={props.requestId} />
           </div>
+          {props.untried === 0 ? null : (
+            <>
+              <p className="m-0 border-t border-dashed border-border-strong pt-3 text-[13px] leading-5 text-muted-foreground">
+                {props.untried === 1 ? '1 planned test case was' : `${props.untried} planned test cases were`} not tried. A new
+                plan can pick them up; it goes to your approval first.
+              </p>
+              <div className="pt-1.5">
+                <RunAgain requestId={props.requestId} untriedFromRunId={props.runId} label="Continue with untried cases" />
+              </div>
+            </>
+          )}
         </section>
       )}
     </div>

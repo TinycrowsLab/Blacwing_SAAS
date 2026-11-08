@@ -105,8 +105,8 @@ function pathForms(pathname: string): string[] | null {
     if (next === decoded.at(-1)) break;
     decoded.push(next);
   }
-  if (decoded.some(hasControlByte)) return null;
-  return [...decoded, ...decoded.map(canonicalPath)];
+  if (decoded.some((form) => hasControlByte(form))) return null;
+  return [...decoded, ...decoded.map((form) => canonicalPath(form))];
 }
 
 /** Scheme+host+port must be an allowed origin and no form of the path (see pathForms) may sit under an excluded path. */

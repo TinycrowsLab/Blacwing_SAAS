@@ -1,10 +1,17 @@
 // Deterministic validator. A finding is `confirmed` only if the probe matches the oracle on all replays and the
-// negative control does not. The model proposes candidates; it never decides confirmation.
+// negative control, which differs from the probe in exactly one part, does not. Claude proposes the candidate, its
+// oracle and its control; it never decides confirmation.
 import { createHash } from 'node:crypto';
 
 import { z } from 'zod';
 
-import { probeSchema, type HttpRequest, type HttpResult } from './http-tool.js';
+import { owaspTop10Title } from '@blackwing/domain';
+import { scrub, scrubDeep } from '@blackwing/errors/scrub';
+
+import { probeSchema, type HttpRequest, type HttpResult, type SentRequest } from './http-tool.js';
+import { classifyMethod } from './scope.js';
+
+import type { FindingRow, HuntRun } from './types.js';
 
 export const REPLAYS = 3;
 const EXCERPT_CHARS = 2000;
@@ -15,6 +22,17 @@ const MAX_CWE_CHARS = 20;
 const MAX_OWASP_CHARS = 60;
 const MAX_DESCRIPTION_CHARS = 4000;
 const MAX_REMEDIATION_CHARS = 1000;
+
+const OWASP_CODES = ['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10'];
+
+/** `"A03:2021 Injection"` from free text (`"A03:2021-Injection"`, `"OWASP A3"`, `"a03"`); null when no A01..A10 code. */
+export function canonicalOwasp(text: string): string | null {
+  const n = /\bA\s*0?(10|[1-9])\b/i.exec(text)?.[1];
+  if (n === undefined) return null;
+  const id = n === '10' ? 'A10' : `A0${n}`;
+  const title = owaspTop10Title(id);
+  return title === null ? null : `${id}:2021 ${title}`;
+}
 
 export const oracleSchema = z.object({
   type: z.enum(['body_contains', 'body_regex', 'status_equals', 'header_contains']),
@@ -27,7 +45,13 @@ export const candidateSchema = z.object({
   title: z.string().min(1).max(MAX_TITLE_CHARS),
   vulnClass: z.string().min(1).max(MAX_VULN_CLASS_CHARS),
   cwe: z.string().min(1).max(MAX_CWE_CHARS),
-  owasp: z.string().min(1).max(MAX_OWASP_CHARS),
+  owasp: z
+    .string()
+    .min(1)
+    .max(MAX_OWASP_CHARS)
+    .refine((value) => canonicalOwasp(value) !== null, {
+      message: `owasp must name an OWASP Top 10 2021 category: ${OWASP_CODES.join(', ')} (for example "A03:2021 Injection")`,
+    }),
   severity: z.enum(['critical', 'high', 'medium', 'low', 'info']),
   description: z.string().min(1).max(MAX_DESCRIPTION_CHARS),
   /** The model's fix suggestion, shown labelled "not verified". Optional: the console hides the block when absent. */
@@ -47,9 +71,14 @@ export interface ReplayRecord {
   readonly bodySha256: string;
 }
 
+/** The one part of the request the negative control changes. */
+export type Delta = 'query' | 'body' | 'header' | 'role' | 'path_segment';
+
 export interface Verdict {
   readonly confirmed: boolean;
   readonly reason: string;
+  /** Null when the control was refused before anything was sent (not a single-delta control). */
+  readonly delta: Delta | null;
   readonly replays: readonly ReplayRecord[];
   readonly probe: Sent | null;
   readonly control: Sent | null;
@@ -88,67 +117,193 @@ export interface ValidatorHooks {
   control(status: number, matched: boolean): Promise<void>;
 }
 
-/** Replays the probe 3 times, then the control once. Any refusal or failure means not confirmed. */
+const normHeaders = (headers: HttpRequest['headers']): string =>
+  JSON.stringify(Object.entries(headers ?? {}).map(([name, value]) => [name.toLowerCase(), value]).sort(([a = ''], [b = '']) => (a < b ? -1 : 1)));
+
+/**
+ * The control must be the probe with exactly one part changed: same method, same origin, and one of the query string,
+ * the body, the header set, the test account role or a single path segment differs. Anything else proves nothing.
+ */
+export function controlDelta(probe: HttpRequest, control: HttpRequest): { ok: true; delta: Delta } | { ok: false; differs: string } {
+  let p: URL;
+  let c: URL;
+  try {
+    p = new URL(probe.url);
+    c = new URL(control.url);
+  } catch {
+    return { ok: false, differs: 'the URL does not parse' };
+  }
+  const differs: string[] = [];
+  if (probe.method.toUpperCase() !== control.method.toUpperCase()) differs.push('method');
+  if (p.origin !== c.origin) differs.push('origin');
+  if (p.pathname !== c.pathname) {
+    const ps = p.pathname.split('/');
+    const cs = c.pathname.split('/');
+    const changed = ps.length === cs.length ? ps.filter((segment, i) => segment !== cs[i]).length : Infinity;
+    differs.push(changed === 1 ? 'path_segment' : 'path');
+  }
+  if (p.search !== c.search) differs.push('query');
+  if ((probe.body ?? '') !== (control.body ?? '')) differs.push('body');
+  if (normHeaders(probe.headers) !== normHeaders(control.headers)) differs.push('header');
+  if ((probe.as_role ?? '').toLowerCase() !== (control.as_role ?? '').toLowerCase()) differs.push('role');
+  const [only] = differs;
+  if (differs.length === 1 && only !== undefined && only !== 'method' && only !== 'origin' && only !== 'path') return { ok: true, delta: only as Delta };
+  return { ok: false, differs: differs.length === 0 ? 'nothing (the control is the probe)' : differs.join(', ') };
+}
+
+/** GET/HEAD/OPTIONS that do not look state-changing are replayed 3 times; anything that may change data, once. */
+export function replaysFor(probe: HttpRequest): number {
+  try {
+    return classifyMethod(probe.method, new URL(probe.url)) === 'active_safe' ? REPLAYS : 1;
+  } catch {
+    return 1;
+  }
+}
+
+/** Checks the control is single-delta (nothing sent otherwise), replays the probe, then sends the control once. */
 export async function validateCandidate(candidate: Candidate, hooks: ValidatorHooks): Promise<Verdict> {
+  const shape = controlDelta(candidate.probe, candidate.control);
+  if (!shape.ok) return { confirmed: false, reason: `control_not_single_delta: ${shape.differs} differ`, delta: null, replays: [], probe: null, control: null, controlMatched: null };
+  const { delta } = shape;
   const replays: ReplayRecord[] = [];
   let probe: Sent | null = null;
-  for (let n = 1; n <= REPLAYS; n += 1) {
+  const planned = replaysFor(candidate.probe);
+  for (let n = 1; n <= planned; n += 1) {
     const result = await hooks.send(candidate.probe);
-    if (!result.ok) return { confirmed: false, reason: `probe replay ${n} not sent: ${result.refusal}`, replays, probe, control: null, controlMatched: null };
+    if (!result.ok) return { confirmed: false, reason: `probe replay ${n} not sent: ${result.refusal}`, delta, replays, probe, control: null, controlMatched: null };
     probe = result;
     const matched = oracleMatches(candidate.oracle, result);
     replays.push({ n, status: result.status, matched, bodySha256: sha256(result.body) });
     await hooks.replay(n, result.status, matched);
-    if (!matched) return { confirmed: false, reason: `probe replay ${n} did not match the oracle`, replays, probe, control: null, controlMatched: null };
+    if (!matched) return { confirmed: false, reason: `probe replay ${n} did not match the oracle`, delta, replays, probe, control: null, controlMatched: null };
   }
   const control = await hooks.send(candidate.control);
-  if (!control.ok) return { confirmed: false, reason: `negative control not sent: ${control.refusal}`, replays, probe, control: null, controlMatched: null };
+  if (!control.ok) return { confirmed: false, reason: `negative control not sent: ${control.refusal}`, delta, replays, probe, control: null, controlMatched: null };
   const controlMatched = oracleMatches(candidate.oracle, control);
   await hooks.control(control.status, controlMatched);
-  if (controlMatched) return { confirmed: false, reason: 'the negative control also matched the oracle', replays, probe, control, controlMatched };
-  return { confirmed: true, reason: 'all probe replays matched and the negative control did not', replays, probe, control, controlMatched };
+  if (controlMatched) return { confirmed: false, reason: 'the negative control also matched the oracle', delta, replays, probe, control, controlMatched };
+  return { confirmed: true, reason: 'all probe replays matched and the negative control did not', delta, replays, probe, control, controlMatched };
 }
 
-export function fingerprint(runId: string, candidate: Candidate): string {
-  const path = new URL(candidate.probe.url).pathname;
-  return sha256([runId, candidate.probe.method.toUpperCase(), path, candidate.vulnClass, candidate.title].join('|'));
+const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Lower-case path, numeric and uuid segments as `:id`, no trailing slash. */
+export function normalisedPath(url: string): string {
+  let path: string;
+  try {
+    path = new URL(url).pathname.toLowerCase();
+  } catch {
+    path = url.toLowerCase();
+  }
+  const segments = path.split('/').map((s) => (/^\d+$/.test(s) || UUID_SEGMENT.test(s) ? ':id' : s));
+  const joined = segments.join('/').replace(/\/+$/, '');
+  return joined === '' ? '/' : joined;
+}
+
+/** The same issue across runs and agents: sha256(asset | METHOD | normalised path | CWE). */
+export function identityKey(assetId: string, candidate: Pick<Candidate, 'probe' | 'cwe'>): string {
+  const digits = /\d+/.exec(candidate.cwe)?.[0];
+  const cwe = digits === undefined ? candidate.cwe.trim().toUpperCase() : `CWE-${digits}`;
+  return sha256([assetId, candidate.probe.method.toUpperCase(), normalisedPath(candidate.probe.url), cwe].join('|'));
+}
+
+/** Unique per run (two agents' copies merge); a later run stores its own row with the same identity key. */
+export function fingerprint(runId: string, identity: string): string {
+  return sha256([runId, identity].join('|'));
 }
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
-/** A probe sent as a test account gets a placeholder for that credential header, never its value. */
-export function reproCurl(probe: HttpRequest, credentialHeader?: string): string {
-  const parts = ['curl', '-sS', '-i', '-X', probe.method.toUpperCase()];
-  for (const [name, value] of Object.entries(probe.headers ?? {})) parts.push('-H', shellQuote(`${name}: ${value}`));
-  if (probe.as_role !== undefined && credentialHeader !== undefined) parts.push('-H', shellQuote(`${credentialHeader}: <${probe.as_role} credential>`));
-  if (probe.body !== undefined) parts.push('--data-raw', shellQuote(probe.body));
-  parts.push(shellQuote(probe.url));
-  return parts.join(' ');
+const ROLE_PLACEHOLDER = /^\[redacted: role (.+)\]$/;
+
+/** The request as Blackwing would send it, for a probe that never went out (refused, or not single-delta). */
+export function unsentRequest(probe: HttpRequest, credentialHeader?: string): SentRequest {
+  const headers: Record<string, string> = Object.fromEntries(Object.entries(probe.headers ?? {}).map(([name, value]) => [name.toLowerCase(), value]));
+  if (probe.as_role !== undefined && credentialHeader !== undefined) headers[credentialHeader.toLowerCase()] = `[redacted: role ${probe.as_role}]`;
+  return { method: probe.method.toUpperCase(), url: probe.url, headers, body: probe.body ?? null, asRole: probe.as_role ?? null };
 }
 
-export function sideEvidence(request: HttpRequest, response: Sent): Record<string, unknown> {
+/** A curl of the request as sent. A test account credential becomes `<role credential>`, never its value; then scrubbed. */
+export function reproCurl(request: SentRequest): string {
+  const parts = ['curl', '-sS', '-i', '-X', request.method.toUpperCase()];
+  for (const [name, value] of Object.entries(request.headers)) {
+    const role = ROLE_PLACEHOLDER.exec(value)?.[1];
+    parts.push('-H', shellQuote(`${name}: ${role === undefined ? value : `<${role} credential>`}`));
+  }
+  if (request.body !== null) parts.push('--data-raw', shellQuote(request.body));
+  parts.push(shellQuote(request.url));
+  return scrub(parts.join(' '));
+}
+
+/** One side of the proof: the request as sent and the response, the excerpt scrubbed, the hash over the raw body. */
+export function sideEvidence(response: Sent): Record<string, unknown> {
   return {
-    request: { method: request.method.toUpperCase(), url: request.url, headers: request.headers ?? {}, body: request.body ?? null },
-    response: { status: response.status, bodyExcerpt: response.body.slice(0, EXCERPT_CHARS), bodySha256: sha256(response.body) },
+    exchangeId: response.exchangeId,
+    request: scrubDeep(response.request),
+    response: { status: response.status, bodyExcerpt: scrub(response.body).slice(0, EXCERPT_CHARS), bodySha256: sha256(response.body) },
   };
 }
 
-/** Evidence jsonb written with a confirmed finding (see docs/poc/AI_HUNT_POC.md section 3). */
-export function buildEvidence(candidate: Candidate, probe: Sent, control: Sent, replays: readonly ReplayRecord[]): Record<string, unknown> {
-  return {
-    probe: sideEvidence(candidate.probe, probe),
-    control: sideEvidence(candidate.control, control),
-    oracle: candidate.oracle,
-    replays,
-    description: candidate.description,
-    ...remediationOf(candidate),
-  };
-}
-
-/** `evidence.remediation` (jsonb, no migration), only when the model gave one. */
+/** `evidence.remediation` (jsonb, no migration), only when the model gave one; scrubbed. */
 export function remediationOf(candidate: Candidate): { remediation?: string } {
-  const text = candidate.remediation?.trim() ?? '';
+  const text = scrub(candidate.remediation?.trim() ?? '');
   return text === '' ? {} : { remediation: text };
+}
+
+export interface FindingRowInput {
+  readonly run: Pick<HuntRun, 'id' | 'assetId'>;
+  readonly candidate: Candidate;
+  readonly verdict: Verdict;
+  readonly agent: string;
+  readonly testCaseId: string | null;
+  readonly credentialHeader: string | undefined;
+}
+
+/**
+ * The finding row for a validated candidate. `proven` rows carry the proof (`evidence.proof`); location and curl come
+ * from the probe as actually sent. Every text that may hold target data is scrubbed here, at store time.
+ */
+export function buildFindingRow(input: FindingRowInput): { proven: boolean; row: Omit<FindingRow, 'id' | 'status'> } {
+  const { run, candidate, verdict } = input;
+  const { probe, control } = verdict;
+  const proven = verdict.confirmed && probe !== null && control !== null;
+  const trigger = probe?.request ?? unsentRequest(candidate.probe, input.credentialHeader);
+  const identity = identityKey(run.assetId, candidate);
+  const description = scrub(candidate.description);
+  const sides = { ...(probe === null ? {} : { probe: sideEvidence(probe) }), ...(control === null ? {} : { control: sideEvidence(control) }) };
+  const evidence: Record<string, unknown> = proven
+    ? {
+        ...sides,
+        oracle: candidate.oracle,
+        replays: verdict.replays,
+        proof: { kind: 'differential_replay', replays: verdict.replays.length, delta: verdict.delta, proposedBy: 'claude' },
+        description,
+        ...remediationOf(candidate),
+      }
+    : { reason: verdict.reason, replays: verdict.replays, oracle: candidate.oracle, ...remediationOf(candidate), ...sides };
+  return {
+    proven,
+    row: {
+      fingerprint: fingerprint(run.id, identity),
+      identityKey: identity,
+      agent: input.agent,
+      title: scrub(candidate.title),
+      vulnClass: candidate.vulnClass,
+      cwe: candidate.cwe,
+      owasp: canonicalOwasp(candidate.owasp) ?? candidate.owasp,
+      severity: candidate.severity,
+      description,
+      location: { method: trigger.method, url: scrub(trigger.url) },
+      oracle: candidate.oracle,
+      evidence,
+      replay: {
+        replays: verdict.replays,
+        control: control === null ? null : { status: control.status, matched: proven ? false : verdict.controlMatched },
+      },
+      reproCurl: reproCurl(trigger),
+      testCaseId: input.testCaseId,
+    },
+  };
 }

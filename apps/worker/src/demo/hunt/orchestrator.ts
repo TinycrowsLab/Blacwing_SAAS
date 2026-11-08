@@ -254,7 +254,7 @@ export function coverageOf(ctx: HuntContext, endReason: string | null): Record<s
 }
 
 async function emitCoverage(ctx: HuntContext, endReason: string | null): Promise<void> {
-  const cases = [...ctx.state.cases.values()].map(caseOutcome);
+  const cases = [...ctx.state.cases.values()].map((c) => caseOutcome(c));
   const count = (status: string): number => cases.filter((c) => c === status).length;
   const message = cases.length === 0
     ? 'Coverage: no test cases were recorded'

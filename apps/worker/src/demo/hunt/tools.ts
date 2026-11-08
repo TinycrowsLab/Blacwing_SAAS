@@ -5,7 +5,7 @@ import { newId } from '@blackwing/ids';
 
 import { awaitDecision, modelView, probeSchema, sendRequest, takeNotices } from './http-tool.js';
 import { SUBAGENT_NAMES } from './prompts.js';
-import { buildEvidence, candidateSchema, fingerprint, remediationOf, reproCurl, sideEvidence, validateCandidate } from './validator.js';
+import { buildFindingRow, candidateSchema, validateCandidate } from './validator.js';
 import { deliverRelease } from './webhook.js';
 
 import type { HuntContext } from './context.js';
@@ -47,7 +47,8 @@ export async function recordProven(ctx: HuntContext, row: Omit<FindingRow, 'stat
   return findingId;
 }
 
-export function createHuntServer(ctx: HuntContext) {
+/** The Blackwing tools of one run (exported for tests; the run uses createHuntServer). */
+export function huntTools(ctx: HuntContext) {
   const httpRequest = tool(
     'http_request',
     'Send one HTTP request to the authorised target. Scope, method class, budget and human gates are enforced for you; refusals are returned as text. A request that needs Gate 2 is not sent: you get its Gate 2 id at once and carry on; the decision arrives later as a notice. Redirects are not followed. The body is cut at 8 KB.',
@@ -149,48 +150,18 @@ export function createHuntServer(ctx: HuntContext) {
       });
       const summary = { candidateId, title: candidate.title, severity: candidate.severity };
       const credentialHeader = ctx.run.testAccounts.find((a) => a.role.toLowerCase() === candidate.probe.as_role?.toLowerCase())?.headerName;
-      const row = {
-        fingerprint: fingerprint(ctx.run.id, candidate),
-        agent,
-        title: candidate.title,
-        vulnClass: candidate.vulnClass,
-        cwe: candidate.cwe,
-        owasp: candidate.owasp,
-        severity: candidate.severity,
-        description: candidate.description,
-        location: { method: candidate.probe.method.toUpperCase(), url: candidate.probe.url },
-        oracle: candidate.oracle,
-        reproCurl: reproCurl(candidate.probe, credentialHeader),
-        testCaseId,
-      };
+      const { proven, row } = buildFindingRow({ run: ctx.run, candidate, verdict, agent, testCaseId, credentialHeader });
       const finish = async (): Promise<void> => {
         if (testCaseId === null || testCase === undefined) return;
         testCase.status = 'executed';
         await ctx.log.emit('case.status', 'plan', `Test case ${testCaseId}: executed`, { caseId: testCaseId, status: 'executed', agent: 'validator', by: 'validator' });
       };
-      if (verdict.confirmed && verdict.probe !== null && verdict.control !== null) {
-        const evidence = buildEvidence(candidate, verdict.probe, verdict.control, verdict.replays);
-        const findingId = await recordProven(
-          ctx,
-          { ...row, id: newId(), evidence, replay: { replays: verdict.replays, control: { status: verdict.control.status, matched: false } } },
-          summary,
-        );
+      if (proven) {
+        const findingId = await recordProven(ctx, { ...row, id: newId() }, summary);
         await finish();
         return text({ verdict: 'confirmed', findingId, released: ctx.run.releaseProven === 'auto', duplicate: findingId === null }, notices);
       }
-      const findingId = await ctx.store.insertFinding(ctx.run, {
-        ...row,
-        id: newId(),
-        status: 'suspected',
-        evidence: {
-          reason: verdict.reason,
-          replays: verdict.replays,
-          oracle: candidate.oracle,
-          ...remediationOf(candidate),
-          ...(verdict.probe === null ? {} : { probe: sideEvidence(candidate.probe, verdict.probe) }),
-        },
-        replay: { replays: verdict.replays, control: verdict.control === null ? null : { status: verdict.control.status, matched: verdict.controlMatched } },
-      });
+      const findingId = await ctx.store.insertFinding(ctx.run, { ...row, id: newId(), status: 'suspected' });
       await ctx.log.emit('finding.suspected', 'validator', `Suspected: ${candidate.title} (${verdict.reason})`, { ...summary, findingId, reason: verdict.reason });
       await finish();
       return text({ verdict: 'suspected', reason: verdict.reason }, notices);
@@ -222,5 +193,9 @@ export function createHuntServer(ctx: HuntContext) {
     },
   );
 
-  return createSdkMcpServer({ name: 'blackwing', tools: [httpRequest, recordTestCases, updateTestCase, submitCandidate, listExchanges, awaitDecisionTool] });
+  return [httpRequest, recordTestCases, updateTestCase, submitCandidate, listExchanges, awaitDecisionTool];
+}
+
+export function createHuntServer(ctx: HuntContext) {
+  return createSdkMcpServer({ name: 'blackwing', tools: huntTools(ctx) });
 }

@@ -12,7 +12,7 @@ import { pgHuntStore } from './store-pg.js';
 
 const MS_PER_S = 1000;
 const POLL_INTERVAL_MS = MS_PER_S;
-const DEFAULT_CONCURRENCY = 2;
+const DEFAULT_CONCURRENCY = 3;
 const DEFAULT_GATE2_TIMEOUT_S = 300;
 const POOL_CONNECTIONS_PER_RUN = 3;
 

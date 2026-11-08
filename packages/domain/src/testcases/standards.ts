@@ -106,6 +106,9 @@ const has = (table: Readonly<Record<string, string>>, id: string): boolean =>
 export const isKnownCwe = (id: string): boolean => has(CWE_NAMES, id);
 /** True when `id` is a known OWASP Top 10 2021 category (`A01`..`A10`). */
 export const isKnownOwaspTop10 = (id: string): boolean => has(OWASP_TOP10_2021, id);
+/** The OWASP Top 10 2021 title of `A01`..`A10` (`'A03'` -> `'Injection'`), or null for an unknown id. */
+export const owaspTop10Title = (id: string): string | null =>
+  has(OWASP_TOP10_2021, id) ? (OWASP_TOP10_2021[id] ?? null) : null;
 /** True when `id` is a known OWASP API Security Top 10 2023 category (`API1`..`API10`). */
 export const isKnownApiTop10 = (id: string): boolean => has(OWASP_API_TOP10_2023, id);
 /** True when `id` is a known WSTG test id. */

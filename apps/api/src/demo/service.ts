@@ -213,10 +213,10 @@ export function runDto(row: RunRow, concurrency: number = DEFAULT_HUNT_CONCURREN
     killRequestedAt: iso(row.kill_requested_at),
     haltMs: row.halt_ms,
     summary: row.summary === null ? null : scrub(row.summary),
-    pins: row.pins,
+    pins: scrubDeep(row.pins),
     startedBy: row.started_by_name === null ? null : { id: row.created_by, name: row.started_by_name },
     queue:
-      ahead === null || ahead === undefined
+      ahead === null
         ? null
         : { position: ahead + 1, ahead, running: row.queue_running ?? 0, concurrency },
   };
@@ -236,7 +236,7 @@ export function findingSummaryDto(row: FindingRow): Record<string, unknown> {
     owasp: owaspLabel(row.owasp_category),
     agent: row.agent,
     createdAt: row.created_at.toISOString(),
-    identityKey: row.identity_key ?? null,
+    identityKey: row.identity_key,
     seenBefore:
       row.seen_run_id === null || row.seen_finding_id === null || row.seen_status === null || row.seen_at === null
         ? null
@@ -313,13 +313,13 @@ export function gate2Dto(row: Gate2Row, now: Date): Record<string, unknown> {
     decisionReason: row.decision_reason,
     decidedAt: iso(row.decided_at),
     createdAt: row.created_at.toISOString(),
-    body: row.request_body === null || row.request_body === undefined ? null : scrub(row.request_body),
-    asRole: row.as_role ?? null,
+    body: row.request_body === null ? null : scrub(row.request_body),
+    asRole: row.as_role,
     assetName: row.asset_name,
     requester:
       row.requester_id === null ? null : { id: row.requester_id, name: row.requester_name ?? 'Unknown' },
     runStartedAt: iso(row.run_started_at),
-    closeReason: row.close_reason ?? null,
+    closeReason: row.close_reason,
   };
 }
 
@@ -423,6 +423,17 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 const capitalise = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
 
+const entryOf = (
+  actor: DemoActor,
+  action: string,
+  targetType: string,
+  targetId: string,
+  payload: AuditPayload,
+): AuditEntry => ({ actorId: actor.id, actorName: actor.name, action, targetType, targetId, payload });
+
+const planChanged = (): DemoRefusal =>
+  new DemoRefusal(HttpStatus.CONFLICT, 'plan_changed', 'The plan changed in another tab. Reload to see it.');
+
 export class DemoService {
   private readonly logger = new Logger('DemoService');
 
@@ -437,6 +448,18 @@ export class DemoService {
     private readonly options: WorkspaceOptions = { gate2TimeoutS: DEFAULT_GATE2_TIMEOUT_S },
   ) {}
 
+  private get origins(): OriginPolicy {
+    return this.options.origins ?? NO_LAB_POLICY;
+  }
+
+  private get concurrency(): number {
+    return this.options.huntConcurrency ?? DEFAULT_HUNT_CONCURRENCY;
+  }
+
+  private runView(row: RunRow): Record<string, unknown> {
+    return runDto(row, this.concurrency);
+  }
+
   /** The workspace and the settings the console needs. `name` is null until the first admin names it (/welcome). */
   async workspace(actor: DemoActor): Promise<Record<string, unknown>> {
     const tenant = await this.store.getTenant(this.tenantId);
@@ -448,6 +471,7 @@ export class DemoService {
       name: tenant.name === '' ? null : tenant.name,
       settings: {
         gate2TimeoutS: this.options.gate2TimeoutS,
+        huntConcurrency: this.concurrency,
         selfApprove: actor.admin === true,
         limits: BUDGET_LIMITS,
         presets: BUDGET_PRESETS,
@@ -474,22 +498,48 @@ export class DemoService {
     targetId: string,
     payload: AuditPayload,
   ): Promise<AuditRef> {
-    return this.store.appendAudit(this.tenantId, {
-      actorId: actor.id,
-      actorName: actor.name,
-      action,
-      targetType,
-      targetId,
-      payload,
-    });
+    return this.store.appendAudit(this.tenantId, entryOf(actor, action, targetType, targetId, payload));
   }
 
   async assets(): Promise<Record<string, unknown>[]> {
-    return (await this.store.listAssets(this.tenantId)).map((row) => assetDto(row));
+    return (await this.store.listAssets(this.tenantId)).map((row) => assetDto(row, this.origins));
   }
 
   async asset(id: string): Promise<Record<string, unknown>> {
-    return assetDto(await this.assetRow(id));
+    return assetDto(await this.assetRow(id), this.origins);
+  }
+
+  /** Plain-words refusal when any of `origins` may not be tested (deny-list, lab allow-list), else null. */
+  private targetRefusal(origins: readonly string[]): Promise<string | null> {
+    return firstRefusal(origins, this.origins, this.options.lookup ?? defaultLookup);
+  }
+
+  /**
+   * Ownership must still hold when Gate 1 approves and when the run starts: the deny rules again, then the proof
+   * itself (the well-known file is fetched again; an attestation needs the site to still be a listed lab). On
+   * failure the asset goes back to unverified, the ledger records why, and the caller is refused.
+   */
+  private async recheckOwnership(actor: DemoActor, asset: AssetRow, at: 'gate1' | 'run_start' | 'retest'): Promise<void> {
+    let reason = await this.targetRefusal(asset.allowed_origins);
+    if (reason === null) {
+      reason =
+        asset.verification_method === 'http_token'
+          ? await this.wellKnownProblem(asset)
+          : assetIsLab(asset, this.origins)
+            ? null
+            : 'an owner attestation covers listed labs only, and this site is not one';
+    }
+    if (reason === null) return;
+    const origin = new URL(asset.base_url).origin;
+    const cause = reason.replace(/\.$/, '');
+    if (await this.store.markAssetUnverified(this.tenantId, asset.id)) {
+      await this.audit(actor, 'asset.unverified', 'asset', asset.id, { origin, reason: cause, at });
+    }
+    throw new DemoRefusal(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      'ownership_recheck_failed',
+      `Blackwing checked ownership of ${origin} again and it no longer holds: ${cause}. Prove ownership again to go ahead.`,
+    );
   }
 
   private async assetRow(id: string): Promise<AssetRow> {
@@ -501,11 +551,14 @@ export class DemoService {
 
   async createAsset(actor: DemoActor, input: CreateAssetInput): Promise<Record<string, unknown>> {
     requireRole(actor, ['appsec-engineer'], 'Only an appsec engineer can register an asset.');
+    const origins = originsOf([input.baseUrl, ...input.extraOrigins]);
+    const refusal = await this.targetRefusal(origins);
+    if (refusal !== null) throw new DemoRefusal(HttpStatus.UNPROCESSABLE_ENTITY, 'target_not_allowed', refusal);
     const origin = new URL(input.baseUrl).origin;
     const existing = (await this.store.listAssets(this.tenantId)).find(
       (a) => new URL(a.base_url).origin === origin,
     );
-    if (existing !== undefined) return assetDto(existing);
+    if (existing !== undefined) return assetDto(existing, this.origins);
     const id = newId();
     const slug = input.name
       .toLowerCase()
@@ -518,7 +571,7 @@ export class DemoService {
       slug: `${slug}-${shortId(id)}`,
       name: input.name,
       base_url: input.baseUrl,
-      allowed_origins: originsOf([input.baseUrl, ...input.extraOrigins]),
+      allowed_origins: origins,
       excluded_paths: [...input.excludedPaths],
       verification_token: randomBytes(TOKEN_BYTES).toString('hex'),
       created_by: actor.id,
@@ -541,6 +594,16 @@ export class DemoService {
         'Ownership is already verified.',
       );
     }
+    const refusal = await this.targetRefusal(asset.allowed_origins);
+    if (refusal !== null) throw new DemoRefusal(HttpStatus.UNPROCESSABLE_ENTITY, 'target_not_allowed', refusal);
+    const lab = assetIsLab(asset, this.origins);
+    if (input.method === 'owner_attestation' && !lab) {
+      throw new DemoRefusal(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'attestation_not_allowed',
+        'This site is not a listed lab, so ownership must be proved with the verification file.',
+      );
+    }
     if (input.method === 'http_token') await this.checkWellKnownToken(asset);
     if (!(await this.store.markAssetVerified(this.tenantId, id, input.method, actor.id))) {
       throw new DemoRefusal(
@@ -549,50 +612,69 @@ export class DemoService {
         'Ownership was verified concurrently.',
       );
     }
+    await this.audit(actor, 'asset.verified', 'asset', id, {
+      method: input.method,
+      origin: new URL(asset.base_url).origin,
+      tokenPath: input.method === 'http_token' ? WELL_KNOWN_PATH : null,
+      statement:
+        input.method === 'owner_attestation' ? (input.statement ?? '').slice(0, ATTESTATION_STATEMENT_MAX) : null,
+      lab,
+    });
     return this.asset(id);
   }
 
-  private async checkWellKnownToken(asset: AssetRow): Promise<void> {
+  /** What is wrong with the well-known proof of `asset`, in plain words, or null when it holds. */
+  private async wellKnownProblem(asset: AssetRow): Promise<string | null> {
     const url = `${new URL(asset.base_url).origin}${WELL_KNOWN_PATH}`;
-    let body = '';
+    let response: Response;
     try {
-      const response = await this.fetchImpl(url, {
-        redirect: 'manual',
-        signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
-      });
-      if (response.ok) body = await response.text();
+      response = await this.fetchImpl(url, { redirect: 'manual', signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) });
     } catch {
-      body = '';
+      return 'the site did not answer';
     }
-    if (asset.verification_token === null || !body.includes(asset.verification_token)) {
+    if (!response.ok) return `the file is gone (the site answered ${response.status})`;
+    const body = await response.text().catch(() => '');
+    return asset.verification_token !== null && body.includes(asset.verification_token)
+      ? null
+      : 'the file does not hold the verification token';
+  }
+
+  private async checkWellKnownToken(asset: AssetRow): Promise<void> {
+    const problem = await this.wellKnownProblem(asset);
+    if (problem !== null) {
       throw new DemoRefusal(
         HttpStatus.UNPROCESSABLE_ENTITY,
         'verification_failed',
-        `${url} did not answer 200 with the verification token.`,
+        `${new URL(asset.base_url).origin}${WELL_KNOWN_PATH} did not answer 200 with the verification token: ${problem}.`,
       );
     }
   }
 
   async dashboard(actor: DemoActor): Promise<Record<string, unknown>> {
-    const [tenant, counts, assets, requests, runs, findings, pending] = await Promise.all([
+    const analyst = actorHasRole(actor, 'appsec-engineer');
+    const [tenant, counts, assets, requests, runs, findings, pending, pendingCounts, live] = await Promise.all([
       this.store.getTenant(this.tenantId),
       this.store.dashboardCounts(this.tenantId),
       this.store.listAssets(this.tenantId),
       this.store.listPendingGate1(this.tenantId),
       this.store.listRuns(this.tenantId, RECENT_ITEMS),
-      this.store.listFindings(this.tenantId, RECENT_ITEMS, actorHasRole(actor, 'appsec-engineer')),
+      this.store.listFindings(this.tenantId, RECENT_ITEMS, analyst),
       this.store.listPendingGate2(this.tenantId),
+      this.store.pendingCounts(this.tenantId, analyst),
+      this.store.listLiveRuns(this.tenantId),
     ]);
     const now = new Date();
     return {
       tenant: { id: this.tenantId, name: tenant === null || tenant.name === '' ? null : tenant.name },
       actor: { id: actor.id, name: actor.name, roles: actor.roles },
       counts: { ...counts, gate2Pending: pending.length },
-      assets: assets.slice(0, RECENT_ITEMS).map((row) => assetDto(row)),
+      assets: assets.slice(0, RECENT_ITEMS).map((row) => assetDto(row, this.origins)),
       requests: requests.map((row) => requestDto(row)),
-      runs: runs.map((row) => runDto(row)),
+      runs: runs.map((row) => this.runView(row)),
       findings: findings.map((row) => findingSummaryDto(row)),
       pendingGate2: pending.map((row) => gate2Dto(row, now)),
+      pendingCounts,
+      liveRuns: live.map((row) => this.runView(row)),
     };
   }
 
@@ -630,13 +712,18 @@ export class DemoService {
     return this.request(id);
   }
 
-  /** Retest: a new pending request with the same answers. The test-account values are copied server-side. */
-  async cloneRequest(actor: DemoActor, id: string): Promise<Record<string, unknown>> {
+  /**
+   * Retest: a new pending request with the same answers. The test-account values are copied server-side. With
+   * `untriedFromRunId`, the test cases that run left untried are appended to the objective.
+   */
+  async cloneRequest(actor: DemoActor, id: string, untriedFromRunId?: string): Promise<Record<string, unknown>> {
     const row = await this.store.getRequest(this.tenantId, id);
     if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
+    const objective =
+      untriedFromRunId === undefined ? row.objective : await this.untriedObjective(row, untriedFromRunId);
     return this.createRequest(actor, {
       assetId: row.asset_id,
-      objective: row.objective,
+      objective,
       intrusiveness: row.intrusiveness === 'passive' ? 'passive' : 'active_safe',
       budgetRequests: row.budget_requests,
       budgetSeconds: row.budget_seconds,
@@ -649,6 +736,126 @@ export class DemoService {
         headerValue: a.header_value,
       })),
     });
+  }
+
+  /** The objective plus the run's untried test cases (from its `coverage.summary`), clipped to the limit. */
+  private async untriedObjective(row: RequestRow, runId: string): Promise<string> {
+    const run = await this.store.getRun(this.tenantId, runId);
+    if (run?.request_id !== row.id) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such run.');
+    const cases = coverageOf(await this.store.lastEvents(runId, [COVERAGE_KIND]))?.cases;
+    const titles = (Array.isArray(cases) ? cases : [])
+      .filter((c): c is { status: string; title: string } => {
+        const value = c as { status?: unknown; title?: unknown } | null;
+        return value?.status === 'not_run' && typeof value.title === 'string';
+      })
+      .map((c) => c.title);
+    if (titles.length === 0) {
+      throw new DemoRefusal(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'nothing_untried',
+        'That audit left no test case untried.',
+      );
+    }
+    const text = `${row.objective}\n\nContinue with the test cases left untried in audit ${shortId(run.id)}: ${titles.join('; ')}`;
+    return text.slice(0, OBJECTIVE_MAX);
+  }
+
+  /** Edits a pending plan in place (no clone, no reject). Only the requester or an administrator. */
+  async amendRequest(actor: DemoActor, id: string, input: AmendRequestInput): Promise<Record<string, unknown>> {
+    requireRole(actor, ['appsec-engineer'], 'Only an appsec engineer can edit a plan.');
+    const row = await this.store.getRequest(this.tenantId, id);
+    if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
+    if (row.requester_id !== actor.id && actor.admin !== true) {
+      throw new DemoRefusal(HttpStatus.FORBIDDEN, 'not_requester', 'Only the person who asked for this audit can edit its plan.');
+    }
+    if (row.status !== 'pending_gate1') {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'request_not_pending', `The request is ${row.status}; its plan can no longer change.`);
+    }
+    if (input.version !== row.version) throw planChanged();
+    const asset = await this.assetRow(row.asset_id);
+    if (asset.ownership_status !== 'verified') {
+      throw new DemoRefusal(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'asset_not_verified',
+        'Ownership must be verified before an assessment can be requested.',
+      );
+    }
+    const accounts =
+      input.testAccounts === undefined
+        ? row.test_accounts.map((a) => ({ ...a }))
+        : input.testAccounts.map((a) => {
+            if (a.headerValue !== undefined) return { role: a.role, header_name: a.headerName, header_value: a.headerValue };
+            const stored = row.test_accounts.find(
+              (s) =>
+                s.role.toLowerCase() === a.role.toLowerCase() &&
+                s.header_name.toLowerCase() === a.headerName.toLowerCase(),
+            );
+            if (stored === undefined) {
+              throw new DemoRefusal(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                'account_value_missing',
+                `Type the ${a.headerName} value for the test account "${a.role}": no value is saved for it.`,
+              );
+            }
+            return { role: a.role, header_name: a.headerName, header_value: stored.header_value };
+          });
+    const next = {
+      objective: input.objective ?? row.objective,
+      intrusiveness: input.intrusiveness ?? row.intrusiveness,
+      budget_requests: input.budgetRequests ?? row.budget_requests,
+      budget_seconds: input.budgetSeconds ?? row.budget_seconds,
+      cost_cap_usd: input.costCapUsd ?? Number(row.cost_cap_usd),
+      excludedPaths: input.excludedPaths === undefined ? (row.scope.excludedPaths ?? []) : [...input.excludedPaths],
+      releaseProven: input.releaseProven ?? releaseModeOf(row),
+    };
+    const before = {
+      objective: row.objective,
+      intrusiveness: row.intrusiveness,
+      budget: [row.budget_requests, row.budget_seconds, Number(row.cost_cap_usd)],
+      excludedPaths: row.scope.excludedPaths ?? [],
+      releaseProven: releaseModeOf(row),
+      testAccounts: row.test_accounts.map((a) => [a.role, a.header_name, a.header_value]),
+    };
+    const after = {
+      objective: next.objective,
+      intrusiveness: next.intrusiveness,
+      budget: [next.budget_requests, next.budget_seconds, next.cost_cap_usd],
+      excludedPaths: next.excludedPaths,
+      releaseProven: next.releaseProven,
+      testAccounts: accounts.map((a) => [a.role, a.header_name, a.header_value]),
+    };
+    const changed = (Object.keys(before) as (keyof typeof before)[]).filter(
+      (key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]),
+    );
+    if (changed.length === 0) return this.request(id, actor);
+    const version = await this.store.amendRequest(this.tenantId, id, row.version, {
+      objective: next.objective,
+      scope: { ...row.scope, excludedPaths: next.excludedPaths, releaseProven: next.releaseProven },
+      intrusiveness: next.intrusiveness,
+      budget_requests: next.budget_requests,
+      budget_seconds: next.budget_seconds,
+      cost_cap_usd: next.cost_cap_usd,
+      test_accounts: accounts,
+    });
+    if (version === null) throw await this.lostDecisionRace(id, planChanged());
+    const audit = await this.audit(actor, 'gate1.amend', 'request', id, {
+      version,
+      changed: changed.join(','),
+      objective: next.objective,
+      excludedPaths: next.excludedPaths.join(','),
+      intrusiveness: next.intrusiveness,
+      budget: `${next.budget_requests} requests, ${next.budget_seconds} s, $${next.cost_cap_usd.toFixed(2)}`,
+      accounts: accounts.map((a) => a.role).join(','),
+    });
+    return this.request(id, actor, audit);
+  }
+
+  /** After a conditional update moved nothing: `request_not_pending` when it was decided, else `fallback`. */
+  private async lostDecisionRace(id: string, fallback: DemoRefusal): Promise<DemoRefusal> {
+    const now = await this.store.getRequest(this.tenantId, id);
+    return now?.status === 'pending_gate1'
+      ? fallback
+      : new DemoRefusal(HttpStatus.CONFLICT, 'request_not_pending', `The request is ${now?.status ?? 'gone'}; Gate 1 is already decided.`);
   }
 
   /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */
@@ -676,6 +883,7 @@ export class DemoService {
     requestId: string,
     decision: 'approve' | 'reject',
     reason: string | null,
+    version: number | null = null,
   ): Promise<Record<string, unknown>> {
     const row = await this.store.getRequest(this.tenantId, requestId);
     if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
@@ -695,25 +903,23 @@ export class DemoService {
       );
     }
     requireRole(actor, ['asset-owner'], 'Only an asset owner can decide Gate 1.');
+    if (version !== null && version !== row.version) throw planChanged();
+    if (decision === 'approve') await this.recheckOwnership(actor, await this.assetRow(row.asset_id), 'gate1');
     const ok = await this.store.decideRequest(
       this.tenantId,
       requestId,
       actor.id,
       decision === 'approve' ? 'approved' : 'rejected',
       reason,
+      row.version,
     );
-    if (!ok) {
-      throw new DemoRefusal(
-        HttpStatus.CONFLICT,
-        'request_not_pending',
-        'Gate 1 was decided concurrently.',
-      );
-    }
+    if (!ok) throw await this.lostDecisionRace(requestId, planChanged());
     const audit = await this.audit(actor, `gate1.${decision}`, 'request', requestId, {
       decision,
       reason,
       selfApproved,
       override: selfApproved ? 'admin' : null,
+      version: row.version,
     });
     return this.request(requestId, actor, audit);
   }
@@ -729,6 +935,9 @@ export class DemoService {
         `The request is ${row.status}; a run needs Gate 1 approval first.`,
       );
     }
+    if ((await this.store.findRunByRequest(this.tenantId, requestId)) !== null) {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'run_already_started', 'This request already has a run.');
+    }
     const asset = await this.assetRow(row.asset_id);
     if (asset.ownership_status !== 'verified') {
       throw new DemoRefusal(
@@ -737,6 +946,7 @@ export class DemoService {
         'Asset ownership is not verified.',
       );
     }
+    await this.recheckOwnership(actor, asset, 'run_start');
     if (!(await this.store.claimRequestForRun(this.tenantId, requestId))) {
       throw new DemoRefusal(
         HttpStatus.CONFLICT,
@@ -745,12 +955,14 @@ export class DemoService {
       );
     }
     const runId = newId();
+    const labOrigins = asset.allowed_origins.filter((o) => isLabOrigin(o, this.origins));
     const pins = {
       asset: {
         id: asset.id,
         name: asset.name,
         baseUrl: asset.base_url,
         allowedOrigins: asset.allowed_origins,
+        labOrigins,
         excludedPaths: [...new Set([...asset.excluded_paths, ...(row.scope.excludedPaths ?? [])])],
       },
       request: {
@@ -771,7 +983,6 @@ export class DemoService {
       authorisation: {
         saId: `SA-${row.id.slice(0, SHORT_ID_LENGTH).toUpperCase()}`,
         signedBy: row.approver_name,
-        keyId: 'bw-sa-key',
       },
       runner: { name: 'ai-hunt', version: '1' },
     };
@@ -788,6 +999,13 @@ export class DemoService {
       stage: 'queued',
       message: 'Run accepted. Scope, budgets and authorisation pinned.',
     });
+    const approval = await this.store.latestAudit(this.tenantId, 'request', requestId, 'gate1.approve');
+    await this.audit(actor, 'run.started', 'run', runId, {
+      requestId,
+      approvalEventId: approval?.eventId ?? null,
+      version: row.version,
+      labOrigins: labOrigins.join(','),
+    });
     return { id: runId, requestId, state: 'queued' };
   }
 
@@ -800,30 +1018,23 @@ export class DemoService {
   async run(actor: DemoActor, runId: string, afterSeq: number): Promise<Record<string, unknown>> {
     const row = await this.runRow(runId);
     const analyst = actorHasRole(actor, 'appsec-engineer');
-    const [events, findings, gate2, stats] = await Promise.all([
+    const [events, findings, gate2, stats, coverage] = await Promise.all([
       this.store.listEvents(runId, afterSeq),
       this.store.listFindingsForRun(this.tenantId, runId, analyst),
       this.store.listGate2ForRun(this.tenantId, runId),
       this.store.runStats(runId),
+      this.store.lastEvents(runId, [COVERAGE_KIND]),
     ]);
     const now = new Date();
     return {
-      ...runDto(row),
+      ...this.runView(row),
       lastSeq: events.at(-1)?.seq ?? afterSeq,
       // Suspected findings are for analysts only, so their events are too.
-      events: events
-        .filter((e) => analyst || e.kind !== 'finding.suspected')
-        .map((e) => ({
-          seq: e.seq,
-          kind: e.kind,
-          stage: e.stage,
-          message: e.message,
-          data: e.data,
-          at: e.at.toISOString(),
-        })),
+      events: events.filter((e) => analyst || e.kind !== 'finding.suspected').map(eventDto),
       findings: findings.map((f) => findingSummaryDto(f)),
       gate2: gate2.map((g) => gate2Dto(g, now)),
       stats,
+      coverage: coverageOf(coverage),
     };
   }
 
@@ -843,7 +1054,7 @@ export class DemoService {
       ['appsec-engineer', 'asset-owner'],
       'Only an appsec engineer or an asset owner controls a run.',
     );
-    await this.runRow(runId);
+    const run = await this.runRow(runId);
     if (!(await this.store.setPaused(this.tenantId, runId, paused))) {
       throw new DemoRefusal(
         HttpStatus.CONFLICT,
@@ -857,7 +1068,8 @@ export class DemoService {
       message: `Run ${paused ? 'paused' : 'resumed'} by ${actor.name}.`,
       data: { by: actor.id },
     });
-    return runDto(await this.runRow(runId));
+    await this.audit(actor, paused ? 'run.pause' : 'run.resume', 'run', runId, { requestId: run.request_id });
+    return this.runView(await this.runRow(runId));
   }
 
   /** Any tenant user may kill. A queued run is killed here; a running one is flagged and the worker halts it. */
@@ -904,7 +1116,7 @@ export class DemoService {
   }
 
   /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */
-  async gate2(id: string, audit?: AuditRef): Promise<Record<string, unknown>> {
+  async gate2(id: string, viewer?: DemoActor, audit?: AuditRef): Promise<Record<string, unknown>> {
     const row = await this.gate2Row(id);
     const run = await this.runRow(row.run_id);
     return {
@@ -916,6 +1128,8 @@ export class DemoService {
         state: run.state,
         assetName: run.asset_name,
         pins: run.pins,
+        startedBy: run.started_by_name === null ? null : { id: run.created_by, name: run.started_by_name },
+        viewerIsRequester: viewer !== undefined && viewer.id === row.requester_id,
       },
     };
   }
@@ -967,7 +1181,7 @@ export class DemoService {
       selfApproved,
       override: selfApproved ? 'admin' : null,
     });
-    return this.gate2(id, audit);
+    return this.gate2(id, actor, audit);
   }
 
   /** A suspected finding is for analysts only: anyone else gets the same 404 as for a missing one. */
@@ -1026,12 +1240,24 @@ export class DemoService {
     asset: AssetRow;
     request: RequestRow;
     findings: FindingRow[];
+    coverage: Record<string, unknown> | null;
+    endReason: string | null;
+    consoleOrigin: string;
   }> {
     const run = await this.runRow(runId);
-    const findings = (await this.store.listFindingsForRun(this.tenantId, runId, false)).filter(
-      (f) => f.status === 'released',
-    );
-    return { run, ...(await this.runContext(run)), findings };
+    const [rows, ends] = await Promise.all([
+      this.store.listFindingsForRun(this.tenantId, runId, false),
+      this.store.lastEvents(runId, [...END_EVENT_KINDS, COVERAGE_KIND]),
+    ]);
+    const findings = rows.filter((f) => f.status === 'released');
+    return {
+      run,
+      ...(await this.runContext(run)),
+      findings,
+      coverage: coverageOf(ends),
+      endReason: endReasonOf(ends),
+      consoleOrigin: this.webhook.consoleOrigin,
+    };
   }
 
   async listFindings(actor: DemoActor): Promise<Record<string, unknown>[]> {
@@ -1078,22 +1304,71 @@ export class DemoService {
       reason,
       runId: finding.run_id,
     });
-    const severity = severityOf(finding.severity);
-    await this.store.appendEvent(finding.run_id, {
+    await this.store.appendEvent(finding.run_id, this.triageEvent(finding, to, actor, reason));
+    if (decision === 'release') await this.deliver(finding, actor.name);
+    return this.findingDetail(actor, id, audit);
+  }
+
+  /**
+   * Batch Gate 3: the same conditional transition as {@link triage} for each id, one ledger event and one run
+   * event per finding that moved. Webhook deliveries run after the response (a failure never fails a release).
+   */
+  async triageMany(
+    actor: DemoActor,
+    ids: readonly string[],
+    decision: 'release' | 'dismiss',
+    reason: string,
+  ): Promise<{ results: TriageResult[]; moved: number; conflicts: number; failed: number }> {
+    requireRole(actor, ['appsec-engineer'], 'Only an AppSec engineer can release or dismiss a finding.');
+    const to = decision === 'release' ? 'released' : 'dismissed';
+    const rows = new Map((await this.store.getFindings(this.tenantId, ids)).map((r) => [r.id, r]));
+    const moved = new Set(
+      await this.store.triageFindings(this.tenantId, [...rows.keys()], TRIAGE_FROM[decision], to, actor.id, reason),
+    );
+    const movedRows = [...rows.values()].filter((r) => moved.has(r.id));
+    await this.store.appendAudits(
+      this.tenantId,
+      movedRows.map((f) => entryOf(actor, `finding.${decision}`, 'finding', f.id, { decision, reason, runId: f.run_id })),
+    );
+    for (const f of movedRows) await this.store.appendEvent(f.run_id, this.triageEvent(f, to, actor, reason));
+    if (decision === 'release') {
+      void Promise.all(movedRows.map((f) => this.deliver(f, actor.name))).catch((error: unknown) => {
+        this.logger.warn({ event: 'demo.webhook.failed', reason: error instanceof Error ? error.name : 'Error' });
+      });
+    }
+    const results: TriageResult[] = ids.map((id) =>
+      moved.has(id)
+        ? { id, ok: true, status: to }
+        : { id, ok: false, code: rows.has(id) ? 'finding_not_triageable' : 'not_found' },
+    );
+    return {
+      results,
+      moved: moved.size,
+      conflicts: results.filter((r) => r.code === 'finding_not_triageable').length,
+      failed: results.filter((r) => r.code === 'not_found').length,
+    };
+  }
+
+  private triageEvent(
+    finding: FindingRow,
+    to: 'released' | 'dismissed',
+    actor: DemoActor,
+    reason: string,
+  ): { kind: string; stage: string; message: string; data: Record<string, unknown> } {
+    const title = scrub(finding.title);
+    return {
       kind: `finding.${to}`,
       stage: 'gate3',
-      message: `${capitalise(to)} by ${actor.name}: ${finding.title}`,
+      message: `${capitalise(to)} by ${actor.name}: ${title}`,
       data: {
-        findingId: id,
-        title: finding.title,
-        severity,
-        ...(decision === 'release' ? { auto: false } : {}),
+        findingId: finding.id,
+        title,
+        severity: severityOf(finding.severity),
+        ...(to === 'released' ? { auto: false } : {}),
         by: actor.id,
         reason,
       },
-    });
-    if (decision === 'release') await this.deliver(finding, actor.name);
-    return this.findingDetail(actor, id, audit);
+    };
   }
 
   /** POSTs the released finding to the optional webhook and records the result. A failure never fails the release. */
@@ -1103,17 +1378,18 @@ export class DemoService {
     const url = `${consoleOrigin}/findings/${finding.id}`;
     const severity = severityOf(finding.severity);
     const asset = finding.asset_name ?? '';
+    const clean = scrubFinding(finding);
     const body = {
-      text: `Blackwing released a ${capitalise(severity)} finding on ${asset}: ${finding.title}. ${url}`,
+      text: `Blackwing released a ${capitalise(severity)} finding on ${asset}: ${clean.title}. ${url}`,
       finding: {
         id: finding.id,
-        title: finding.title,
+        title: clean.title,
         severity,
         cwe: finding.cwe_id,
-        owasp: finding.owasp_category,
+        owasp: owaspLabel(finding.owasp_category),
         asset,
         url,
-        reproCurl: finding.repro_curl,
+        reproCurl: clean.repro_curl,
         releasedBy,
       },
     };

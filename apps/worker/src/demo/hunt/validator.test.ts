@@ -1,10 +1,41 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildEvidence, oracleMatches, reproCurl, validateCandidate, type Candidate } from './validator.js';
+import {
+  buildFindingRow,
+  canonicalOwasp,
+  candidateSchema,
+  controlDelta,
+  identityKey,
+  normalisedPath,
+  oracleMatches,
+  reproCurl,
+  validateCandidate,
+  type Candidate,
+  type Verdict,
+} from './validator.js';
 
 import type { HttpRequest, HttpResult } from './http-tool.js';
 
-const ok = (body: string, status = 200, headers: Record<string, string> = {}): HttpResult => ({ ok: true, exchangeId: 'x', status, headers, body, bodyBytes: body.length });
+// A structurally valid, unsigned sample token (benign lab value).
+const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJlLXNhbXBsZQ';
+
+const sentOf = (request: HttpRequest) => ({
+  method: request.method.toUpperCase(),
+  url: request.url,
+  headers: { 'user-agent': 'blackwing-hunt/1', ...(request.as_role === undefined ? {} : { authorization: `[redacted: role ${request.as_role}]` }) },
+  body: request.body ?? null,
+  asRole: request.as_role ?? null,
+});
+
+const ok = (request: HttpRequest, body: string, status = 200, headers: Record<string, string> = {}): HttpResult => ({
+  ok: true,
+  exchangeId: `x-${request.url}`,
+  status,
+  headers,
+  body,
+  bodyBytes: body.length,
+  request: sentOf(request),
+});
 
 const candidate: Candidate = {
   title: 'Reflected marker',
@@ -41,6 +72,8 @@ function hooks(respond: (request: HttpRequest, call: number) => HttpResult) {
   };
 }
 
+const reflect = (request: HttpRequest) => ok(request, request.url.includes('bwmark') ? 'found bwmark here' : 'nothing');
+
 describe('oracleMatches', () => {
   const response = { status: 500, headers: { 'X-Powered-By': 'Express' }, body: 'SQLITE_ERROR near "\'"' };
   it('evaluates every oracle type', () => {
@@ -56,22 +89,72 @@ describe('oracleMatches', () => {
   });
 });
 
+describe('controlDelta', () => {
+  const base = { method: 'GET', url: 'https://t.example/rest/basket/2' };
+  it.each([
+    [{ ...base, url: 'https://t.example/rest/basket/2?x=1' }, 'query'],
+    [{ ...base, body: 'a=1' }, 'body'],
+    [{ ...base, headers: { 'X-Test': '1' } }, 'header'],
+    [{ ...base, as_role: 'bob' }, 'role'],
+    [{ ...base, url: 'https://t.example/rest/basket/1' }, 'path_segment'],
+  ])('accepts exactly one changed part (%#: %s)', (control, delta) => {
+    expect(controlDelta(base, control)).toEqual({ ok: true, delta });
+  });
+
+  it('ignores header name case and order', () => {
+    expect(controlDelta({ ...base, headers: { A: '1', b: '2' } }, { ...base, headers: { B: '2', a: '1' }, as_role: 'x' })).toEqual({ ok: true, delta: 'role' });
+  });
+
+  it.each([
+    [{ ...base, url: 'https://t.example/metrics' }, 'path'],
+    [{ ...base, method: 'POST' }, 'method'],
+    [{ ...base, url: 'https://other.example/rest/basket/2' }, 'origin'],
+    [{ ...base, url: 'https://t.example/rest/basket/1?x=1' }, 'path_segment, query'],
+    [base, 'nothing (the control is the probe)'],
+  ])('refuses any other control (%#: %s)', (control, differs) => {
+    expect(controlDelta(base, control)).toEqual({ ok: false, differs });
+  });
+});
+
 describe('validateCandidate', () => {
   it('confirms only when 3 probe replays match and the control does not', async () => {
-    const h = hooks((request) => ok(request.url.includes('bwmark') ? 'found bwmark here' : 'nothing'));
+    const h = hooks(reflect);
     const verdict = await validateCandidate(candidate, h.hooks);
-    expect(verdict.confirmed).toBe(true);
+    expect(verdict).toMatchObject({ confirmed: true, delta: 'query' });
     expect(h.calls).toHaveLength(4);
     expect(h.steps).toEqual(['replay1:true', 'replay2:true', 'replay3:true', 'control:false']);
   });
 
+  it('sends nothing and keeps the candidate suspected when the control is not single-delta', async () => {
+    const h = hooks(reflect);
+    const verdict = await validateCandidate({ ...candidate, control: { method: 'GET', url: 'https://t.example/a/b?q=bwmark' } }, h.hooks);
+    expect(verdict).toMatchObject({ confirmed: false, reason: 'control_not_single_delta: path differ', delta: null });
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it('replays a state-changing probe once', async () => {
+    const post: Candidate = {
+      ...candidate,
+      probe: { method: 'POST', url: 'https://t.example/login', body: "email=' OR 1=1--" },
+      control: { method: 'POST', url: 'https://t.example/login', body: 'email=a' },
+      oracle: { type: 'status_equals', value: '200' },
+    };
+    const h = hooks((request) => ok(request, '', request.body?.includes('OR') === true ? 200 : 401));
+    const verdict = await validateCandidate(post, h.hooks);
+    expect(verdict).toMatchObject({ confirmed: true, delta: 'body' });
+    expect(h.steps).toEqual(['replay1:true', 'control:false']);
+    const logout = hooks((request) => ok(request, request.url.includes('bwmark') ? 'bwmark' : ''));
+    await validateCandidate({ ...candidate, probe: { method: 'GET', url: 'https://t.example/logout?q=bwmark' }, control: { method: 'GET', url: 'https://t.example/logout?q=plain' } }, logout.hooks);
+    expect(logout.calls).toHaveLength(2);
+  });
+
   it('does not confirm when the negative control also matches', async () => {
-    const verdict = await validateCandidate(candidate, hooks(() => ok('bwmark')).hooks);
+    const verdict = await validateCandidate(candidate, hooks((request) => ok(request, 'bwmark')).hooks);
     expect(verdict).toMatchObject({ confirmed: false, controlMatched: true });
   });
 
   it('does not confirm a flaky probe and stops replaying', async () => {
-    const h = hooks((_request, call) => ok(call === 2 ? 'nothing' : 'bwmark'));
+    const h = hooks((request, call) => ok(request, call === 2 ? 'nothing' : 'bwmark'));
     const verdict = await validateCandidate(candidate, h.hooks);
     expect(verdict.confirmed).toBe(false);
     expect(h.calls).toHaveLength(2);
@@ -80,22 +163,106 @@ describe('validateCandidate', () => {
   it('does not confirm when a request is refused', async () => {
     const refused = hooks(() => ({ ok: false, refusal: 'Refused by policy (gate2_required)' }));
     expect((await validateCandidate(candidate, refused.hooks)).confirmed).toBe(false);
-    const controlRefused = hooks((request) => (request.url.includes('plain') ? { ok: false, refusal: 'no' } : ok('bwmark')));
+    const controlRefused = hooks((request) => (request.url.includes('plain') ? { ok: false, refusal: 'no' } : ok(request, 'bwmark')));
     expect((await validateCandidate(candidate, controlRefused.hooks)).confirmed).toBe(false);
   });
 });
 
-describe('evidence', () => {
-  it('builds the spec evidence shape and a quoted repro command', async () => {
-    const verdict = await validateCandidate(candidate, hooks((request) => ok(request.url.includes('bwmark') ? 'bwmark' : 'x')).hooks);
-    if (verdict.probe === null || verdict.control === null) throw new Error('expected responses');
-    const evidence = buildEvidence(candidate, verdict.probe, verdict.control, verdict.replays);
-    expect(Object.keys(evidence).sort()).toEqual(['control', 'description', 'oracle', 'probe', 'replays']);
-    expect(reproCurl({ method: 'post', url: "https://t.example/a'b", headers: { 'X-A': "it's" }, body: '{"a":1}' })).toBe(
-      `curl -sS -i -X POST -H 'X-A: it'\\''s' --data-raw '{"a":1}' 'https://t.example/a'\\''b'`,
+describe('OWASP canonical form', () => {
+  it.each([
+    ['A03:2021-Injection', 'A03:2021 Injection'],
+    ['OWASP A3', 'A03:2021 Injection'],
+    ['a03', 'A03:2021 Injection'],
+    ['A10:2021 SSRF', 'A10:2021 Server-Side Request Forgery'],
+    ['A1', 'A01:2021 Broken Access Control'],
+  ])('%s -> %s', (text, canonical) => {
+    expect(canonicalOwasp(text)).toBe(canonical);
+  });
+
+  it('refuses a candidate whose category is not A01..A10, naming the valid codes', () => {
+    expect(canonicalOwasp('API3:2023')).toBeNull();
+    const parsed = candidateSchema.safeParse({ ...candidate, owasp: 'Injection' });
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toContain('A01, A02');
+  });
+});
+
+describe('identity', () => {
+  it('normalises the path: case, numeric and uuid segments, trailing slash', () => {
+    expect(normalisedPath('https://t.example/Rest/Basket/2/')).toBe('/rest/basket/:id');
+    expect(normalisedPath('https://t.example/api/users/0197a5d0-aaaa-7000-8000-000000000001?x=1')).toBe('/api/users/:id');
+    expect(normalisedPath('https://t.example/')).toBe('/');
+  });
+
+  it('is stable across runs and agents and differs by asset, method, path and CWE', () => {
+    const a = identityKey('asset-1', { probe: { method: 'get', url: 'https://t.example/ftp/' }, cwe: 'cwe-548' });
+    expect(identityKey('asset-1', { probe: { method: 'GET', url: 'https://t.example/FTP' }, cwe: 'CWE-548' })).toBe(a);
+    expect(identityKey('asset-2', { probe: { method: 'GET', url: 'https://t.example/ftp' }, cwe: 'CWE-548' })).not.toBe(a);
+    expect(identityKey('asset-1', { probe: { method: 'POST', url: 'https://t.example/ftp' }, cwe: 'CWE-548' })).not.toBe(a);
+    expect(identityKey('asset-1', { probe: { method: 'GET', url: 'https://t.example/ftp' }, cwe: 'CWE-200' })).not.toBe(a);
+  });
+});
+
+describe('buildFindingRow', () => {
+  const run = { id: 'run-1', assetId: 'asset-1' };
+
+  it('stores the proof, the trigger request as sent and scrubbed text', async () => {
+    const leaky: Candidate = {
+      ...candidate,
+      probe: { ...candidate.probe, as_role: 'alice' },
+      control: { ...candidate.control, as_role: 'alice' },
+      owasp: 'A03:2021-Injection',
+      description: `Found $_DVWA[ 'db_password' ] = 'vulnerables'; token ${JWT}`,
+      remediation: 'Rotate "password": "pass1" now',
+    };
+    const verdict = await validateCandidate(leaky, hooks((request) => ok(request, request.url.includes('bwmark') ? `bwmark {"token":"${JWT}"}` : 'nothing')).hooks);
+    const { proven, row } = buildFindingRow({ run, candidate: leaky, verdict, agent: 'web-api-specialist', testCaseId: 'xss-1', credentialHeader: 'Authorization' });
+    expect(proven).toBe(true);
+    expect(row.owasp).toBe('A03:2021 Injection');
+    expect(row.location).toEqual({ method: 'GET', url: 'https://t.example/search?q=bwmark' });
+    expect(row.reproCurl).toBe("curl -sS -i -X GET -H 'user-agent: blackwing-hunt/1' -H 'authorization: <alice credential>' 'https://t.example/search?q=bwmark'");
+    expect(row.evidence['proof']).toEqual({ kind: 'differential_replay', replays: 3, delta: 'query', proposedBy: 'claude' });
+    const probe = row.evidence['probe'] as { exchangeId: string; request: { asRole: string }; response: { bodyExcerpt: string; bodySha256: string } };
+    expect(probe.exchangeId).toBe('x-https://t.example/search?q=bwmark');
+    expect(probe.request.asRole).toBe('alice');
+    expect(probe.response.bodyExcerpt).toBe('bwmark {"token":"[redacted: token]"}');
+    expect(probe.response.bodySha256).toBe(verdict.replays[0]?.bodySha256);
+    const stored = JSON.stringify(row);
+    expect(stored).not.toContain(JWT);
+    expect(stored).not.toContain('vulnerables');
+    expect(stored).not.toContain('pass1');
+    expect(row.identityKey).toBe(identityKey('asset-1', leaky));
+    expect(row.replay).toEqual({ replays: verdict.replays, control: { status: 200, matched: false } });
+  });
+
+  it('merges two agents in one run and keeps a later run separate', async () => {
+    const verdict = await validateCandidate(candidate, hooks(reflect).hooks);
+    const input = { candidate, verdict, testCaseId: null, credentialHeader: undefined };
+    const a = buildFindingRow({ ...input, run, agent: 'recon' }).row;
+    const b = buildFindingRow({ ...input, run, agent: 'web-api-specialist', candidate: { ...candidate, title: 'Other words' } }).row;
+    const later = buildFindingRow({ ...input, run: { ...run, id: 'run-2' }, agent: 'recon' }).row;
+    expect(b.fingerprint).toBe(a.fingerprint);
+    expect(later.fingerprint).not.toBe(a.fingerprint);
+    expect(later.identityKey).toBe(a.identityKey);
+  });
+
+  it('builds a suspected row from the candidate when nothing was sent', () => {
+    const verdict: Verdict = { confirmed: false, reason: 'control_not_single_delta: path differ', delta: null, replays: [], probe: null, control: null, controlMatched: null };
+    const probe = { method: 'post', url: 'https://t.example/api?token=abc', body: '{"password":"x"}', as_role: 'bob' };
+    const { proven, row } = buildFindingRow({ run, candidate: { ...candidate, probe }, verdict, agent: 'a', testCaseId: null, credentialHeader: 'X-Api-Key' });
+    expect(proven).toBe(false);
+    expect(row.evidence).toEqual({ reason: verdict.reason, replays: [], oracle: candidate.oracle });
+    expect(row.reproCurl).toBe(
+      `curl -sS -i -X POST -H 'x-api-key: <bob credential>' --data-raw '{"password":"[redacted: password]"}' 'https://t.example/api?token=[redacted: secret]'`,
     );
-    expect(reproCurl({ method: 'get', url: 'https://t.example/me', as_role: 'customer' }, 'Authorization')).toBe(
-      `curl -sS -i -X GET -H 'Authorization: <customer credential>' 'https://t.example/me'`,
+    expect(row.replay).toEqual({ replays: [], control: null });
+  });
+});
+
+describe('reproCurl', () => {
+  it('quotes every part', () => {
+    expect(reproCurl({ method: 'post', url: "https://t.example/a'b", headers: { 'x-a': "it's" }, body: '{"a":1}', asRole: null })).toBe(
+      `curl -sS -i -X POST -H 'x-a: it'\\''s' --data-raw '{"a":1}' 'https://t.example/a'\\''b'`,
     );
   });
 });

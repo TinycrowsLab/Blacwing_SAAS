@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 
+import { ledgerWords } from './words';
 import { Chip, EmptyState, Icon } from '../../../components/console/design';
 import { Path } from '../../../components/console/results/decisions';
 import { HashFocus } from '../../../components/console/results/hash-focus';
@@ -31,6 +32,7 @@ const TARGET: Readonly<Record<string, { href: (id: string) => string; label: str
   run: { href: (id) => `/runs/${id}`, label: 'View audit' },
   finding: { href: (id) => `/findings/${id}`, label: 'View finding' },
   gate2: { href: (id) => `/decisions/gate2/${id}`, label: 'View request' },
+  asset: { href: () => '/targets', label: 'View targets' },
 };
 /** Newest entries shown at first; "Show all" lists the rest. */
 const PAGE = 50;
@@ -38,6 +40,8 @@ const PAGE = 50;
 const findingTitles = z.object({ items: z.array(z.object({ id: z.string(), title: z.string() })) });
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : null);
+/** "Approved a plan" reads "· approved a plan" after the name; an origin or a run id keeps its case. */
+const lowerFirst = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1);
 
 function pathOf(url: string): string {
   try {
@@ -60,6 +64,8 @@ function Detail({
   readonly previousName: string | undefined;
 }) {
   const p = item.payload;
+  // These words already hold their detail.
+  if (ledgerWords(item.action, p, item.targetId) !== null) return null;
   const method = text(p.method);
   const url = text(p.url);
   const name = text(p.name);
@@ -210,10 +216,12 @@ export default async function LedgerPage({
                   </span>
                   <span className="min-w-0 break-words text-[13.5px] leading-[21px] text-foreground">
                     <span className="font-medium">{e.actor.name}</span> ·{' '}
-                    {(renamedFrom.has(e.eventId)
-                      ? 'Renamed the workspace'
-                      : actionLabel(e.action, e.payload)
-                    ).toLowerCase()}
+                    {lowerFirst(
+                      renamedFrom.has(e.eventId)
+                        ? 'Renamed the workspace'
+                        : (ledgerWords(e.action, e.payload, e.targetId) ??
+                            actionLabel(e.action, e.payload)),
+                    )}
                     <Detail
                       item={e}
                       title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined}
@@ -230,6 +238,7 @@ export default async function LedgerPage({
                         {' '}
                         <NavLink
                           href={target.href(e.targetId)}
+                          prefetch={false}
                           className="whitespace-nowrap text-[12.5px] font-medium text-gold-ink underline-offset-2 hover:underline"
                         >
                           {target.label}
@@ -259,6 +268,7 @@ export default async function LedgerPage({
               entries.{' '}
               <NavLink
                 href="/ledger?all=1"
+                prefetch={false}
                 className="font-medium text-gold-ink underline-offset-2 hover:underline"
               >
                 Show all
