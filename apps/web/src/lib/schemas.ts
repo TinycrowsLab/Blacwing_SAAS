@@ -33,8 +33,14 @@ export const assetSchema = z.object({
     verifiedBy: z.string().nullable().default(null),
     verifiedAt: nullableIso,
   }),
+  /** True when the operator listed every origin of this asset as a lab (owner attestation is allowed there). */
+  lab: z.boolean().default(false),
   verification: z
-    .object({ token: z.string().nullable(), wellKnownUrl: z.string() })
+    .object({
+      token: z.string().nullable(),
+      wellKnownUrl: z.string(),
+      methods: z.array(z.enum(['http_token', 'owner_attestation'])).default(['http_token', 'owner_attestation']),
+    })
     .nullable()
     .default(null),
 });
@@ -60,6 +66,9 @@ export const requestSchema = z.object({
     costUsd: z.number().nullable().default(null),
   }),
   excludedPaths: strings,
+  /** Plan version: an edit or a decision names the version it saw (a mismatch is 409 plan_changed). */
+  version: z.number().int().default(1),
+  /** pending_gate1 | approved | rejected | running | completed, or the terminal failed | killed. */
   status: z.string(),
   requester: personSchema,
   approver: personSchema.nullable().default(null),
@@ -108,7 +117,7 @@ const pinsSchema = z
       .loose()
       .optional(),
     authorisation: z
-      .object({ saId: z.string(), signedBy: z.string().nullable(), keyId: z.string() })
+      .object({ saId: z.string(), signedBy: z.string().nullable(), keyId: z.string().optional() })
       .optional(),
   })
   .loose();
@@ -130,7 +139,24 @@ const gate2Schema = z.object({
   decidedAt: nullableIso,
   secondsLeft: z.number().default(0),
   decisionReason: z.string().nullable().default(null),
-  run: z.object({ id: z.string(), assetName: z.string().optional() }).optional(),
+  /** The request body as asked (scrubbed); null for asks recorded before it was stored. */
+  body: z.string().nullable().default(null),
+  asRole: z.string().nullable().default(null),
+  assetName: z.string().nullable().default(null),
+  /** Who asked for the audit this request belongs to. */
+  requester: personSchema.nullable().default(null),
+  runStartedAt: nullableIso,
+  /** deadline | run_ended | killed | worker_restarted when the ask closed without a person deciding. */
+  closeReason: z.string().nullable().default(null),
+  run: z
+    .object({
+      id: z.string(),
+      assetName: z.string().optional(),
+      startedBy: personSchema.nullable().optional(),
+      viewerIsRequester: z.boolean().optional(),
+    })
+    .loose()
+    .optional(),
 });
 export type Gate2 = z.infer<typeof gate2Schema>;
 
@@ -145,7 +171,38 @@ export const findingSummarySchema = z.object({
   cwe: z.string().nullable().default(null),
   owasp: z.string().nullable().default(null),
   createdAt: iso.optional(),
+  identityKey: z.string().nullable().default(null),
+  /** The earliest finding with the same identity in an earlier audit of this workspace. */
+  seenBefore: z
+    .object({ runId: z.string(), findingId: z.string(), status: z.string(), at: iso })
+    .nullable()
+    .default(null),
 });
+
+/** What the run covered (the run's last coverage.summary event); null for older or still-running runs. */
+export const coverageSchema = z.object({
+  cases: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        agent: z.string(),
+        status: z.enum(['executed', 'skipped', 'blocked', 'not_run']),
+        note: z.string().nullable().default(null),
+        requests: z.number().default(0),
+        candidates: z.number().default(0),
+      }),
+    )
+    .default([]),
+  rolesConfigured: strings,
+  rolesUsed: z.record(z.string(), z.number()).default({}),
+  requestsSent: z.number().default(0),
+  endReason: z.string().nullable().default(null),
+});
+export type Coverage = z.infer<typeof coverageSchema>;
+
+/** Only while a run is queued: its place in the line and how many run at a time. */
+const queueSchema = z.object({ position: z.number(), ahead: z.number(), running: z.number(), concurrency: z.number() });
 
 export const runSchema = z.object({
   id: z.string(),
@@ -176,6 +233,9 @@ export const runSchema = z.object({
       gate2Pending: z.number().default(0),
     })
     .default({ httpSent: 0, blocked: 0, gate2Pending: 0 }),
+  startedBy: personSchema.nullable().default(null),
+  queue: queueSchema.nullable().default(null),
+  coverage: coverageSchema.nullable().default(null),
 });
 export type Run = z.infer<typeof runSchema>;
 
@@ -183,12 +243,14 @@ export type Run = z.infer<typeof runSchema>;
 export const gate2DetailSchema = gate2Schema.extend({ audit: auditRefSchema });
 
 const findingEvidenceSchema = z.object({
+  exchangeId: z.string().optional(),
   request: z
     .object({
       method: z.string(),
       url: z.string(),
       headers: z.record(z.string(), z.string()).optional(),
       body: z.string().nullish(),
+      asRole: z.string().nullable().optional(),
     })
     .optional(),
   response: z
@@ -213,6 +275,10 @@ export const findingSchema = findingSummarySchema.extend({
       reason: z.string().optional(),
       /** Claude's fix suggestion (optional, not verified): the "How to fix it" block is hidden without it. */
       remediation: z.string().optional(),
+      proof: z
+        .object({ kind: z.string(), replays: z.number(), delta: z.string().nullable(), proposedBy: z.string() })
+        .partial()
+        .optional(),
     })
     .default({ probe: {}, control: {}, replays: [] }),
   testCaseId: z.string().nullable().default(null),
@@ -227,6 +293,19 @@ export const findingSchema = findingSummarySchema.extend({
   audit: auditRefSchema,
   reproCurl: z.string().default(''),
   agent: z.string().nullable().default(null),
+  retests: z
+    .array(
+      z.object({
+        id: z.string(),
+        status: z.string(),
+        result: z.string().nullable().default(null),
+        requestedBy: z.string().nullable().default(null),
+        createdAt: iso,
+        finishedAt: nullableIso,
+        detail: z.record(z.string(), z.unknown()).default({}),
+      }),
+    )
+    .default([]),
 });
 
 const runSummarySchema = z.object({
@@ -240,6 +319,8 @@ const runSummarySchema = z.object({
   assetName: z.string().optional(),
   requestsUsed: z.number().default(0),
   costUsd: z.number().default(0),
+  startedBy: personSchema.nullable().default(null),
+  queue: queueSchema.nullable().default(null),
 });
 
 export const dashboardSchema = z.object({
@@ -258,6 +339,18 @@ export const dashboardSchema = z.object({
   runs: z.array(runSummarySchema).default([]),
   findings: z.array(findingSummarySchema).default([]),
   pendingGate2: z.array(gate2Schema).default([]),
+  /** Exact, uncapped counts of what waits on people (the lists above stay capped). */
+  pendingCounts: z
+    .object({
+      gate1: z.number(),
+      gate2: z.number(),
+      gate3: z.number(),
+      keptBack: z.number().default(0),
+      live: z.number(),
+    })
+    .optional(),
+  /** Every live run, uncapped, newest first. */
+  liveRuns: z.array(runSummarySchema).optional(),
 });
 export type Dashboard = z.infer<typeof dashboardSchema>;
 
@@ -275,6 +368,7 @@ export const workspaceSchema = z.object({
       z.object({ key: z.string(), label: z.string(), minutes: z.number(), requests: z.number(), costUsd: z.number() }),
     ),
     webhook: z.object({ configured: z.boolean(), host: z.string().nullable() }),
+    huntConcurrency: z.number().optional(),
   }),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
@@ -293,6 +387,11 @@ export const sidebarSchema = z.object({
   releases: z.array(z.object({ id: z.string(), title: z.string(), assetName: z.string().nullable() })),
   live: z.array(runSummarySchema),
   earlier: z.array(runSummarySchema),
+  /** Exact counts from /dashboard; null while the API does not send them (the lists above are then the counts). */
+  counts: z
+    .object({ gate1: z.number(), gate2: z.number(), gate3: z.number(), live: z.number() })
+    .nullable()
+    .default(null),
 });
 export type SidebarData = z.infer<typeof sidebarSchema>;
 
@@ -313,7 +412,16 @@ export function toSidebar(d: Dashboard): SidebarData {
     releases: d.findings
       .filter((f) => f.status === 'confirmed')
       .map((f) => ({ id: f.id, title: f.title, assetName: f.assetName })),
-    live: d.runs.filter((r) => LIVE_RUN_STATES.includes(r.state)),
+    live: d.liveRuns ?? d.runs.filter((r) => LIVE_RUN_STATES.includes(r.state)),
     earlier: d.runs.filter((r) => !LIVE_RUN_STATES.includes(r.state)).slice(0, EARLIER_RUNS),
+    counts:
+      d.pendingCounts === undefined
+        ? null
+        : {
+            gate1: d.pendingCounts.gate1,
+            gate2: d.pendingCounts.gate2,
+            gate3: d.pendingCounts.gate3,
+            live: d.pendingCounts.live,
+          },
   };
 }

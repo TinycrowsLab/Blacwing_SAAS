@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { isUuid } from '../../../../(console)/decisions/asked';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
-import { getAsUser } from '../../../../../lib/post-route';
+import { getAsUser, refuseMutation } from '../../../../../lib/post-route';
 import { gate2DetailSchema } from '../../../../../lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,8 @@ export async function POST(
   request: Request,
   { params }: { readonly params: Promise<{ readonly id: string }> },
 ): Promise<Response> {
+  const refused = refuseMutation(request, { json: true });
+  if (refused !== null) return refused;
   const session = await getViewer();
   if (session === null) return Response.json({ code: 'unauthenticated' }, { status: 401 });
   const { id } = await params;
