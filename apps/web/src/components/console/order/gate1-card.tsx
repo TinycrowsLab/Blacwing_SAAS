@@ -99,6 +99,7 @@ export function Gate1Card({
   onBusy,
   unsaved = null,
   replacedBy = null,
+  siteVerified = true,
 }: {
   readonly request: AssessmentRequest;
   readonly viewer: Person;
@@ -110,6 +111,8 @@ export function Gate1Card({
   readonly unsaved?: string | null;
   /** The plan that replaced this one, when found: its link is the way on. */
   readonly replacedBy?: string | null;
+  /** False when the site's ownership lapsed after the plan was written (approving re-checks it and would refuse). */
+  readonly siteVerified?: boolean;
 }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
@@ -332,7 +335,11 @@ export function Gate1Card({
           ) : (
             <>
               <b className="font-semibold">You can approve it yourself.</b>{' '}
-              <span className="text-muted-foreground">You own this workspace and the site is verified as yours.</span>
+              <span className="text-muted-foreground">
+                {siteVerified
+                  ? 'You own this workspace and the site is verified as yours.'
+                  : 'You own this workspace. The site is no longer verified as yours: show it is yours again on Targets first.'}
+              </span>
             </>
           )}
         </p>

@@ -20,7 +20,7 @@ import {
   readPathList,
   ReleaseEditor,
 } from './plan-editors';
-import { type Care, originOf, refreshSidebar, wasApproved } from './shared';
+import { type Care, isVerified, originOf, refreshSidebar, wasApproved } from './shared';
 import { amendPlanAction } from '../../../app/(console)/audits/actions';
 import { objectiveConflicts, type PlanField, planSegments, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, LinkButton, type Voice, VoiceTag } from '../design';
@@ -548,6 +548,7 @@ export function PlanView({
             onBusy={setBusy}
             unsaved={unsaved}
             replacedBy={replacedBy}
+            siteVerified={asset === null || isVerified(asset)}
           />
         </div>
       </div>
