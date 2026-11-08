@@ -83,8 +83,9 @@ function requireRole(actor: DemoActor, roles: readonly string[], detail: string)
   }
 }
 
-/** The run id as people type and read it (kill confirmation, breadcrumbs). */
-export const shortId = (id: string): string => id.slice(0, SHORT_ID_LENGTH);
+/** The run id as people type and read it (kill confirmation, breadcrumbs). UUIDv7 ids start with their timestamp,
+ *  so ids made in the same minute share a prefix: the random tail tells them apart (the web uses the same rule). */
+export const shortId = (id: string): string => id.replace(/-/g, '').slice(-SHORT_ID_LENGTH).toUpperCase();
 
 /** `scheme://host[:port]` of each URL, without duplicates. */
 export function originsOf(urls: readonly string[]): string[] {

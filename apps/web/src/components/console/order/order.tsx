@@ -146,6 +146,8 @@ export function Order({
   const [focusText, setFocusText] = useState('');
   const [care, setCare] = useState<Care | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** The API refused the address outright (its own console, metadata, an unlisted private host): no proof can help. */
+  const [refused, setRefused] = useState<{ readonly origin: string; readonly message: string } | null>(null);
   const [saved, setSaved] = useState(false);
   const [inText, setInText] = useState(false);
   /** Bumped by Try again when registering the site for question 2 failed: the registration runs again. */
@@ -194,6 +196,7 @@ export function Order({
     void ensureTargetAction(target.origin, target.host).then((r) => {
       if (!active) return;
       if (r.ok) setAsset(r.data);
+      else if (r.code === 'target_not_allowed') setRefused({ origin: target.origin, message: r.message });
       else setError(r.message);
     });
     return () => {
@@ -259,6 +262,7 @@ export function Order({
   };
 
   const verified = asset !== null && isVerified(asset);
+  const refusedHere = refused !== null && refused.origin === target?.origin ? refused.message : null;
 
   const back = useCallback((): void => {
     // Back skips what Continue skipped (question 2 has nothing to ask once the site is verified), but never past the
@@ -352,14 +356,14 @@ export function Order({
       ? // Muted while the field shows its error, as on Home: a gold Continue that does nothing reads as a missed click.
         text.trim() !== '' && !(shownError && !normalizeTarget(text).ok)
       : step === 2
-        ? verified || (target !== null && method === 'attest' && attested)
+        ? refusedHere === null && (verified || (target !== null && method === 'attest' && attested))
         : step === Q.care
           ? asset !== null
           : true;
 
   /** Why Continue is not ready yet, said next to it (a disabled button alone does not explain itself). */
   const stepHint =
-    step === 2 && !canContinue
+    step === 2 && !canContinue && refusedHere === null
       ? method === 'file'
         ? 'Put the file on the site and press Check now, or choose \u201cI\u2019m responsible for this system\u201d.'
         : 'Tick the box to confirm, then continue.'
@@ -555,7 +559,20 @@ export function Order({
             />
           ) : null}
 
-          {step === 2 ? (
+          {step === 2 && refusedHere !== null ? (
+            <InlineMessage tone="bad">
+              {refusedHere}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  go(1);
+                }}
+                className="rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                Use another address
+              </button>
+            </InlineMessage>
+          ) : step === 2 ? (
             <VerifyOwnership
               asset={asset}
               origin={target?.origin ?? null}

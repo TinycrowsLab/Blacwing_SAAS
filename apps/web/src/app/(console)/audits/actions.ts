@@ -43,10 +43,9 @@ function plainOwnership<T>(result: ActionResult<T>): ActionResult<T> {
     case 'ownership_recheck_failed':
       return {
         ...result,
-        message: `Blackwing checked again that the site is yours and could not confirm it (${result.message.replace(/\.$/, '')}). Show it is yours again on Targets, then try again.`,
+        // The API's detail already says what changed; only the way forward is the console's.
+        message: result.message.replace(/\s*Prove ownership again to go ahead\.?$/, ' Show it is yours again on Targets, then try again.'),
       };
-    case 'target_not_allowed':
-      return { ...result, message: `Blackwing cannot test this address. ${result.message}` };
     default:
       return result;
   }
