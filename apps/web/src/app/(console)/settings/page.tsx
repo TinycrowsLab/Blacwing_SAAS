@@ -80,7 +80,7 @@ export default async function SettingsPage(): Promise<ReactNode> {
   const minutes = s === undefined ? 0 : Math.max(1, Math.round(s.gate2TimeoutS / S_PER_MIN));
 
   return (
-    <div className="flex w-full max-w-[860px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[860px] flex-col gap-5">
       <HashFocus />
       <div className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">

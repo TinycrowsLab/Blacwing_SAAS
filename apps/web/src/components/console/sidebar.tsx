@@ -2,7 +2,7 @@
 'use client';
 
 // The console's one navigation (experience spec §2): brand and workspace, New audit, the five places, the Stop pill
-// while an audit runs elsewhere, then the live groups (Waiting on you, In progress, Drafts, Earlier) and the person.
+// while an audit runs elsewhere, then the live groups (Running, Waiting on you, Drafts, Earlier) and the person.
 // Seeded by the layout's server data, refreshed from /api/sidebar every 5 s while visible and at once on `bw:refresh`.
 // On phones the same content lives in the MobileBar's sheet. Every control here works; none is decorative.
 import Link from 'next/link';
@@ -96,6 +96,22 @@ export function waitingCount(data: SidebarData | null): number {
   if (data === null) return 0;
   const listed = data.gate2.length + data.plans.length + data.releases.length;
   return data.counts === null ? listed : Math.max(listed, data.counts.gate1 + data.counts.gate2 + data.counts.gate3);
+}
+
+/**
+ * How "Waiting on you" stays short: each Gate 2 request and plan is a row, proven findings fold into one row with their
+ * count (exact when the API counts them), and what the lists leave out is one "more on Decisions" line.
+ */
+export function waitingRows(data: SidebarData): { readonly findings: number; readonly more: number } {
+  const findings = Math.max(data.releases.length, data.counts?.gate3 ?? 0);
+  const asks = data.counts === null ? 0 : data.counts.gate1 + data.counts.gate2;
+  return { findings, more: Math.max(0, asks - data.gate2.length - data.plans.length) };
+}
+
+/** The dot of a finished audit: green when it completed, red when it was stopped or failed. */
+export function outcomeDot(state: string): 'ok' | 'bad' | 'faint' {
+  if (state === 'completed') return 'ok';
+  return state === 'killed' || state === 'failed' ? 'bad' : 'faint';
 }
 
 function hostOf(url: string): string {
@@ -202,13 +218,14 @@ function Row({
   readonly href: string;
   readonly title: string;
   readonly sub: React.ReactNode;
-  readonly dot: 'gold' | 'live' | 'ok' | 'faint';
+  readonly dot: 'gold' | 'live' | 'ok' | 'bad' | 'faint';
   readonly current?: boolean;
 }) {
   const dots = {
     gold: 'bg-gold motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]',
     live: 'bg-gold-ink motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]',
     ok: 'bg-ok',
+    bad: 'bg-bad',
     faint: 'bg-faint',
   };
   return (
@@ -328,7 +345,7 @@ function SidebarBody({
   const drafts = useDrafts();
   const router = useRouter();
   const decisions = waitingCount(data);
-  const listed = data === null ? 0 : data.gate2.length + data.plans.length + data.releases.length;
+  const waiting = data === null ? null : waitingRows(data);
   const live = data?.live ?? [];
   const stop = stopTarget(data, path);
   const name = data?.workspaceName ?? workspaceName;
@@ -426,7 +443,21 @@ function SidebarBody({
             </button>
           </p>
         ) : null}
-        {data !== null && decisions > 0 ? (
+        {live.length === 0 ? null : (
+          <Section title="Running">
+            {live.map((r) => (
+              <Row
+                key={r.id}
+                href={`/runs/${r.id}`}
+                current={path.startsWith(`/runs/${r.id}`)}
+                dot="live"
+                title={r.assetName ?? 'Audit'}
+                sub={runSub(r)}
+              />
+            ))}
+          </Section>
+        )}
+        {data !== null && waiting !== null && decisions > 0 ? (
           <Section title="Waiting on you">
             {data.gate2.map((g) => (
               <Row
@@ -452,41 +483,25 @@ function SidebarBody({
                 sub="Plan ready for your approval"
               />
             ))}
-            {data.releases.map((f) => (
+            {waiting.findings === 0 ? null : (
               <Row
-                key={f.id}
-                href={`/findings/${f.id}`}
-                current={path === `/findings/${f.id}`}
+                href="/findings?status=confirmed"
                 dot="gold"
-                title={f.title}
-                sub={`Proven · release or dismiss${f.assetName === null ? '' : ` · ${f.assetName}`}`}
+                title={`${waiting.findings.toLocaleString()} proven ${waiting.findings === 1 ? 'finding' : 'findings'} to review`}
+                sub="Release or dismiss"
               />
-            ))}
-            {decisions > listed ? (
+            )}
+            {waiting.more > 0 ? (
               <Link
                 href="/decisions"
                 prefetch={false}
                 className="rounded-[9px] px-2.5 py-1.5 pl-[30px] text-[12px] font-medium text-gold-ink no-underline hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
               >
-                And {(decisions - listed).toLocaleString()} more on Decisions
+                And {waiting.more.toLocaleString()} more on Decisions
               </Link>
             ) : null}
           </Section>
         ) : null}
-        {live.length === 0 ? null : (
-          <Section title="In progress">
-            {live.map((r) => (
-              <Row
-                key={r.id}
-                href={`/runs/${r.id}`}
-                current={path.startsWith(`/runs/${r.id}`)}
-                dot="live"
-                title={r.assetName ?? 'Audit'}
-                sub={runSub(r)}
-              />
-            ))}
-          </Section>
-        )}
         {drafts.length === 0 ? null : (
           <Section title="Drafts">
             {drafts.map((d) => (
@@ -501,7 +516,7 @@ function SidebarBody({
                 key={r.id}
                 href={`/runs/${r.id}`}
                 current={path.startsWith(`/runs/${r.id}`)}
-                dot={r.state === 'completed' ? 'ok' : 'faint'}
+                dot={outcomeDot(r.state)}
                 title={r.assetName ?? 'Audit'}
                 sub={earlierSub(r)}
               />

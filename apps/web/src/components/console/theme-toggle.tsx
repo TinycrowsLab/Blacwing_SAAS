@@ -1,6 +1,6 @@
 'use client';
 
-// Light/dark switch (no System option: the console is light unless dark is chosen).
+// Light/dark switch. Until someone picks one, the console follows the device's theme (System).
 import { useEffect, useState } from 'react';
 
 import { useTheme } from '@blackwing/ui';
@@ -21,6 +21,19 @@ export function useDarkTheme(): readonly [boolean, () => void] {
       setTheme(dark ? 'light' : 'dark');
     },
   ] as const;
+}
+
+export type ThemeChoice = 'light' | 'dark' | 'system';
+
+/** [choice, set]: the stored choice (System until one is picked). `choice` is null until mounted (no hydration mismatch). */
+export function useThemeChoice(): readonly [ThemeChoice | null, (choice: ThemeChoice) => void] {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const choice: ThemeChoice | null = !mounted ? null : theme === 'light' || theme === 'dark' ? theme : 'system';
+  return [choice, setTheme] as const;
 }
 
 export function ThemeToggle() {
