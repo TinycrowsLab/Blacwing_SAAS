@@ -48,7 +48,7 @@ export function testCase(over: Partial<PlannedTestCase> = {}): PlannedTestCase {
   return {
     class: 'active_safe',
     title: 'Unauthenticated admin access',
-    refs: { owasp: ['A01:2021'], wstg: ['WSTG-ATHZ-02'], asvs: ['V4.1.1'] },
+    refs: { owasp: ['A01:2021'], wstg: ['WSTG-ATHZ-02'], asvs: ['v5.0.0-4.1.1'] },
     cweCandidates: ['CWE-284'],
     targets: ['https://app.example.test/admin'],
     roles: ['anonymous'],

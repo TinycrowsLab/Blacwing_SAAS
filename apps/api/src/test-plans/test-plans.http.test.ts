@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createLogger } from '@blackwing/logger';
 
@@ -19,6 +19,7 @@ import {
 } from './fixtures.test-helpers.js';
 import { TestPlanModule } from './module.js';
 import {
+  NOW,
   memoryPlanValidationStore,
   planRow,
   type MemoryPlanValidationStore,
@@ -60,6 +61,7 @@ let validation: MemoryPlanValidationStore;
 let keySeq = 0;
 
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ['Date'], now: NOW });
   metrics = createHttpMetrics();
   store = memoryTestPlanStore();
   store.seedRun(RUN_A, TENANT_A);
@@ -89,6 +91,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await app.close();
+  vi.useRealTimers();
 });
 
 type Who = 'appsec-a' | 'auditor-a' | 'appsec-b';
