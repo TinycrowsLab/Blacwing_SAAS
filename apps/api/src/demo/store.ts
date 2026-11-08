@@ -79,6 +79,7 @@ export interface RunRow {
   readonly budget_seconds: number;
   readonly cost_cap_usd: string;
   readonly cost_usd: string;
+  readonly asset_id: string;
   readonly asset_name: string;
   readonly summary: string | null;
   readonly halt_ms: number | null;
@@ -278,7 +279,7 @@ const FINDING_SELECT = `
 
 // The queue columns are computed only for a queued run; the worker claims the oldest queued run of any tenant.
 const RUN_SELECT = `
-  SELECT ru.*, rq.budget_seconds, rq.cost_cap_usd, a.name AS asset_name, cb.name AS started_by_name,
+  SELECT ru.*, rq.asset_id, rq.budget_seconds, rq.cost_cap_usd, a.name AS asset_name, cb.name AS started_by_name,
     CASE WHEN ru.state = 'queued' THEN (SELECT count(*) FROM demo.runs q
       WHERE q.state = 'queued' AND (q.created_at, q.id) < (ru.created_at, ru.id))::int END AS queue_ahead,
     CASE WHEN ru.state = 'queued' THEN (SELECT count(*) FROM demo.runs q

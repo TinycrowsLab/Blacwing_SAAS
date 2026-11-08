@@ -343,6 +343,7 @@ const runSummarySchema = z.object({
   createdAt: iso,
   startedAt: nullableIso,
   finishedAt: nullableIso,
+  assetId: z.string().optional(),
   assetName: z.string().optional(),
   requestsUsed: z.number().default(0),
   costUsd: z.number().default(0),

@@ -63,6 +63,11 @@ export function ledgerWords(action: string, payload: Payload, targetId: string):
     }
     case 'finding.retest':
       return 'Asked Blackwing to retest a finding';
+    case 'kill.scope': {
+      const n = typeof payload.runs === 'number' ? payload.runs : 0;
+      const audits = `${n} ${n === 1 ? 'audit' : 'audits'}`;
+      return payload.scope === 'target' ? `Stopped ${audits} on one target` : `Stopped ${audits} across the workspace`;
+    }
     default:
       return null;
   }
