@@ -2,10 +2,36 @@
 // the Gate 2 countdown and the ownership proof.
 import { describe, expect, it, vi } from 'vitest';
 
-import { gate2DecisionSchema, workspaceSchema } from './controller.js';
-import { ALL_ROLES, DemoRefusal, DemoService, actorHasRole, originsOf, secondsLeft, shortId } from './service.js';
+import { amendRequestSchema, gate2DecisionSchema, triageManySchema, workspaceSchema } from './controller.js';
+import {
+  ALL_ROLES,
+  DemoRefusal,
+  DemoService,
+  actorHasRole,
+  assetDto,
+  exchangeDto,
+  findingDto,
+  gate2Dto,
+  originsOf,
+  owaspLabel,
+  runDto,
+  secondsLeft,
+  shortId,
+} from './service.js';
 
-import type { AssetRow, DemoStore, FindingRow, RequestRow } from './store.js';
+import type { Lookup, OriginPolicy } from './ownership.js';
+import type { AssetRow, DemoStore, FindingRow, Gate2Row, RequestRow, RunRow } from './store.js';
+
+/** Labs on loopback, the console on :3000 and the API on :13400 (the launcher's defaults). */
+const policy: OriginPolicy = {
+  labOrigins: ['http://127.0.0.1:3001'],
+  platformOrigins: ['http://localhost:3000', 'http://127.0.0.1:13400'],
+  platformPorts: [3000, 13400, 13401],
+};
+/** app.example.com and friends resolve to a public documentation address; IP literals resolve to themselves. */
+const lookup: Lookup = (host) => Promise.resolve([/^[\d.]+$/.test(host) || host.includes(':') ? host : '93.184.216.34']);
+const options = { gate2TimeoutS: 300, origins: policy, lookup };
+const webhookOff = { webhookUrl: null, consoleOrigin: 'http://localhost:3000' };
 
 describe('actorHasRole', () => {
   it('accepts the Keycloak dash form and the seed underscore form', () => {
@@ -56,9 +82,10 @@ function serviceWith(row: AssetRow, response: Response | Error) {
   const store = {
     getAsset: vi.fn().mockResolvedValue(row),
     markAssetVerified: vi.fn().mockResolvedValue(true),
+    appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
   };
   const fetchImpl = vi.fn(() => (response instanceof Error ? Promise.reject(response) : Promise.resolve(response)));
-  return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetchImpl) };
+  return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetchImpl, webhookOff, options) };
 }
 
 describe('verifyAsset http_token', () => {
@@ -124,7 +151,7 @@ describe('createAsset', () => {
 
   it('returns the existing asset for an origin that is already registered and inserts nothing', async () => {
     const store = { listAssets: vi.fn().mockResolvedValue([asset('abc')]), insertAsset: vi.fn() };
-    const service = new DemoService(store as unknown as DemoStore, 't1');
+    const service = new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options);
     const dto = await service.createAsset(engineer, input);
     expect(dto.id).toBe('a1');
     expect(store.insertAsset).not.toHaveBeenCalled();
@@ -154,6 +181,13 @@ describe('triage', () => {
       triaged_at: null,
       delivery_status: null,
       created_at: new Date(),
+      seen_at: null,
+      evidence: {},
+      replay: {},
+      oracle: {},
+      location: {},
+      repro_curl: 'curl x',
+      description: null,
     }) as unknown as FindingRow;
 
   function triageService(status: string, transitioned: boolean) {
@@ -221,6 +255,7 @@ describe('run events', () => {
       listFindingsForRun: vi.fn().mockResolvedValue([]),
       listGate2ForRun: vi.fn().mockResolvedValue([]),
       runStats: vi.fn().mockResolvedValue({}),
+      lastEvents: vi.fn().mockResolvedValue([]),
     };
     const service = new DemoService(store as unknown as DemoStore, 't1');
     const view = async (roles: string[]) =>
@@ -250,6 +285,13 @@ describe('demo admin self-approval', () => {
     }) as unknown as RequestRow;
 
   const adminOverride: unknown = expect.objectContaining({ selfApproved: true, override: 'admin' });
+  const labAsset: AssetRow = {
+    ...asset(null),
+    base_url: 'http://127.0.0.1:3001',
+    allowed_origins: ['http://127.0.0.1:3001'],
+    ownership_status: 'verified',
+    verification_method: 'owner_attestation',
+  };
 
   function service(extra: Record<string, unknown> = {}) {
     const store = {
@@ -257,9 +299,11 @@ describe('demo admin self-approval', () => {
       decideRequest: vi.fn().mockResolvedValue(true),
       findRunByRequest: vi.fn().mockResolvedValue(null),
       appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
+      getAsset: vi.fn().mockResolvedValue(labAsset),
+      latestAudit: vi.fn().mockResolvedValue(null),
       ...extra,
     };
-    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options) };
   }
 
   it('lets the admin approve its own Gate 1 request and marks it in the audit payload', async () => {
@@ -386,9 +430,15 @@ describe('workspace (B1)', () => {
       listRuns: vi.fn().mockResolvedValue([]),
       listFindings: vi.fn().mockResolvedValue([]),
       listPendingGate2: vi.fn().mockResolvedValue([]),
+      pendingCounts: vi.fn().mockResolvedValue({ gate1: 3, gate2: 1, gate3: 56, keptBack: 7, live: 2 }),
+      listLiveRuns: vi.fn().mockResolvedValue([]),
     };
     const service = new DemoService(store as unknown as DemoStore, 't1');
-    expect((await service.dashboard(admin)).tenant).toEqual({ id: 't1', name: 'Tinycrows' });
+    const dashboard = await service.dashboard(admin);
+    expect(dashboard.tenant).toEqual({ id: 't1', name: 'Tinycrows' });
+    expect(dashboard.pendingCounts).toEqual({ gate1: 3, gate2: 1, gate3: 56, keptBack: 7, live: 2 });
+    expect(store.pendingCounts).toHaveBeenCalledWith('t1', true);
+    expect(dashboard.liveRuns).toEqual([]);
   });
 });
 
@@ -475,5 +525,464 @@ describe('release mode (B3) and retest clone (B5)', () => {
     const { store, service } = requestService(stored({}));
     await expect(service.cloneRequest({ ...engineer, roles: ['auditor'] }, 'q1')).rejects.toBeInstanceOf(DemoRefusal);
     expect(store.insertRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe('ownership allow-list and recheck (P0-5a)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const approver = { id: 'u2', email: 'o@x.test', name: 'O', roles: ['asset-owner'] };
+  const lab: AssetRow = {
+    ...asset('tok'),
+    base_url: 'http://127.0.0.1:3001',
+    allowed_origins: ['http://127.0.0.1:3001'],
+    ownership_status: 'verified',
+    verification_method: 'owner_attestation',
+  };
+  const pending = {
+    id: 'q1',
+    asset_id: 'a1',
+    status: 'pending_gate1',
+    version: 2,
+    requester_id: 'u1',
+    approver_id: null,
+    approver_name: 'O',
+    objective: 'Look.',
+    scope: {},
+    intrusiveness: 'passive',
+    test_accounts: [],
+    budget_requests: 100,
+    budget_seconds: 600,
+    cost_cap_usd: '3',
+    created_at: new Date(),
+  } as unknown as RequestRow;
+
+  function storeWith(row: AssetRow, extra: Record<string, unknown> = {}) {
+    return {
+      getAsset: vi.fn().mockResolvedValue(row),
+      listAssets: vi.fn().mockResolvedValue([]),
+      insertAsset: vi.fn(),
+      markAssetVerified: vi.fn().mockResolvedValue(true),
+      markAssetUnverified: vi.fn().mockResolvedValue(true),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
+      getRequest: vi.fn().mockResolvedValue(pending),
+      decideRequest: vi.fn().mockResolvedValue(true),
+      findRunByRequest: vi.fn().mockResolvedValue(null),
+      latestAudit: vi.fn().mockResolvedValue({ eventId: 'approve-1', hash: 'h0' }),
+      claimRequestForRun: vi.fn().mockResolvedValue(true),
+      insertRun: vi.fn(),
+      appendEvent: vi.fn(),
+      ...extra,
+    };
+  }
+  const make = (store: ReturnType<typeof storeWith>, fetchImpl: typeof fetch = fetch) =>
+    new DemoService(store as unknown as DemoStore, 't1', fetchImpl, webhookOff, options);
+
+  it.each([
+    ['http://localhost:3000', 'own console'],
+    ['http://169.254.169.254/latest', 'Cloud metadata'],
+    ['http://127.0.0.1:8091', 'listed it as a lab'],
+  ])('refuses to register %s', async (baseUrl, words) => {
+    const store = storeWith(lab);
+    const refusal = make(store).createAsset(engineer, { name: 'x', baseUrl, extraOrigins: [], excludedPaths: [] });
+    await expect(refusal).rejects.toMatchObject({ response: { code: 'target_not_allowed' } });
+    await expect(refusal).rejects.toMatchObject({ response: { detail: expect.stringContaining(words) as unknown } });
+    expect(store.insertAsset).not.toHaveBeenCalled();
+  });
+
+  it('refuses an extra origin that points somewhere private even when the base URL is public', async () => {
+    const store = storeWith(lab);
+    await expect(
+      make(store).createAsset(engineer, {
+        name: 'x',
+        baseUrl: 'https://app.example.com',
+        extraOrigins: ['http://10.0.0.8'],
+        excludedPaths: [],
+      }),
+    ).rejects.toMatchObject({ response: { code: 'target_not_allowed' } });
+  });
+
+  it('offers owner attestation only for a lab, and ledgers the proof', async () => {
+    expect(assetDtoOf(lab).verification).toMatchObject({ methods: ['http_token', 'owner_attestation'] });
+    expect(assetDtoOf(lab).lab).toBe(true);
+    expect(assetDtoOf(asset('t')).verification).toMatchObject({ methods: ['http_token'] });
+
+    const publicStore = storeWith(asset('t'));
+    await expect(
+      make(publicStore).verifyAsset(approver, 'a1', { method: 'owner_attestation', statement: 'I own this site.' }),
+    ).rejects.toMatchObject({ response: { code: 'attestation_not_allowed' } });
+
+    const labStore = storeWith({ ...lab, ownership_status: 'unverified' });
+    await make(labStore).verifyAsset(approver, 'a1', { method: 'owner_attestation', statement: 'Our local lab.' });
+    expect(labStore.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        action: 'asset.verified',
+        targetType: 'asset',
+        payload: { method: 'owner_attestation', origin: 'http://127.0.0.1:3001', tokenPath: null, statement: 'Our local lab.', lab: true },
+      }),
+    );
+  });
+
+  it('rechecks the well-known file at Gate 1: a vanished file un-verifies the asset and leaves the request pending', async () => {
+    const tokenAsset: AssetRow = { ...asset('tok'), ownership_status: 'verified', verification_method: 'http_token' };
+    const store = storeWith(tokenAsset);
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('gone', { status: 404 })));
+    await expect(make(store, fetchImpl).decideGate1(approver, 'q1', 'approve', null)).rejects.toMatchObject({
+      response: { code: 'ownership_recheck_failed', detail: expect.stringContaining('the file is gone (the site answered 404)') as unknown },
+    });
+    expect(store.decideRequest).not.toHaveBeenCalled();
+    expect(store.markAssetUnverified).toHaveBeenCalledWith('t1', 'a1');
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ action: 'asset.unverified', payload: expect.objectContaining({ at: 'gate1' }) as unknown }),
+    );
+  });
+
+  it('rechecks at run start: an attested asset that is no longer a lab cannot start', async () => {
+    const store = storeWith({ ...lab, base_url: 'http://127.0.0.1:8091', allowed_origins: ['http://127.0.0.1:8091'] }, {
+      getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }),
+    });
+    await expect(make(store).startRun(engineer, 'q1')).rejects.toMatchObject({
+      response: { code: 'ownership_recheck_failed' },
+    });
+    expect(store.claimRequestForRun).not.toHaveBeenCalled();
+  });
+
+  it('pins the lab origins, drops the signing key id, and ledgers run.started with the approval', async () => {
+    const store = storeWith(lab, { getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }) });
+    const started = await make(store).startRun(engineer, 'q1');
+    const pins = (store.insertRun.mock.calls[0]?.[0] as { pins: { asset: { labOrigins: string[] }; authorisation: Record<string, unknown> } }).pins;
+    expect(pins.asset.labOrigins).toEqual(['http://127.0.0.1:3001']);
+    expect(pins.authorisation).not.toHaveProperty('keyId');
+    expect(store.latestAudit).toHaveBeenCalledWith('t1', 'request', 'q1', 'gate1.approve');
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        action: 'run.started',
+        targetId: started.id,
+        payload: { requestId: 'q1', approvalEventId: 'approve-1', version: 2, labOrigins: 'http://127.0.0.1:3001' },
+      }),
+    );
+  });
+
+  it('refuses a second run for an approval that already has one', async () => {
+    const store = storeWith(lab, {
+      getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }),
+      findRunByRequest: vi.fn().mockResolvedValue({ id: 'r0' }),
+    });
+    await expect(make(store).startRun(engineer, 'q1')).rejects.toMatchObject({ response: { code: 'run_already_started' } });
+    expect(store.claimRequestForRun).not.toHaveBeenCalled();
+  });
+
+  it('refuses a Gate 1 decision on an older plan version', async () => {
+    const store = storeWith(lab);
+    await expect(make(store).decideGate1(approver, 'q1', 'approve', null, 1)).rejects.toMatchObject({
+      response: { code: 'plan_changed' },
+    });
+    await make(store).decideGate1(approver, 'q1', 'approve', null, 2);
+    expect(store.decideRequest).toHaveBeenCalledWith('t1', 'q1', 'u2', 'approved', null, 2);
+    expect(store.appendAudit).toHaveBeenCalledWith('t1', expect.objectContaining({ payload: expect.objectContaining({ version: 2 }) as unknown }));
+  });
+});
+
+const assetDtoOf = (row: AssetRow): Record<string, unknown> => assetDto(row, policy);
+
+describe('PATCH /requests/:id (P0-8a)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const row = {
+    id: 'q1',
+    asset_id: 'a1',
+    status: 'pending_gate1',
+    version: 3,
+    requester_id: 'u1',
+    objective: 'Look.',
+    scope: { excludedPaths: ['/setup.php'], releaseProven: 'hold' },
+    intrusiveness: 'passive',
+    test_accounts: [{ role: 'alice', header_name: 'Authorization', header_value: 'Bearer alice-secret' }],
+    budget_requests: 300,
+    budget_seconds: 900,
+    cost_cap_usd: '4.00',
+    created_at: new Date(),
+  } as unknown as RequestRow;
+
+  function amendService(amended: number | null = 4, now: RequestRow = row) {
+    const store = {
+      getRequest: vi.fn().mockResolvedValueOnce(row).mockResolvedValue(now),
+      getAsset: vi.fn().mockResolvedValue({ ...asset('t'), ownership_status: 'verified' }),
+      amendRequest: vi.fn().mockResolvedValue(amended),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e9', hash: 'h9' }),
+      findRunByRequest: vi.fn().mockResolvedValue(null),
+      latestAudit: vi.fn().mockResolvedValue(null),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('amends in place, keeps an account value the browser did not resend, and ledgers gate1.amend without values', async () => {
+    const { store, service } = amendService();
+    const dto = await service.amendRequest(engineer, 'q1', {
+      version: 3,
+      objective: 'Look harder.',
+      testAccounts: [
+        { role: 'Alice', headerName: 'authorization' },
+        { role: 'bob', headerName: 'Authorization', headerValue: 'Bearer bob-secret' },
+      ],
+    });
+    expect(store.amendRequest).toHaveBeenCalledWith('t1', 'q1', 3, expect.objectContaining({
+      objective: 'Look harder.',
+      test_accounts: [
+        { role: 'Alice', header_name: 'authorization', header_value: 'Bearer alice-secret' },
+        { role: 'bob', header_name: 'Authorization', header_value: 'Bearer bob-secret' },
+      ],
+      scope: { excludedPaths: ['/setup.php'], releaseProven: 'hold' },
+    }));
+    const entry = store.appendAudit.mock.calls[0]?.[1] as { action: string; payload: Record<string, unknown> };
+    expect(entry.action).toBe('gate1.amend');
+    expect(entry.payload).toMatchObject({ version: 4, changed: 'objective,testAccounts', budget: '300 requests, 900 s, $4.00', accounts: 'Alice,bob' });
+    expect(JSON.stringify(entry.payload)).not.toContain('secret');
+    expect(JSON.stringify(dto)).not.toContain('secret');
+    expect(dto.audit).toEqual({ eventId: 'e9', hash: 'h9' });
+  });
+
+  it('refuses an account without a value that does not match a saved role and header', async () => {
+    const { store, service } = amendService();
+    await expect(
+      service.amendRequest(engineer, 'q1', { version: 3, testAccounts: [{ role: 'carol', headerName: 'Authorization' }] }),
+    ).rejects.toMatchObject({ response: { code: 'account_value_missing', detail: expect.stringContaining('carol') as unknown } });
+    await expect(
+      service.amendRequest(engineer, 'q1', { version: 3, testAccounts: [{ role: 'alice', headerName: 'Cookie' }] }),
+    ).rejects.toMatchObject({ response: { code: 'account_value_missing' } });
+    expect(store.amendRequest).not.toHaveBeenCalled();
+  });
+
+  it('answers plan_changed for a stale version or a lost race, and request_not_pending once decided', async () => {
+    await expect(amendService().service.amendRequest(engineer, 'q1', { version: 2, objective: 'x' })).rejects.toMatchObject({
+      response: { code: 'plan_changed' },
+    });
+    await expect(amendService(null).service.amendRequest(engineer, 'q1', { version: 3, objective: 'x' })).rejects.toMatchObject({
+      response: { code: 'plan_changed' },
+    });
+    const decided = { ...row, status: 'approved' } as RequestRow;
+    await expect(amendService(null, decided).service.amendRequest(engineer, 'q1', { version: 3, objective: 'x' })).rejects.toMatchObject({
+      response: { code: 'request_not_pending' },
+    });
+  });
+
+  it('lets only the requester (or an administrator) edit', async () => {
+    const other = { ...engineer, id: 'u9' };
+    await expect(amendService().service.amendRequest(other, 'q1', { version: 3, objective: 'x' })).rejects.toMatchObject({
+      response: { code: 'not_requester' },
+    });
+    const { store, service } = amendService();
+    await service.amendRequest({ ...other, admin: true }, 'q1', { version: 3, objective: 'x' });
+    expect(store.amendRequest).toHaveBeenCalled();
+  });
+
+  it('validates the body: version required, at least one field', () => {
+    expect(amendRequestSchema.safeParse({ objective: 'x' }).success).toBe(false);
+    expect(amendRequestSchema.safeParse({ version: 1 }).success).toBe(false);
+    expect(amendRequestSchema.safeParse({ version: 1, budgetRequests: 5 }).success).toBe(false);
+    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'a', headerName: 'X-Key' }] }).success).toBe(true);
+    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'a', headerName: 'X' }, { role: 'A', headerName: 'X' }] }).success).toBe(false);
+  });
+});
+
+describe('clone with untried cases (P1-cov2)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const runId = '0197a5d0-bbbb-7000-8000-000000000001';
+  const request = {
+    id: 'q1',
+    asset_id: 'a1',
+    objective: 'Look.',
+    scope: {},
+    intrusiveness: 'passive',
+    test_accounts: [],
+    budget_requests: 300,
+    budget_seconds: 900,
+    cost_cap_usd: '4',
+    created_at: new Date(),
+  } as unknown as RequestRow;
+
+  function cloneService(cases: unknown[], runRequest = 'q1') {
+    const store = {
+      getRequest: vi.fn().mockResolvedValue(request),
+      getRun: vi.fn().mockResolvedValue({ id: runId, request_id: runRequest }),
+      lastEvents: vi.fn().mockResolvedValue([{ seq: 9, kind: 'coverage.summary', data: { cases }, message: '', stage: 'done', at: new Date() }]),
+      getAsset: vi.fn().mockResolvedValue({ ...asset('t'), ownership_status: 'verified' }),
+      insertRequest: vi.fn(),
+      findRunByRequest: vi.fn().mockResolvedValue(null),
+      latestAudit: vi.fn().mockResolvedValue(null),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('appends the untried case titles to the objective', async () => {
+    const { store, service } = cloneService([
+      { id: 'a', title: 'SQL injection in search', status: 'not_run' },
+      { id: 'b', title: 'IDOR on baskets', status: 'executed' },
+      { id: 'c', title: 'Reflected XSS', status: 'not_run' },
+    ]);
+    await service.cloneRequest(engineer, 'q1', runId);
+    expect(store.insertRequest).toHaveBeenCalledWith(expect.objectContaining({
+      objective: 'Look.\n\nContinue with the test cases left untried in audit 0197a5d0: SQL injection in search; Reflected XSS',
+    }));
+  });
+
+  it('refuses when nothing was left untried, or the run belongs to another request', async () => {
+    await expect(cloneService([{ id: 'b', title: 'x', status: 'executed' }]).service.cloneRequest(engineer, 'q1', runId)).rejects.toMatchObject({
+      response: { code: 'nothing_untried' },
+    });
+    await expect(cloneService([], 'q2').service.cloneRequest(engineer, 'q1', runId)).rejects.toMatchObject({
+      response: { code: 'not_found' },
+    });
+  });
+});
+
+describe('batch Gate 3 (P1-rel1)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const row = (id: string, status: string) =>
+    ({ id, run_id: 'r1', title: `T ${id}`, severity: 'high', status, asset_name: 'X', repro_curl: 'curl', owasp_category: 'A01' }) as unknown as FindingRow;
+
+  it('moves what it can, reports conflicts and unknown ids, and ledgers one event per finding moved', async () => {
+    const store = {
+      getFindings: vi.fn().mockResolvedValue([row('f1', 'confirmed'), row('f2', 'confirmed'), row('f3', 'dismissed')]),
+      triageFindings: vi.fn().mockResolvedValue(['f1', 'f2']),
+      appendAudits: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn(),
+      recordDelivery: vi.fn(),
+    };
+    const service = new DemoService(store as unknown as DemoStore, 't1');
+    const out = await service.triageMany(engineer, ['f1', 'f2', 'f3', 'f4'], 'release', 'proven, reviewed by hand');
+    expect(out).toEqual({
+      results: [
+        { id: 'f1', ok: true, status: 'released' },
+        { id: 'f2', ok: true, status: 'released' },
+        { id: 'f3', ok: false, code: 'finding_not_triageable' },
+        { id: 'f4', ok: false, code: 'not_found' },
+      ],
+      moved: 2,
+      conflicts: 1,
+      failed: 1,
+    });
+    expect(store.triageFindings).toHaveBeenCalledWith('t1', ['f1', 'f2', 'f3'], ['suspected', 'confirmed'], 'released', 'u1', 'proven, reviewed by hand');
+    const entries = store.appendAudits.mock.calls[0]?.[1] as { action: string; targetId: string }[];
+    expect(entries.map((e) => [e.action, e.targetId])).toEqual([['finding.release', 'f1'], ['finding.release', 'f2']]);
+    expect(store.appendEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it('validates the body: 1..200 unique ids', () => {
+    const id = '0197a5d0-aaaa-7000-8000-000000000001';
+    expect(triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [id] }).success).toBe(true);
+    expect(triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [] }).success).toBe(false);
+    expect(triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [id, id.toUpperCase()] }).success).toBe(false);
+  });
+});
+
+describe('DTOs: queue, starter, Gate 2 details, OWASP and read-time scrub', () => {
+  const runRow = {
+    id: '0197a5d0-aaaa-7000-8000-000000000001',
+    state: 'queued',
+    created_by: 'u1',
+    started_by_name: 'Jatin Singh',
+    queue_ahead: 1,
+    queue_running: 3,
+    created_at: new Date(),
+    started_at: null,
+    finished_at: null,
+    kill_requested_at: null,
+    summary: null,
+    pins: {},
+  } as unknown as RunRow;
+
+  it('shows who started a run and, while queued, where it stands', () => {
+    expect(runDto(runRow, 3)).toMatchObject({
+      startedBy: { id: 'u1', name: 'Jatin Singh' },
+      queue: { position: 2, ahead: 1, running: 3, concurrency: 3 },
+    });
+    expect(runDto({ ...runRow, state: 'running', queue_ahead: null }, 3).queue).toBeNull();
+  });
+
+  it('carries the Gate 2 ask body (scrubbed), role, asset, requester and close reason', () => {
+    const dto = gate2Dto(
+      {
+        id: 'g1',
+        run_id: 'r1',
+        method: 'POST',
+        url: 'http://127.0.0.1:3001/rest/user/login',
+        status: 'expired',
+        deadline_at: new Date(),
+        created_at: new Date(),
+        decided_at: null,
+        reason: null,
+        request_body: '{"email":"a@b.c","password":"hunter2"}',
+        as_role: 'alice',
+        asset_name: 'Juice Shop',
+        requester_id: 'u1',
+        requester_name: 'A',
+        run_started_at: new Date('2026-11-08T10:00:00Z'),
+        close_reason: 'deadline',
+      } as unknown as Gate2Row,
+      new Date(),
+    );
+    expect(dto).toMatchObject({
+      asRole: 'alice',
+      assetName: 'Juice Shop',
+      requester: { id: 'u1', name: 'A' },
+      runStartedAt: '2026-11-08T10:00:00.000Z',
+      closeReason: 'deadline',
+    });
+    expect(dto.body).not.toContain('hunter2');
+  });
+
+  it('normalises OWASP labels and scrubs stored secrets in findings and exchanges', () => {
+    expect(owaspLabel('A03:2021-Injection')).toBe('A03:2021 Injection');
+    expect(owaspLabel('OWASP A1')).toBe('A01:2021 Broken Access Control');
+    expect(owaspLabel('a10')).toBe('A10:2021 Server-Side Request Forgery');
+    expect(owaspLabel('API1:2023')).toBe('API1:2023');
+    const finding = {
+      id: 'f1',
+      title: 'Config exposed',
+      owasp_category: 'A05',
+      description: "$_DVWA[ 'db_password' ] = 'vulnerables';",
+      repro_curl: "curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln' http://x",
+      evidence: { probe: { response: { bodyExcerpt: '{"password":"hunter2"}', bodySha256: 'a'.repeat(64) } } },
+      replay: {},
+      oracle: {},
+      location: {},
+      created_at: new Date(),
+      triaged_at: null,
+      delivered_at: null,
+      seen_run_id: 'r0',
+      seen_finding_id: 'f0',
+      seen_status: 'released',
+      seen_at: new Date('2026-11-01T00:00:00Z'),
+      identity_key: 'idk',
+    } as unknown as FindingRow;
+    const dto = JSON.stringify(findingDto(finding));
+    expect(dto).not.toContain('vulnerables');
+    expect(dto).not.toContain('hunter2');
+    expect(dto).not.toContain('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0');
+    expect(dto).toContain('a'.repeat(64));
+    expect(findingDto(finding)).toMatchObject({
+      owasp: 'A05:2021 Security Misconfiguration',
+      identityKey: 'idk',
+      seenBefore: { runId: 'r0', findingId: 'f0', status: 'released', at: '2026-11-01T00:00:00.000Z' },
+    });
+    const exchange = exchangeDto({
+      id: 'x1',
+      seq: 1,
+      agent: 'a',
+      method: 'GET',
+      url: 'http://x/?token=abc123',
+      request_headers: { cookie: 'token=abc' },
+      request_body: null,
+      status: 200,
+      response_headers: { 'set-cookie': 'token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln; Path=/' },
+      response_body: '{"password":"hunter2"}',
+      duration_ms: 1,
+      outcome: 'sent',
+      reason: null,
+      at: new Date(),
+    });
+    expect(JSON.stringify(exchange)).not.toMatch(/hunter2|abc123|eyJhbGciOiJIUzI1NiJ9/);
   });
 });

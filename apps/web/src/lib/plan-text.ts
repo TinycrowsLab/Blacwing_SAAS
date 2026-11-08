@@ -30,8 +30,6 @@ export const usd = (n: number): string =>
   n.toLocaleString(LOCALE, { style: 'currency', currency: 'USD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 });
 
 const SENTENCE_END = /(?<=\.)\s/;
-/** The person's own note is read back in full up to this length, then clipped. */
-const NOTE_MAX = 140;
 
 /** "Look for injection and APIs. Focus on checkout." becomes "injection and APIs". */
 export function objectivePhrase(objective: string): string {
@@ -39,12 +37,42 @@ export function objectivePhrase(objective: string): string {
   return first === '' ? 'the OWASP Top 10' : first.charAt(0).toLowerCase() + first.slice(1);
 }
 
-/** What the person wrote after the first sentence ("Focus on checkout"), clipped; null when nothing. */
+/**
+ * What the person wrote after the first sentence ("Focus on checkout"), in full: the agents get every word, so the
+ * plan the approver reads does too (the page folds a long one behind "Show all"). Null when nothing.
+ */
 function objectiveNote(objective: string): string | null {
   const parts = objective.trim().split(SENTENCE_END);
   const rest = parts.slice(1).join(' ').replace(/\s+/g, ' ').trim().replace(/\.$/, '');
-  if (rest === '') return null;
-  return rest.length > NOTE_MAX ? `${rest.slice(0, NOTE_MAX - 1).trimEnd()}…` : rest;
+  return rest === '' ? null : rest;
+}
+
+const HOST_TOKEN =
+  /\b(?:https?:\/\/([^\s/?#"'<>]+)|((?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?|localhost:\d{1,5}|(?:[a-z0-9-]+\.)+(?:com|net|org|io|dev|app|co|uk|de|local|internal|test|example|cloud)(?::\d{1,5})?)\b)/gi;
+
+/**
+ * What an approver should notice in the objective before saying yes: excluded paths it asks for (agents stay out of
+ * them anyway) and other hosts it names (outside the scope, so never tested). `host` is the plan's host, with its port.
+ */
+export function objectiveConflicts(objective: string, excludedPaths: readonly string[], host: string): {
+  excluded: string[];
+  hosts: string[];
+} {
+  const text = objective.toLowerCase();
+  const excluded = excludedPaths.filter((p) => {
+    const path = p.toLowerCase().replace(/\/+$/, '');
+    return path.length > 1 && text.includes(path);
+  });
+  const own = host.toLowerCase();
+  const ownName = own.replace(/:\d+$/, '');
+  const hosts = new Set<string>();
+  for (const m of objective.matchAll(HOST_TOKEN)) {
+    const token = (m[1] ?? m[2] ?? '').toLowerCase().replace(/^[^@]*@/, '');
+    if (token === '') continue;
+    const same = token.includes(':') ? token === own || (!own.includes(':') && token.replace(/:\d+$/, '') === own) : token === ownName;
+    if (!same) hosts.add(token);
+  }
+  return { excluded, hosts: [...hosts] };
 }
 
 export function limitsPhrase(p: Pick<PlanInput, 'minutes' | 'requests' | 'costUsd'>): string {
@@ -63,7 +91,7 @@ export function planSegments(p: PlanInput): PlanSegment[] {
     { text: ". Claude's agents will " },
     { text: gentle ? 'probe gently' : 'only look, never touch', field: 'intrusiveness' },
     {
-      text: `: ${gentle ? 'crafted read requests that should not change data' : 'GET, HEAD and OPTIONS requests'}. Anything that would change data waits for your yes. They ${anywhere ? 'may go' : 'will stay out of'} `,
+      text: `: ${gentle ? 'crafted read requests that should not change data' : 'GET, HEAD and OPTIONS requests'}. Anything that would change data ${gentle ? 'waits for your yes' : 'is refused'}. They ${anywhere ? 'may go' : 'will stay out of'} `,
     },
     { text: anywhere ? 'anywhere on the site' : list(p.excludedPaths), field: 'paths' },
     // A path is a prefix (the worker never enters anything under it), and the read-back says so. The list then ends its

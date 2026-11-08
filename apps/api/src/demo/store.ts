@@ -208,6 +208,7 @@ export interface FindingRetestRow {
   readonly status: string;
   readonly result: string | null;
   readonly requested_by: string;
+  readonly requested_by_name: string | null;
   readonly detail: Record<string, unknown>;
   readonly created_at: Date;
   readonly finished_at: Date | null;
@@ -844,6 +845,32 @@ export class DemoStore {
       [tenantId, id, [...from], to, by, reason],
     );
     return (r.rowCount ?? 0) === 1;
+  }
+
+  /** Queues a retest. False when one is already open for the finding (one queued or running at a time). */
+  async insertRetest(row: { id: string; tenant_id: string; finding_id: string; requested_by: string }): Promise<boolean> {
+    try {
+      await this.pool.query(
+        `INSERT INTO demo.finding_retests (id, tenant_id, finding_id, requested_by) VALUES ($1, $2, $3, $4)`,
+        [row.id, row.tenant_id, row.finding_id, row.requested_by],
+      );
+      return true;
+    } catch (error) {
+      if ((error as { code?: string }).code === UNIQUE_VIOLATION) return false;
+      throw error;
+    }
+  }
+
+  /** The latest retests of a finding, newest first. */
+  async listRetests(tenantId: string, findingId: string, limit: number): Promise<FindingRetestRow[]> {
+    const r = await this.pool.query<FindingRetestRow>(
+      `SELECT t.id, t.status, t.result, t.requested_by, u.name AS requested_by_name, t.detail, t.created_at,
+         t.finished_at
+       FROM demo.finding_retests t LEFT JOIN users u ON u.id = t.requested_by
+       WHERE t.tenant_id = $1 AND t.finding_id = $2 ORDER BY t.created_at DESC LIMIT $3`,
+      [tenantId, findingId, limit],
+    );
+    return r.rows;
   }
 
   /** Records the result of the last webhook POST (never the URL). */

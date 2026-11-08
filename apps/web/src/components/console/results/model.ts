@@ -1,7 +1,8 @@
 // Results model (experience spec §7): pure functions over the run DTO, the request and the ledger. Every number and
 // sentence here is derived from what the runner and the API recorded; nothing is estimated.
-import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { z } from 'zod';
+
+import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 
 import { finishedWhy } from '../../../lib/host-lines';
 import { resultsHeadline } from '../../../lib/plan-text';
@@ -53,6 +54,11 @@ export const findingDetailSchema = findingSchema
     evidence: scrubDeep(f.evidence),
   }));
 export type FindingDetail = z.infer<typeof findingDetailSchema>;
+
+/** "Seen before in audit 01A1B919": the same issue (same site, method, path and weakness) in an earlier audit. */
+const SHORT_ID = 8;
+export const seenBeforeText = (f: Pick<FindingSummary, 'seenBefore'>): string | null =>
+  f.seenBefore === null ? null : `Seen before in audit ${f.seenBefore.runId.slice(0, SHORT_ID).toUpperCase()}`;
 
 /** The findings filters (shared by the server page, which reads the URL, and the client list). */
 export const FINDING_STATUSES = [

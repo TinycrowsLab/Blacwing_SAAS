@@ -22,13 +22,15 @@ import {
 import { type AccountValue, recallAccounts, rememberAccounts } from './secrets';
 import { type Care, originOf, refreshSidebar, wasApproved } from './shared';
 import { replacePlanAction } from '../../../app/(console)/audits/actions';
-import { type PlanField, planSegments, usd } from '../../../lib/plan-text';
+import { objectiveConflicts, type PlanField, planSegments, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, LinkButton, type Voice, VoiceTag } from '../design';
 import { PendingButton } from '../design-client';
 
 import type { Asset, AssessmentRequest, Workspace } from '../../../lib/schemas';
 
 const SECONDS_PER_MINUTE = 60;
+/** A read-back longer than this folds behind "Show all" (it is never clipped: the agents get every word). */
+const FOLD_AFTER_CHARS = 600;
 const REPLACED = 'Replaced by an edited plan';
 const NEXT_STEP_COUNT = 4;
 /** The order's four questions, all answered by now. */
@@ -143,6 +145,7 @@ export function PlanView({
     request.testAccounts.map((a) => ({ role: a.role, headerName: a.headerName, headerValue: '' }));
   const [rows, setRows] = useState<readonly AccountRow[]>(startRows);
   const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   /** Paths typed but not yet a chip: Update includes them, so a click never depends on the field's blur. */
   const [pathText, setPathText] = useState('');
   /** The value just changed by Update the plan (from ?updated=), highlighted until the next edit. */
@@ -254,6 +257,10 @@ export function PlanView({
   const locked = asset?.excludedPaths ?? [];
   const allPaths = [...new Set([...locked, ...values.paths])];
 
+  const found = objectiveConflicts(values.objective, allPaths, host);
+  // Without the site's own address, another address cannot be told apart from it: say nothing rather than guess.
+  const conflicts = origin === null ? { ...found, hosts: [] } : found;
+  const folded = !showAll && field === null && values.objective.length > FOLD_AFTER_CHARS;
   const segments = planSegments({
     host,
     objective: values.objective,
@@ -385,7 +392,9 @@ export function PlanView({
           </h1>
         </div>
 
-        <p className="m-0 text-[17px] leading-[30px] text-foreground sm:text-[18px] sm:leading-[31px]">
+        <p
+          className={`m-0 text-[17px] leading-[30px] text-foreground sm:text-[18px] sm:leading-[31px] ${folded ? 'line-clamp-[8]' : ''}`}
+        >
           {segments.map((s, i) =>
             s.field === undefined ? (
               <span key={i}>{s.text}</span>
@@ -417,6 +426,30 @@ export function PlanView({
             ),
           )}
         </p>
+        {values.objective.length > FOLD_AFTER_CHARS && field === null ? (
+          <button
+            type="button"
+            aria-expanded={showAll}
+            onClick={() => {
+              setShowAll(!showAll);
+            }}
+            className="-mt-3 self-start rounded text-[13px] font-medium text-gold-ink hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            {showAll ? 'Show less' : 'Show all of the plan'}
+          </button>
+        ) : null}
+        {conflicts.excluded.length > 0 ? (
+          <InlineMessage tone="gold">
+            What Claude looks for names {conflicts.excluded.join(', ')}, which the plan excludes. The agents stay out of it
+            anyway.
+          </InlineMessage>
+        ) : null}
+        {conflicts.hosts.length > 0 ? (
+          <InlineMessage tone="gold">
+            What Claude looks for names {conflicts.hosts.length === 1 ? 'another address' : 'other addresses'} (
+            {conflicts.hosts.join(', ')}). Only {host} is in scope: requests anywhere else are blocked.
+          </InlineMessage>
+        ) : null}
 
         {field === null && updated !== null ? (
           <p role="status" className="m-0 flex items-center gap-2 text-[12.5px] font-medium text-ok">

@@ -205,7 +205,7 @@ async function raiseGate2(ctx: HuntContext, agent: string, req: HttpRequest, url
   // Agent-authored; test-account credentials are injected as headers by the runner, never into the body.
   const body = req.body === undefined ? null : scrub(redactor(ctx)(req.body)).slice(0, GATE2_BODY_MAX_CHARS);
   const key = gateKey(method, url, role);
-  const ask: Gate2Ask = { id, key, label: `${method} ${url.pathname} as ${role ?? 'no test account'}`, agent, deadlineAt: deadlineAt.getTime(), status: 'pending' };
+  const ask: Gate2Ask = { id, key, label: `${method} ${url.pathname} as ${role ?? 'no test account'}`, agent, caseId: options.caseId ?? null, deadlineAt: deadlineAt.getTime(), status: 'pending' };
   await ctx.store.insertGate2(ctx.run, {
     id,
     agent,

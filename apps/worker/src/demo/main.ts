@@ -6,9 +6,13 @@ import { z } from 'zod';
 import { defineConfig } from '@blackwing/config';
 import { createLogger } from '@blackwing/logger';
 
-import { EventLog } from './hunt/context.js';
+import { EventLog, newHuntState, type HuntContext } from './hunt/context.js';
+import { sendRequest } from './hunt/http-tool.js';
 import { executeRun } from './hunt/orchestrator.js';
+import { retestFinding } from './hunt/validator.js';
 import { pgHuntStore } from './store-pg.js';
+
+import type { HuntStore, RetestJob, RetestResult } from './hunt/types.js';
 
 const MS_PER_S = 1000;
 const POLL_INTERVAL_MS = MS_PER_S;
@@ -74,17 +78,43 @@ async function recoverStaleRuns(): Promise<void> {
   }
 }
 
+/**
+ * A retest replays one stored finding (probe replays + control, no Gate 2) under its run's pinned scope, lab origins
+ * and the request's test accounts. It adds nothing to the finished run's timeline; the result goes on the retest row.
+ */
+async function executeRetest(job: RetestJob): Promise<void> {
+  const quiet: HuntStore = { ...store, appendEvent: () => Promise.resolve(), insertExchange: () => Promise.resolve() };
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), job.run.budgetSeconds * MS_PER_S);
+  const ctx: HuntContext = { run: job.run, store: quiet, log: new EventLog(quiet, job.run.id, logger), signal: abort.signal, deps, state: newHuntState() };
+  let result: RetestResult;
+  try {
+    result = await retestFinding(job, (request) => sendRequest(ctx, 'validator', request, { purpose: 'retest a finding', askGate2: false }));
+  } catch (error) {
+    logger.error({ event: 'demo.runner.retest_failed', reason: error instanceof Error ? error.name : 'unknown' }, 'retest failed');
+    result = { status: 'failed', result: null, detail: { reason: 'The retest could not finish.' } };
+  } finally {
+    clearTimeout(timer);
+  }
+  await store.finishRetest(job.id, result);
+}
+
+function track(task: Promise<void>): void {
+  const tracked = task.finally(() => active.delete(tracked));
+  active.add(tracked);
+}
+
 async function loop(): Promise<void> {
   await recoverStaleRuns();
   while (!stopping) {
     try {
-      const run = active.size < env.BW_HUNT_CONCURRENCY ? await store.claimQueuedRun() : null;
-      if (run === null) {
-        await sleep(POLL_INTERVAL_MS);
-        continue;
-      }
-      const task = executeRun(store, run, deps, config, logger).finally(() => active.delete(task));
-      active.add(task);
+      // Audits first; a free slot with no queued audit takes a queued retest.
+      const free = active.size < env.BW_HUNT_CONCURRENCY;
+      const run = free ? await store.claimQueuedRun() : null;
+      const retest = free && run === null ? await store.claimQueuedRetest() : null;
+      if (run !== null) track(executeRun(store, run, deps, config, logger));
+      else if (retest !== null) track(executeRetest(retest));
+      else await sleep(POLL_INTERVAL_MS);
     } catch (error) {
       logger.error({ event: 'demo.runner.poll_failed', reason: error instanceof Error ? error.name : 'unknown' }, 'poll failed');
       await sleep(POLL_INTERVAL_MS);

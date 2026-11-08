@@ -4,8 +4,9 @@
 // most severe first, and the three voices kept apart (Blackwing's proof, Claude's explanation and Claude's fix, the
 // last two marked "not verified"). It holds released issues only, so the agent's run summary (written about every
 // suspected issue, dismissed and unreleased ones too) never goes in. Pure functions, no IO; all text is escaped.
-import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { z } from 'zod';
+
+import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 
 import { agentName } from '../../../lib/agents';
 import { coverageSchema } from '../../../lib/schemas';

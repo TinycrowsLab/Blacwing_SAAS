@@ -28,6 +28,31 @@ const signedOut = {
 
 const invalid = (message: string): ActionResult<never> => ({ ok: false, code: 'invalid', message, status: 400 });
 
+/**
+ * Ownership refusals in plain words, with the one fix. The API's own detail names the cause (it is already plain);
+ * these add what to do next.
+ */
+function plainOwnership<T>(result: ActionResult<T>): ActionResult<T> {
+  if (result.ok) return result;
+  switch (result.code) {
+    case 'attestation_not_allowed':
+      return {
+        ...result,
+        message:
+          "The owner's word is accepted only for labs your Blackwing operator listed. Put the file on the site to show it is yours.",
+      };
+    case 'ownership_recheck_failed':
+      return {
+        ...result,
+        message: `Blackwing checked again that the site is yours and could not confirm it (${result.message.replace(/\.$/, '')}). Show it is yours again on Targets, then try again.`,
+      };
+    case 'target_not_allowed':
+      return { ...result, message: `Blackwing cannot test this address. ${result.message}` };
+    default:
+      return result;
+  }
+}
+
 const webOrigin = z.url({ protocol: /^https?$/ }).max(2048);
 const uuid = z.uuid();
 
@@ -47,13 +72,15 @@ export async function ensureTargetAction(
     .safeParse({ origin, host, extraOrigins });
   if (!input.success) return invalid("That doesn't look like a web address yet.");
   // Safe to try twice: the API reuses the asset with the same origin, so a retry never adds a second target.
-  return toResult(() =>
-    retryOnce(async () =>
-      assetSchema.parse(
-        await callApi(session, '/assets', {
-          method: 'POST',
-          body: { name: input.data.host, baseUrl: input.data.origin, extraOrigins: input.data.extraOrigins },
-        }),
+  return plainOwnership(
+    await toResult(() =>
+      retryOnce(async () =>
+        assetSchema.parse(
+          await callApi(session, '/assets', {
+            method: 'POST',
+            body: { name: input.data.host, baseUrl: input.data.origin, extraOrigins: input.data.extraOrigins },
+          }),
+        ),
       ),
     ),
   );
@@ -145,7 +172,7 @@ export async function verifyTargetAction(assetId: string, verify: VerifyInput): 
           : await fileCheckCause(v.wellKnownUrl, v.token),
       };
   }
-  return result;
+  return plainOwnership(result);
 }
 
 const accountSchema = z.object({
@@ -263,7 +290,7 @@ export async function approveAndStartAction(
     }),
   );
   if (!approved.ok) {
-    if (approved.status !== HTTP_CONFLICT) return approved;
+    if (approved.status !== HTTP_CONFLICT) return plainOwnership(approved);
     const current = await toResult(async () => requestSchema.parse(await callApi(session, `/requests/${enc(id.data)}`)));
     if (!current.ok) return current;
     if (!wasApproved(current.data.status))
@@ -280,7 +307,7 @@ export async function approveAndStartAction(
       const runId = await runOf(session, id.data).catch(() => null);
       if (runId !== null) return { ok: true, data: { runId } };
     }
-    return toResult(() => Promise.reject(error instanceof Error ? error : new Error('start failed')));
+    return plainOwnership(await toResult(() => Promise.reject(error instanceof Error ? error : new Error('start failed'))));
   }
 }
 
@@ -298,7 +325,7 @@ export async function startAuditAction(requestId: string): Promise<ActionResult<
     const runId = await runOf(session, id.data).catch(() => null);
     if (runId !== null) return { ok: true, data: { runId } };
   }
-  return started;
+  return plainOwnership(started);
 }
 
 /** A reviewer's Deny at Gate 1. A reason is required. */

@@ -49,8 +49,8 @@ describe('pgHuntStore.claimQueuedRun release mode', () => {
 
 describe('pgHuntStore request status (single-use Gate 1 approvals)', () => {
   const run = { id: 'run-1', tenantId: 't', requestId: 'q' } as unknown as Parameters<ReturnType<typeof pgHuntStore>['finishRun']>[0];
-  const statusSet = (query: ReturnType<typeof vi.fn>) =>
-    query.mock.calls.filter((c) => String(c[0]).includes('demo.assessment_requests')).map((c) => [String(c[0]), c[1]]);
+  const statusSet = (query: ReturnType<typeof vi.fn>): [string, unknown][] =>
+    query.mock.calls.filter((c) => String(c[0]).includes('demo.assessment_requests')).map((c): [string, unknown] => [String(c[0]), c[1]]);
 
   it('ends the request completed or failed with its run, never back to approved', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
@@ -63,8 +63,7 @@ describe('pgHuntStore request status (single-use Gate 1 approvals)', () => {
   it('ends a killed run request killed', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [{ halt_ms: 7 }] });
     await expect(pgHuntStore({ query } as unknown as pg.Pool).markKilled(run)).resolves.toBe(7);
-    const [[sql]] = statusSet(query);
-    expect(sql).toContain("status = 'killed'");
+    expect(statusSet(query)[0]?.[0]).toContain("status = 'killed'");
   });
 
   it('fails stale runs, their requests and closes their asks as worker_restarted', async () => {
@@ -103,10 +102,10 @@ describe('pgHuntStore Gate 2 and findings columns', () => {
   it('records an expiry on the ledger in the same transaction, chained after the last entry', async () => {
     const deadline = new Date('2026-11-08T12:05:00.000Z');
     const prev = 'a'.repeat(64);
-    const clientQuery = vi.fn(async (sql: string) => {
-      if (sql.startsWith('UPDATE demo.gate2_requests')) return { rows: [{ tenant_id: 't', run_id: 'run-1', method: 'POST', url: 'http://127.0.0.1:3001/api/Users', deadline_at: deadline }] };
-      if (sql.startsWith('SELECT seq, hash')) return { rows: [{ seq: 41, hash: prev }] };
-      return { rows: [] };
+    const clientQuery = vi.fn((sql: string) => {
+      if (sql.startsWith('UPDATE demo.gate2_requests')) return Promise.resolve({ rows: [{ tenant_id: 't', run_id: 'run-1', method: 'POST', url: 'http://127.0.0.1:3001/api/Users', deadline_at: deadline }] });
+      if (sql.startsWith('SELECT seq, hash')) return Promise.resolve({ rows: [{ seq: 41, hash: prev }] });
+      return Promise.resolve({ rows: [] });
     });
     const release = vi.fn();
     const query = vi.fn().mockResolvedValue({ rows: [{ status: 'expired', decided_by: null }] });

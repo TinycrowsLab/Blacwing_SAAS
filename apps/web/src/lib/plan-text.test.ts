@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { decisionTitle, objectivePhrase, planSegments, planText, resultsHeadline } from './plan-text';
+import { decisionTitle, objectiveConflicts, objectivePhrase, planSegments, planText, resultsHeadline } from './plan-text';
 
 describe('plan read-back', () => {
   const plan = {
@@ -31,7 +31,7 @@ describe('plan read-back', () => {
       costUsd: 2.5,
       releaseProven: 'auto',
     });
-    expect(text).toContain('only look, never touch: GET, HEAD and OPTIONS requests.');
+    expect(text).toContain('only look, never touch: GET, HEAD and OPTIONS requests. Anything that would change data is refused.');
     expect(text).toContain('They may go anywhere on the site and test as a visitor.');
     expect(planText({ ...plan, objective: 'Look for injection flaws.' })).toContain('for injection flaws. Claude');
     expect(text).toContain('We stop at 1 minute, 1,000 requests or $2.50 of model spend');
@@ -65,5 +65,16 @@ describe('plan read-back', () => {
     expect(decisionTitle('POST', 'https://s.example.com/api/Users')).toBe('Allow a request to users?');
     expect(decisionTitle('POST', 'https://s.example.com/file-upload')).toBe('Allow a request to file upload?');
     expect(decisionTitle('POST', 'https://s.example.com/upload')).toBe('Allow a request to upload?');
+  });
+
+  it('reads back the whole note, and names what an approver should notice', () => {
+    const long = `Look for injection flaws. ${'Try every admin variant like //admin and /admin;x. '.repeat(5)}Then the end.`;
+    expect(planText({ ...plan, objective: long })).toContain('Then the end');
+    expect(objectiveConflicts('Look for flaws. Also hit /admin/users and https://evil.example.com/x.', ['/admin', '/setup.php'], 'staging.example.com')).toEqual({
+      excluded: ['/admin'],
+      hosts: ['evil.example.com'],
+    });
+    expect(objectiveConflicts('Check 127.0.0.1:3092 and config.inc.php.', [], '127.0.0.1:3082').hosts).toEqual(['127.0.0.1:3092']);
+    expect(objectiveConflicts('Focus on http://127.0.0.1:3082/login.php', [], '127.0.0.1:3082')).toEqual({ excluded: [], hosts: [] });
   });
 });

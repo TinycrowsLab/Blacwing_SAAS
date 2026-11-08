@@ -119,16 +119,20 @@ describe('limits (§10.3)', () => {
     expect(parseMinutes('3h', minutes)).toEqual({
       ok: true,
       value: 120,
-      note: 'Set to 120 minutes, the most this workspace allows.',
+      note: 'Lowered to 120 minutes, the most this workspace allows.',
     });
-    expect(parseRequests('2', { min: 10, max: 5000 })).toMatchObject({ value: 10 });
+    expect(parseRequests('9', { min: 10, max: 5000 })).toEqual({
+      ok: true,
+      value: 10,
+      note: 'Raised to 10 requests, the smallest this workspace allows.',
+    });
     expect(parseCost('$0.10', { min: 0.5, max: 100 })).toEqual({
       ok: true,
       value: 0.5,
-      note: 'Set to $0.50, the least this workspace allows.',
+      note: 'Raised to $0.50, the smallest this workspace allows.',
     });
     expect(parseRequests('9k', { min: 10, max: 5000 })).toMatchObject({
-      note: 'Set to 5,000 requests, the most this workspace allows.',
+      note: 'Lowered to 5,000 requests, the most this workspace allows.',
     });
   });
 

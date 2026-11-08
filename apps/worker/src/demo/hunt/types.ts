@@ -103,10 +103,29 @@ export interface StaleRun {
   readonly findings: number;
 }
 
+/** A queued retest of one finding, with a run rebuilt from the finding's run pins (budget: probe replays + control). */
+export interface RetestJob {
+  readonly id: string;
+  readonly findingId: string;
+  readonly run: HuntRun;
+  /** `evidence.probe.request` / `evidence.control.request` as stored (scrubbed SentRequest), or absent on old rows. */
+  readonly probe: unknown;
+  readonly control: unknown;
+  readonly oracle: unknown;
+}
+
+export type RetestOutcome = 'still_present' | 'fixed' | 'inconclusive';
+
+export interface RetestResult {
+  readonly status: 'done' | 'failed';
+  readonly result: RetestOutcome | null;
+  readonly detail: Record<string, unknown>;
+}
+
 /** Persistence the hunt needs. Implemented over `pg` in ../store-pg.ts, faked in unit tests. */
 export interface HuntStore {
   claimQueuedRun(): Promise<HuntRun | null>;
-  /** Marks runs left `running` by a dead worker as failed and denies their pending Gate 2 requests. */
+  /** Marks runs (and retests) left `running` by a dead worker as failed and denies their pending Gate 2 requests. */
   failStaleRuns(): Promise<StaleRun[]>;
   /** Allocates the next seq itself: the API appends events to the same run. */
   appendEvent(runId: string, event: RunEvent): Promise<void>;
@@ -127,4 +146,7 @@ export interface HuntStore {
   finishRun(run: HuntRun, outcome: RunOutcome): Promise<void>;
   /** Sets state=killed, killed_at=now and halt_ms from kill_requested_at; returns halt_ms. */
   markKilled(run: HuntRun): Promise<number>;
+  /** Claims the oldest queued finding retest (SKIP LOCKED), or null. */
+  claimQueuedRetest(): Promise<RetestJob | null>;
+  finishRetest(id: string, result: RetestResult): Promise<void>;
 }

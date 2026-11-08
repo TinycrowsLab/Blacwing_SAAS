@@ -1,5 +1,8 @@
-// The finding report as a download (HTML or Markdown), rendered by the API. Any other format is a 400, never a guess.
+// The finding report as a download (HTML or Markdown), rendered by the API and scrubbed of secrets once more here. Any
+// other format is a 400, never a guess.
 import { z } from 'zod';
+
+import { scrub } from '@blackwing/errors/scrub';
 
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
@@ -29,7 +32,8 @@ export async function GET(
     const report = renderedSchema.parse(
       await callApi(session, `/findings/${encodeURIComponent(id)}/report?format=${format}`),
     );
-    return new Response(report.body, {
+    // The API scrubs the evidence it renders; scrubbing the file again here means no token or password can slip out.
+    return new Response(scrub(report.body), {
       headers: {
         'content-type': report.contentType,
         'content-disposition': `attachment; filename="${report.filename}"`,

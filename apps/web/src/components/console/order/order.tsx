@@ -186,10 +186,10 @@ export function Order({
     else setStep(d.step);
   }, [draftId, restoreDraft, startStep, first, firstAsset]);
 
-  // Question 2's file needs the site registered for its token (the API reuses an existing one). The tick needs nothing
-  // yet: it registers on Continue, so a site only looked at never becomes a target.
+  // Question 2 registers the site (the API reuses an existing one): the file needs its token, and only the API knows
+  // whether the owner's word is accepted for it (a lab the operator listed) or the address is refused outright.
   useEffect(() => {
-    if (target === null || asset !== null || step < 2 || (step === Q.proof && method !== 'file')) return;
+    if (target === null || asset !== null || step < 2) return;
     let active = true;
     void ensureTargetAction(target.origin, target.host).then((r) => {
       if (!active) return;
@@ -450,7 +450,7 @@ export function Order({
     },
     3: {
       h1: 'What should Claude look for?',
-      lede: "Pick as many as you like. I'll turn them into the objective, and you can change it on the plan.",
+      lede: "Pick areas to focus on, or keep the broad OWASP sweep. I'll turn your choice into the objective, and you can change it on the plan.",
     },
     4: {
       h1: 'How careful should Claude be?',
@@ -601,8 +601,8 @@ export function Order({
               </fieldset>
               <p className="m-0 flex items-start gap-2 rounded-[12px] bg-surface-2 px-3.5 py-3 text-[13px] leading-5 text-muted-foreground">
                 <Icon name="shield" size={15} className="mt-0.5 shrink-0" />
-                Either way, anything that would change data waits for your yes, and destructive requests (like DELETE) are
-                never sent.
+                Probing gently, anything that would change data waits for your yes. Only looking, it is refused. Either way,
+                destructive requests (like DELETE) are never sent.
               </p>
               <p className="m-0 text-[12.5px] text-muted-foreground">
                 {limits === null

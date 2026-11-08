@@ -19,10 +19,13 @@ const finding = (severity: string, cwe: string, title: string): FindingRow =>
     location: { method: 'GET', url: 'http://lab/rest/basket/2' },
     status: 'released',
     created_at: new Date('2026-11-05T10:00:00Z'),
+    fingerprint: `fp-${cwe}`,
+    identity_key: cwe === 'CWE-639' ? 'idk-639' : null,
+    seen_at: null,
   }) as unknown as FindingRow;
 
 const input = {
-  run: { id: '0197a5d0-aaaa-7000-8000-000000000001', state: 'completed', created_at: new Date(), started_at: null, finished_at: null, kill_requested_at: null, requests_used: 3, budget_requests: 100, cost_usd: '0.5', summary: 'done', pins: {} } as unknown as RunRow,
+  run: { id: '0197a5d0-aaaa-7000-8000-000000000001', state: 'completed', created_at: new Date(), started_at: null, finished_at: null, kill_requested_at: null, requests_used: 3, budget_requests: 100, cost_usd: '0.5', summary: 'done', pins: { runner: { name: 'ai-hunt', version: '1' } }, started_by_name: null, queue_ahead: null } as unknown as RunRow,
   asset: { name: 'Lab', base_url: 'http://lab', ownership_status: 'verified', allowed_origins: ['http://lab'], excluded_paths: [], created_at: new Date(), verified_at: null } as unknown as AssetRow,
   request: { intrusiveness: 'passive', requester_name: 'A', approver_name: 'B', scope: {}, test_accounts: [], cost_cap_usd: '5', created_at: new Date(), decided_at: null } as unknown as RequestRow,
   findings: [finding('high', 'CWE-639', 'IDOR'), finding('low', 'CWE-200', 'Leak <b>')],
@@ -36,14 +39,76 @@ describe('renderRunReport', () => {
     const sarif = JSON.parse(report.body) as {
       version: string;
       runs: {
-        tool: { driver: { rules: unknown[] } };
-        results: { level: string; locations: { physicalLocation: { artifactLocation: { uri: string } } }[] }[];
+        tool: { driver: { version?: string; informationUri?: string; rules: Record<string, unknown>[] } };
+        originalUriBaseIds: { TARGET: { uri: string } };
+        results: {
+          level: string;
+          partialFingerprints: Record<string, string>;
+          properties: { findingId: string };
+          locations: { physicalLocation: { artifactLocation: { uri: string; uriBaseId?: string } } }[];
+        }[];
       }[];
     };
     expect(sarif.version).toBe('2.1.0');
-    expect(sarif.runs[0]?.tool.driver.rules).toEqual([{ id: 'CWE-639' }, { id: 'CWE-200' }]);
-    expect(sarif.runs[0]?.results.map((r) => r.level)).toEqual(['error', 'note']);
-    expect(sarif.runs[0]?.results[0]?.locations[0]?.physicalLocation.artifactLocation.uri).toBe('http://lab/rest/basket/2');
+    const run = sarif.runs[0];
+    expect(run?.tool.driver.rules.map((r) => r.id)).toEqual(['CWE-639', 'CWE-200']);
+    expect(run?.results.map((r) => r.level)).toEqual(['error', 'note']);
+    expect(run?.results[0]?.locations[0]?.physicalLocation.artifactLocation).toEqual({ uri: 'rest/basket/2', uriBaseId: 'TARGET' });
+    expect(run?.originalUriBaseIds.TARGET.uri).toBe('http://lab/');
+  });
+
+  it('gives SARIF rules their metadata and results stable cross-run fingerprints', () => {
+    const report = renderRunReport({ ...input, consoleOrigin: 'http://localhost:3000' }, 'sarif');
+    const run = (JSON.parse(report.body) as { runs: { tool: { driver: Record<string, unknown> }; results: Record<string, unknown>[] }[] }).runs[0];
+    expect(run?.tool.driver).toMatchObject({ name: 'Blackwing', version: '1', informationUri: 'http://localhost:3000' });
+    expect((run?.tool.driver.rules as unknown[])[0]).toEqual({
+      id: 'CWE-639',
+      name: 'CWE-639',
+      shortDescription: { text: 'IDOR' },
+      helpUri: 'https://cwe.mitre.org/data/definitions/639.html',
+      properties: { tags: ['A01:2021 Broken Access Control', 'security'], 'security-severity': '8.0' },
+    });
+    expect(run?.results[0]).toMatchObject({
+      partialFingerprints: { 'blackwingIdentity/v1': 'idk-639' },
+      properties: { findingId: '0197a5d0-aaaa-7000-8000-000000000002' },
+    });
+    // No identity key on an older row: the per-run fingerprint stands in.
+    expect(run?.results[1]).toMatchObject({ partialFingerprints: { 'blackwingIdentity/v1': 'fp-CWE-200' } });
+  });
+
+  it('adds coverage and the end reason to the JSON report', () => {
+    const coverage = { cases: [{ id: 'c1', title: 'SQLi', agent: 'web', status: 'not_run' }], requestsSent: 3 };
+    const body = JSON.parse(renderRunReport({ ...input, coverage, endReason: 'duration_budget' }, 'json').body) as {
+      coverage: unknown;
+      run: { endReason: string | null };
+    };
+    expect(body.coverage).toEqual(coverage);
+    expect(body.run.endReason).toBe('duration_budget');
+    expect((JSON.parse(renderRunReport(input, 'json').body) as { coverage: unknown }).coverage).toBeNull();
+  });
+
+  it('never prints a secret from evidence, curl or description, in any format', () => {
+    const leaky = {
+      ...finding('high', 'CWE-200', 'Config exposed'),
+      description: "The file holds $_DVWA[ 'db_password' ] = 'vulnerables';",
+      repro_curl: "curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl' http://lab/x",
+      evidence: { probe: { response: { status: 200, bodyExcerpt: '{"password":"hunter2","email":"a@b.c"}' } }, replays: [] },
+    } as unknown as FindingRow;
+    for (const format of ['html', 'md', 'json', 'sarif'] as const) {
+      const { body } = renderRunReport({ ...input, findings: [leaky] }, format);
+      expect(body, format).not.toContain('vulnerables');
+      expect(body, format).not.toContain('hunter2');
+      expect(body, format).not.toContain('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0');
+    }
+    const { body } = renderReport({ ...input, finding: leaky }, 'md');
+    expect(body).not.toContain('vulnerables');
+    expect(body).not.toContain('hunter2');
+  });
+
+  it('does not claim that no data was extracted', () => {
+    for (const format of ['html', 'md'] as const) {
+      expect(renderRunReport(input, format).body).not.toContain('no data was extracted');
+    }
   });
 
   it('counts severities in JSON and escapes titles in HTML', () => {

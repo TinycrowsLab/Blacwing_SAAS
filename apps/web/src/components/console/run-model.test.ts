@@ -523,10 +523,10 @@ suite('teamNodes', () => {
 suite('client-ready run view', () => {
   const free = (e: RunEvent): RunEvent => (e.kind === 'gate2.requested' ? { ...e, data: { ...e.data, blocking: false } } : e);
   it('a non-blocking ask leaves the agent testing, and says it asked', () => {
-    const team = teamNodes(RUN.map(free), [G1], T0 + 20_000, false);
+    const team = teamNodes(RUN.map((e) => free(e)), [G1], T0 + 20_000, false);
     expect(team.specialists[2]).toMatchObject({ id: 'authz-specialist', state: 'working' });
     expect(team.specialists[2]?.sub).toMatch(/^asked you · /);
-    expect(blockingAsks(RUN.map(free), [G1])).toEqual([]);
+    expect(blockingAsks(RUN.map((e) => free(e)), [G1])).toEqual([]);
     expect(blockingAsks(RUN, [G1])).toEqual([G1]);
   });
   it('stops every ring while paused', () => {
@@ -554,7 +554,7 @@ suite('client-ready run view', () => {
   });
   it('says when an allowed non-blocking request was actually sent', () => {
     const events = [
-      ...RUN.map(free),
+      ...RUN.map((e) => free(e)),
       ev(26, 'gate2.decided', 'gate2', { gate2Id: 'g1', status: 'approved', by: 'u1' }, at(25)),
       ev(27, 'http.sent', 'authz-specialist', { agent: 'authz-specialist', method: 'POST', url: `${URL0}/api/Users`, status: 201, gate2Id: 'g1' }, at(26)),
     ];

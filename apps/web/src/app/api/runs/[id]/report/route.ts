@@ -3,6 +3,8 @@
 // page says: released issues only, most severe first, plain words, and no agent summary of issues left out.
 import { z } from 'zod';
 
+import { scrub } from '@blackwing/errors/scrub';
+
 import {
   ordered,
   renderHtml,
@@ -65,7 +67,7 @@ export async function GET(
           ? renderMarkdown(source, findings)
           : format === 'json'
             ? renderJson(raw, findings)
-            : (sarif?.body ?? '');
+            : scrub(sarif?.body ?? '');
     return new Response(body, {
       headers: {
         'content-type': TYPES[format],

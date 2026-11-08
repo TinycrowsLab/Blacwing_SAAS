@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { LocalTime, momentText } from './local-time';
-import { refreshSidebar, wasApproved } from './shared';
+import { approvalEnded, refreshSidebar, wasApproved } from './shared';
 import { approveAndStartAction, denyPlanAction, startAuditAction } from '../../../app/(console)/audits/actions';
 import { reasonEnough, REASON_MIN } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage, LinkButton, Receipt } from '../design';
@@ -247,12 +247,17 @@ export function Gate1Card({
           detail={request.decisionReason === null || replaced || discarded ? undefined : `“${request.decisionReason}”`}
           hash={request.audit?.hash ?? null}
         />
+        {approvalEnded(request.status) ? (
+          <p className="m-0 text-[13px] leading-5 text-muted-foreground">
+            This audit ended. Run it again for a new approval: an approval starts one audit only.
+          </p>
+        ) : null}
         {approved && request.runId !== null ? (
           <LinkButton href={`/runs/${request.runId}`} variant="primary" className="h-12 rounded-xl text-[14.5px]">
             {request.status === 'running' ? <>Watch Claude&apos;s team work</> : 'Open the audit'}
             <Icon name="arrow" size={16} />
           </LinkButton>
-        ) : approved ? (
+        ) : request.status === 'approved' ? (
           <PendingButton
             onAction={async () => {
               const r = await startAuditAction(request.id);

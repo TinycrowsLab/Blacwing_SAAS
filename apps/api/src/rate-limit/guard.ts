@@ -21,9 +21,9 @@ import {
   RATE_LIMITER,
 } from './tokens.js';
 import { requestLogger } from '../bootstrap/request-context.js';
-import { loadDemoConfig, type DemoConfig } from '../demo/config.js';
 import { API_LOGGER } from '../bootstrap/tokens.js';
 import { isEntryPoint, replyOf, requestOf } from '../bootstrap/transport.js';
+import { loadDemoConfig, type DemoConfig } from '../demo/config.js';
 import { tenantContextOf } from '../tenant/guard.js';
 
 import type { BucketDecision, BucketSpec, BucketSpecs } from './bucket.js';

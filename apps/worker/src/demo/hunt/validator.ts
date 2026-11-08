@@ -11,7 +11,7 @@ import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 import { probeSchema, type HttpRequest, type HttpResult, type SentRequest } from './http-tool.js';
 import { classifyMethod } from './scope.js';
 
-import type { FindingRow, HuntRun } from './types.js';
+import type { FindingRow, HuntRun, RetestJob, RetestResult } from './types.js';
 
 export const REPLAYS = 3;
 const EXCERPT_CHARS = 2000;
@@ -161,7 +161,7 @@ export function replaysFor(probe: HttpRequest): number {
 }
 
 /** Checks the control is single-delta (nothing sent otherwise), replays the probe, then sends the control once. */
-export async function validateCandidate(candidate: Candidate, hooks: ValidatorHooks): Promise<Verdict> {
+export async function validateCandidate(candidate: Pick<Candidate, 'probe' | 'control' | 'oracle'>, hooks: ValidatorHooks): Promise<Verdict> {
   const shape = controlDelta(candidate.probe, candidate.control);
   if (!shape.ok) return { confirmed: false, reason: `control_not_single_delta: ${shape.differs} differ`, delta: null, replays: [], probe: null, control: null, controlMatched: null };
   const { delta } = shape;
@@ -306,4 +306,68 @@ export function buildFindingRow(input: FindingRowInput): { proven: boolean; row:
       testCaseId: input.testCaseId,
     },
   };
+}
+
+const storedRequestSchema = z.object({
+  method: z.string().min(1),
+  url: z.string().min(1),
+  headers: z.record(z.string(), z.string()).default({}),
+  body: z.string().nullish(),
+  asRole: z.string().nullish(),
+});
+/** Headers the runner sets itself on every send. */
+const RUNNER_HEADERS = new Set(['user-agent']);
+const REDACTED_MARK = /\[redacted/i;
+
+/**
+ * The stored (scrubbed) request as a probe Blackwing may send again: the runner's own headers dropped, the test
+ * account credential back to `as_role`. Null when a value Blackwing does not keep is needed (an agent-obtained token).
+ */
+export function replayableRequest(stored: unknown, roles: readonly string[]): { request: HttpRequest } | { reason: string } {
+  const parsed = storedRequestSchema.safeParse(scrubDeep(stored));
+  if (!parsed.success) return { reason: 'The finding has no stored request to send again.' };
+  const { method, url, body, asRole } = parsed.data;
+  const headers: Record<string, string> = {};
+  for (const [name, value] of Object.entries(parsed.data.headers)) {
+    if (RUNNER_HEADERS.has(name.toLowerCase()) || (asRole != null && ROLE_PLACEHOLDER.test(value))) continue;
+    headers[name] = value;
+  }
+  if ([url, body ?? '', ...Object.values(headers)].some((part) => REDACTED_MARK.test(part))) {
+    return { reason: 'The request needs a fresh sign-in: it used a value Blackwing does not keep.' };
+  }
+  if (asRole != null && !roles.some((role) => role.toLowerCase() === asRole.toLowerCase())) {
+    return { reason: `The test account ${asRole} is no longer on this audit's plan.` };
+  }
+  return {
+    request: { method, url, ...(Object.keys(headers).length === 0 ? {} : { headers }), ...(body == null ? {} : { body }), ...(asRole == null ? {} : { as_role: asRole }) },
+  };
+}
+
+/**
+ * Retests one finding: the stored probe is replayed and the stored control sent once, through the normal send rules.
+ * `still_present` when it validates again, `fixed` when the probe no longer matches the oracle, else `inconclusive`.
+ */
+export async function retestFinding(job: RetestJob, send: (request: HttpRequest) => Promise<HttpResult>): Promise<RetestResult> {
+  const inconclusive = (reason: string, extra: Record<string, unknown> = {}): RetestResult => ({ status: 'done', result: 'inconclusive', detail: { reason, ...extra } });
+  const oracle = oracleSchema.safeParse(job.oracle);
+  if (!oracle.success) return inconclusive('The finding has no oracle to check.');
+  const roles = job.run.testAccounts.map((a) => a.role);
+  const probe = replayableRequest(job.probe, roles);
+  if (!('request' in probe)) return inconclusive(probe.reason);
+  const control = replayableRequest(job.control, roles);
+  if (!('request' in control)) return inconclusive(control.reason);
+  const verdict = await validateCandidate({ probe: probe.request, control: control.request, oracle: oracle.data }, {
+    send,
+    replay: () => Promise.resolve(),
+    control: () => Promise.resolve(),
+  });
+  const detail = {
+    replays: verdict.replays,
+    control: verdict.control === null ? null : { status: verdict.control.status, matched: verdict.controlMatched },
+  };
+  if (verdict.confirmed) return { status: 'done', result: 'still_present', detail: { ...detail, reason: 'Every replay matched the oracle and the control did not.' } };
+  if (verdict.replays.length > 0 && verdict.replays.every((r) => !r.matched)) {
+    return { status: 'done', result: 'fixed', detail: { ...detail, reason: 'The probe no longer matches the oracle.' } };
+  }
+  return inconclusive(verdict.reason, detail);
 }

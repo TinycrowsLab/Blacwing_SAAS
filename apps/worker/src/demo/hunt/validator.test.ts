@@ -8,13 +8,16 @@ import {
   identityKey,
   normalisedPath,
   oracleMatches,
+  replayableRequest,
   reproCurl,
+  retestFinding,
   validateCandidate,
   type Candidate,
   type Verdict,
 } from './validator.js';
 
 import type { HttpRequest, HttpResult } from './http-tool.js';
+import type { RetestJob } from './types.js';
 
 // A structurally valid, unsigned sample token (benign lab value).
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJlLXNhbXBsZQ';
@@ -221,8 +224,8 @@ describe('buildFindingRow', () => {
     expect(row.owasp).toBe('A03:2021 Injection');
     expect(row.location).toEqual({ method: 'GET', url: 'https://t.example/search?q=bwmark' });
     expect(row.reproCurl).toBe("curl -sS -i -X GET -H 'user-agent: blackwing-hunt/1' -H 'authorization: <alice credential>' 'https://t.example/search?q=bwmark'");
-    expect(row.evidence['proof']).toEqual({ kind: 'differential_replay', replays: 3, delta: 'query', proposedBy: 'claude' });
-    const probe = row.evidence['probe'] as { exchangeId: string; request: { asRole: string }; response: { bodyExcerpt: string; bodySha256: string } };
+    expect(row.evidence.proof).toEqual({ kind: 'differential_replay', replays: 3, delta: 'query', proposedBy: 'claude' });
+    const probe = row.evidence.probe as { exchangeId: string; request: { asRole: string }; response: { bodyExcerpt: string; bodySha256: string } };
     expect(probe.exchangeId).toBe('x-https://t.example/search?q=bwmark');
     expect(probe.request.asRole).toBe('alice');
     expect(probe.response.bodyExcerpt).toBe('bwmark {"token":"[redacted: token]"}');
@@ -264,5 +267,51 @@ describe('reproCurl', () => {
     expect(reproCurl({ method: 'post', url: "https://t.example/a'b", headers: { 'x-a': "it's" }, body: '{"a":1}', asRole: null })).toBe(
       `curl -sS -i -X POST -H 'x-a: it'\\''s' --data-raw '{"a":1}' 'https://t.example/a'\\''b'`,
     );
+  });
+});
+
+describe('retest', () => {
+  const run = { testAccounts: [{ role: 'alice', headerName: 'Authorization', headerValue: 'secret-value' }] } as unknown as RetestJob['run'];
+  const stored = (url: string, extra: Record<string, unknown> = {}) => ({
+    method: 'GET',
+    url,
+    headers: { 'user-agent': 'blackwing-hunt/1', authorization: '[redacted: role alice]' },
+    body: null,
+    asRole: 'alice',
+    ...extra,
+  });
+  const job = (probe: unknown, control: unknown): RetestJob => ({ id: 'rt', findingId: 'f', run, probe, control, oracle: candidate.oracle });
+
+  it('rebuilds the stored request: runner headers dropped, the credential back to as_role', () => {
+    expect(replayableRequest(stored('https://t.example/search?q=bwmark'), ['alice'])).toEqual({
+      request: { method: 'GET', url: 'https://t.example/search?q=bwmark', as_role: 'alice' },
+    });
+  });
+
+  it('never replays a value Blackwing does not keep, nor a role no longer on the plan', () => {
+    const token = stored('https://t.example/me', { headers: { authorization: `Bearer ${JWT}` }, asRole: null });
+    expect(replayableRequest(token, ['alice'])).toEqual({ reason: 'The request needs a fresh sign-in: it used a value Blackwing does not keep.' });
+    expect(replayableRequest(stored('https://t.example/me'), [])).toEqual({ reason: "The test account alice is no longer on this audit's plan." });
+    expect(replayableRequest(undefined, [])).toEqual({ reason: 'The finding has no stored request to send again.' });
+  });
+
+  it('reports still present, fixed or inconclusive', async () => {
+    const pair = job(stored('https://t.example/search?q=bwmark'), stored('https://t.example/search?q=plain'));
+    const sent: HttpRequest[] = [];
+    const present = await retestFinding(pair, (request) => {
+      sent.push(request);
+      return Promise.resolve(reflect(request));
+    });
+    expect(present).toMatchObject({ status: 'done', result: 'still_present', detail: { control: { status: 200, matched: false } } });
+    expect(sent).toHaveLength(4);
+    expect(sent.every((r) => r.as_role === 'alice' && r.headers === undefined)).toBe(true);
+    expect(await retestFinding(pair, (request) => Promise.resolve(ok(request, 'nothing')))).toMatchObject({ result: 'fixed' });
+    expect(await retestFinding(pair, () => Promise.resolve({ ok: false, refusal: 'no' }))).toMatchObject({ result: 'inconclusive' });
+    expect(await retestFinding(pair, (request) => Promise.resolve(ok(request, 'bwmark')))).toMatchObject({
+      result: 'inconclusive',
+      detail: { reason: 'the negative control also matched the oracle' },
+    });
+    const old = job(stored('https://t.example/search?q=bwmark'), stored('https://t.example/other'));
+    expect(await retestFinding(old, () => Promise.reject(new Error('must not send')))).toMatchObject({ result: 'inconclusive' });
   });
 });

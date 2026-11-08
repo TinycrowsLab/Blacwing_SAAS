@@ -183,9 +183,9 @@ const usd = (n: number): string =>
 
 function clamp(value: number, range: Range, say: (n: number) => string): LimitResult {
   if (value > range.max)
-    return { ok: true, value: range.max, note: `Set to ${say(range.max)}, the most this workspace allows.` };
+    return { ok: true, value: range.max, note: `Lowered to ${say(range.max)}, the most this workspace allows.` };
   if (value < range.min)
-    return { ok: true, value: range.min, note: `Set to ${say(range.min)}, the least this workspace allows.` };
+    return { ok: true, value: range.min, note: `Raised to ${say(range.min)}, the smallest this workspace allows.` };
   return { ok: true, value, note: null };
 }
 

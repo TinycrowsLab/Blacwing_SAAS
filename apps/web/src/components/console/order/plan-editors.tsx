@@ -61,7 +61,8 @@ export function CareEditor({ value, onChange }: { readonly value: Care; readonly
         />
       ))}
       <p className="m-0 text-[12.5px] text-muted-foreground">
-        Either way, anything that would change data waits for your yes, and destructive requests are never sent.
+        Probing gently, anything that would change data waits for your yes; only looking, it is refused. Either way,
+        destructive requests are never sent.
       </p>
     </fieldset>
   );

@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { DEMO_GENESIS, demoAuditHash, type DemoAuditPayload } from '@blackwing/audit';
 import { newId } from '@blackwing/ids';
 
-import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RunControl, RunEvent, RunOutcome, StaleRun } from './hunt/types.js';
+import { REPLAYS } from './hunt/validator.js';
+
+import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun } from './hunt/types.js';
 import type pg from 'pg';
 
 const pinsSchema = z.object({
@@ -37,6 +39,7 @@ interface ClaimedRow {
 }
 
 const UNIQUE_VIOLATION = '23505';
+const RETEST_SECONDS = 60;
 const EVENT_APPEND_ATTEMPTS = 5;
 const AUTO_RELEASE_REASON = 'Auto-released: proven by deterministic replay.';
 
@@ -49,6 +52,40 @@ const CLAIM_SQL = `
   )
   RETURNING id, tenant_id, request_id, pins,
     (SELECT test_accounts FROM demo.assessment_requests q WHERE q.id = demo.runs.request_id) AS test_accounts`;
+
+/** Claims the oldest queued retest with its finding's evidence and run pins (same tenant only). */
+const CLAIM_RETEST_SQL = `
+  WITH claimed AS (
+    UPDATE demo.finding_retests SET status = 'running', started_at = now()
+    WHERE id = (SELECT id FROM demo.finding_retests WHERE status = 'queued' ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1)
+    RETURNING id, finding_id, tenant_id
+  )
+  SELECT c.id AS retest_id, c.finding_id, f.evidence, f.oracle, r.id, r.tenant_id, r.request_id, r.pins, q.test_accounts
+  FROM claimed c
+  JOIN demo.findings f ON f.id = c.finding_id AND f.tenant_id = c.tenant_id
+  JOIN demo.runs r ON r.id = f.run_id AND r.tenant_id = c.tenant_id
+  JOIN demo.assessment_requests q ON q.id = r.request_id AND q.tenant_id = c.tenant_id`;
+
+/** A claimed row as the hunt's run: pins (what Gate 1 approved) plus the request row's test accounts. */
+function toHuntRun(row: ClaimedRow): HuntRun {
+  const pins = pinsSchema.parse(row.pins);
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    requestId: row.request_id,
+    assetId: pins.asset.id,
+    assetName: pins.asset.name,
+    objective: pins.request.objective,
+    scope: { allowedOrigins: pins.asset.allowedOrigins, excludedPaths: pins.asset.excludedPaths },
+    budgetRequests: pins.request.budget.requests,
+    budgetSeconds: pins.request.budget.seconds,
+    costCapUsd: pins.request.budget.costUsd,
+    intrusiveness: pins.request.intrusiveness,
+    testAccounts: testAccountsSchema.parse(row.test_accounts).map((a) => ({ role: a.role, headerName: a.header_name, headerValue: a.header_value })),
+    releaseProven: pins.request.releaseProven,
+    labOrigins: pins.asset.labOrigins,
+  };
+}
 
 const LEDGER_ACTOR = 'Blackwing';
 
@@ -89,24 +126,22 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
     async claimQueuedRun(): Promise<HuntRun | null> {
       const r = await pool.query<ClaimedRow>(CLAIM_SQL);
       const row = r.rows[0];
+      return row === undefined ? null : toHuntRun(row);
+    },
+    async claimQueuedRetest(): Promise<RetestJob | null> {
+      const r = await pool.query<ClaimedRow & { retest_id: string; finding_id: string; evidence: Record<string, unknown> | null; oracle: unknown }>(CLAIM_RETEST_SQL);
+      const row = r.rows[0];
       if (row === undefined) return null;
-      const pins = pinsSchema.parse(row.pins);
-      return {
-        id: row.id,
-        tenantId: row.tenant_id,
-        requestId: row.request_id,
-        assetId: pins.asset.id,
-        assetName: pins.asset.name,
-        objective: pins.request.objective,
-        scope: { allowedOrigins: pins.asset.allowedOrigins, excludedPaths: pins.asset.excludedPaths },
-        budgetRequests: pins.request.budget.requests,
-        budgetSeconds: pins.request.budget.seconds,
-        costCapUsd: pins.request.budget.costUsd,
-        intrusiveness: pins.request.intrusiveness,
-        testAccounts: testAccountsSchema.parse(row.test_accounts).map((a) => ({ role: a.role, headerName: a.header_name, headerValue: a.header_value })),
-        releaseProven: pins.request.releaseProven,
-        labOrigins: pins.asset.labOrigins,
-      };
+      const side = (key: string): unknown => (row.evidence?.[key] as { request?: unknown } | undefined)?.request;
+      // Only the probe replays and the control may be sent: one request each, nothing more.
+      const run = { ...toHuntRun(row), budgetRequests: REPLAYS + 1, budgetSeconds: RETEST_SECONDS };
+      return { id: row.retest_id, findingId: row.finding_id, run, probe: side('probe'), control: side('control'), oracle: row.oracle };
+    },
+    async finishRetest(id: string, result: RetestResult): Promise<void> {
+      await pool.query(
+        "UPDATE demo.finding_retests SET status = $2, result = $3, detail = $4, finished_at = now() WHERE id = $1 AND status = 'running'",
+        [id, result.status, result.result, JSON.stringify(result.detail)],
+      );
     },
     async failStaleRuns(): Promise<StaleRun[]> {
       const r = await pool.query<{ id: string; request_id: string; requests_used: number; cost_usd: string; findings: number }>(
@@ -115,6 +150,10 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
            (SELECT count(*)::int FROM demo.findings f WHERE f.run_id = r.id AND f.status IN ('confirmed', 'released')) AS findings`,
       );
       const ids = r.rows.map((row) => row.id);
+      await pool.query(
+        `UPDATE demo.finding_retests SET status = 'failed', finished_at = now(),
+           detail = jsonb_build_object('reason', 'The worker restarted during the retest.') WHERE status = 'running'`,
+      );
       await pool.query(
         "UPDATE demo.gate2_requests SET status = 'denied', decided_at = now(), close_reason = 'worker_restarted' WHERE run_id = ANY($1) AND status = 'pending'",
         [ids],

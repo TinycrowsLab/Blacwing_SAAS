@@ -6,10 +6,10 @@
 // once). R releases the issue you opened last, or else the first open one that still awaits release.
 import { startTransition, useEffect, useRef, useState } from 'react';
 
-import { buttonClass, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
+import { buttonClass, Chip, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
 import { IssueBody } from './issue-body';
-import { findingDetailSchema, type FindingDetail, type FindingSummary } from './model';
+import { findingDetailSchema, seenBeforeText, type FindingDetail, type FindingSummary } from './model';
 import { NavLink } from './nav-link';
 import {
   announceChange,
@@ -193,6 +193,7 @@ export function IssueList({
                 <span className="min-w-0 flex-1 basis-48 text-[15px] font-semibold leading-[22px] text-foreground">
                   {s.title}
                 </span>
+                {seenBeforeText(s) === null ? null : <Chip tone="neutral">{seenBeforeText(s)}</Chip>}
                 <span className="ml-auto flex items-center gap-2">
                   <IssueStatus status={status} pill={isOpen} />
                   <Icon

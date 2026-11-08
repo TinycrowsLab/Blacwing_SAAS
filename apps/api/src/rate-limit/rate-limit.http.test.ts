@@ -4,7 +4,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Controller, HttpCode, Module, Post } from '@nestjs/common';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createLogger } from '@blackwing/logger';
 
@@ -207,5 +207,48 @@ describe('rate limiting over HTTP', () => {
     expect((await createThing('bw_pat_fb', TENANT_A)).statusCode).toBe(429);
     const degraded = await registry.getSingleMetricAsString('rate_limit_degraded_total');
     expect(degraded).toMatch(/rate_limit_degraded_total 3/);
+  });
+});
+
+describe('rate limiting the console signed internal hop (BW_DEMO_MODE=1)', () => {
+  const TOKEN = 'k'.repeat(40);
+
+  beforeEach(async () => {
+    await app.close();
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('BW_DEMO_MODE', '1');
+    vi.stubEnv('BW_DEMO_INTERNAL_TOKEN', TOKEN);
+    vi.stubEnv('BW_DEMO_TENANT_ID', TENANT_A);
+    vi.stubEnv('DATABASE_URL', 'postgres://localhost/unused');
+    await boot();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // Every console user arrives from the web server's one address.
+  const asUser = (email: string, token = TOKEN) =>
+    app.inject({
+      method: 'GET',
+      url: '/v1',
+      remoteAddress: '127.0.0.1',
+      headers: { 'x-bw-demo-token': token, 'x-bw-demo-user': email },
+    });
+
+  it('gives each signed-in user a bucket of their own instead of one shared IP bucket', async () => {
+    expect((await asUser('a@acme.test')).statusCode).toBe(200);
+    expect((await asUser('A@acme.test')).statusCode).toBe(200);
+    expect((await asUser('a@acme.test')).statusCode).toBe(429);
+    // Another user from the same address is not throttled by the first one.
+    expect((await asUser('b@acme.test')).statusCode).toBe(200);
+    expect(await blockedCount('principal')).toBe(1);
+  });
+
+  it('keeps a wrong token on the IP bucket', async () => {
+    expect((await asUser('a@acme.test', 'w'.repeat(40))).statusCode).toBe(200);
+    expect((await asUser('b@acme.test', 'w'.repeat(40))).statusCode).toBe(200);
+    expect((await asUser('c@acme.test', 'w'.repeat(40))).statusCode).toBe(429);
+    expect(await blockedCount('ip')).toBe(1);
   });
 });

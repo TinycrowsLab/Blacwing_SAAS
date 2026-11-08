@@ -26,7 +26,7 @@ function VerifyPanel({
   readonly onVerified: (a: Asset) => void;
   readonly onClose: () => void;
 }) {
-  const [method, setMethod] = useState<ProofMethod>(() => recommendedProof(new URL(originOf(asset)).host));
+  const [method, setMethod] = useState<ProofMethod>(() => recommendedProof(new URL(originOf(asset)).host, asset));
   const [attested, setAttested] = useState(false);
   if (isVerified(asset)) {
     const origin = originOf(asset);

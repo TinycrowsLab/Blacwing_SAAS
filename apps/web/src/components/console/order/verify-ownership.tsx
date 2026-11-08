@@ -3,9 +3,9 @@
 // "Is {host} yours?" (experience spec §3.3 question 2): two whole-card choices. The file is checked by the API (the
 // only request that reaches the site before Gate 1, and only when asked); the attestation is one tick that composes
 // the statement for the person. Shared by the order and Targets.
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
-import { dayLabel, isVerified, originOf, RECOMMEND_PILL, recommendedProof } from './shared';
+import { attestationAllowed, dayLabel, isVerified, originOf, RECOMMEND_PILL, recommendedProof } from './shared';
 import { verifyTargetAction } from '../../../app/(console)/audits/actions';
 import { Icon, InlineMessage, RADIO_CLASS } from '../design';
 import { CopyField, PendingButton } from '../design-client';
@@ -107,6 +107,12 @@ export function VerifyOwnership({
 }) {
   const [checked, setChecked] = useState<{ ok: boolean; message: string } | null>(null);
   const [attestError, setAttestError] = useState<string | null>(null);
+  // The owner's word only where the API accepts it (an operator-listed lab); until the site is registered, unknown.
+  const canAttest = asset !== null && attestationAllowed(asset);
+  const fileOnly = asset !== null && !canAttest;
+  useEffect(() => {
+    if (fileOnly && method === 'attest') onMethod('file');
+  }, [fileOnly, method, onMethod]);
 
   if (asset !== null && isVerified(asset))
     return (
@@ -137,9 +143,10 @@ export function VerifyOwnership({
   const path = url === null ? null : new URL(url).pathname;
   const token = asset?.verification?.token ?? null;
   const origin = asset === null ? (knownOrigin ?? '') : originOf(asset);
-  const recommended = origin === '' ? 'file' : recommendedProof(new URL(origin).host);
+  // No badge before the API has registered the site: a refused address is never "recommended".
+  const recommended = asset === null || origin === '' ? null : recommendedProof(new URL(origin).host, asset);
   const recommendPill = (
-    <span className={RECOMMEND_PILL}>{recommended === 'attest' ? 'Recommended for local addresses' : 'Recommended'}</span>
+    <span className={RECOMMEND_PILL}>{recommended === 'attest' ? 'Recommended for this lab' : 'Recommended'}</span>
   );
 
   const check = async (): Promise<void> => {
@@ -164,7 +171,7 @@ export function VerifyOwnership({
   // one out from under the pointer.
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label="How to show the site is yours" className="grid gap-3 sm:grid-cols-2">
+      <div role="radiogroup" aria-label="How to show the site is yours" className={`grid gap-3 ${fileOnly ? '' : 'sm:grid-cols-2'}`}>
         <ChoiceCard
           name="proof"
           checked={method === 'file'}
@@ -176,6 +183,7 @@ export function VerifyOwnership({
           line="Anyone can check it, and it proves you control the server."
           index={showIndex ? 1 : undefined}
         />
+        {fileOnly ? null : (
         <ChoiceCard
           name="proof"
           checked={method === 'attest'}
@@ -191,7 +199,14 @@ export function VerifyOwnership({
           }
           index={showIndex ? 2 : undefined}
         />
+        )}
       </div>
+      {fileOnly ? (
+        <p className="m-0 text-[12.5px] leading-5 text-muted-foreground">
+          The owner&apos;s word is accepted only for labs your Blackwing operator listed. Put the file on the site to show
+          it is yours.
+        </p>
+      ) : null}
       {method === 'file' ? (
         <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-card p-4">
           <div className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[124px_minmax(0,1fr)]">

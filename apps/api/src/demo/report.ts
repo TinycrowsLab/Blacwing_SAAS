@@ -285,7 +285,7 @@ ${limitationsHtml}`,
 /** One run: the released findings only, as HTML, Markdown, JSON or SARIF. */
 export function renderRunReport(input: RunReportInput, format: RunReportFormat): RenderedReport {
   const { run, asset, request } = input;
-  const findings = input.findings.map(scrubFinding);
+  const findings = input.findings.map((f) => scrubFinding(f));
   const base = `run-${run.id.slice(0, ID_PREFIX_LENGTH)}`;
   const counts = Object.fromEntries(
     SEVERITIES.map((s) => [s, findings.filter((f) => severityOf(f.severity) === s).length]),

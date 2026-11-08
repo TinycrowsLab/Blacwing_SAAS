@@ -57,6 +57,8 @@ export interface Gate2Ask {
   /** "POST /api/Users as no test account", for notices. */
   readonly label: string;
   readonly agent: string;
+  /** The test case the ask was raised for, when the agent named one. */
+  readonly caseId: string | null;
   readonly deadlineAt: number;
   status: Gate2Status;
 }

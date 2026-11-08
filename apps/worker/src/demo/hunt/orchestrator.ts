@@ -203,8 +203,8 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
   if (halted.reason === 'killed') {
     await store.saveProgress(run.id, used.requestsUsed, used.costUsd);
     await closePendingAsks(ctx, 'killed');
-    await emitCoverage(ctx, 'killed');
     const haltMs = await store.markKilled(run);
+    await emitCoverage(ctx, 'killed');
     await log.emit('run.killed', 'control', `Run killed. Halt measured in ${haltMs} ms.`, { by: halted.killedBy, haltMs });
     return;
   }
@@ -242,10 +242,19 @@ export function caseOutcome(testCase: CaseState): 'executed' | 'skipped' | 'bloc
   return testCase.requests > 0 || testCase.candidates > 0 ? 'executed' : 'not_run';
 }
 
+/** A case that never ran because a human denied (or did not answer) the request it needed is `blocked`, saying which. */
+function caseResult(ctx: HuntContext, id: string, testCase: CaseState): { status: ReturnType<typeof caseOutcome>; note: string | null } {
+  const status = caseOutcome(testCase);
+  if (status !== 'not_run') return { status, note: testCase.note };
+  const refused = [...ctx.state.asks.values()].filter((a) => a.caseId === id && (a.status === 'denied' || a.status === 'expired'));
+  if (refused.length === 0) return { status, note: testCase.note };
+  return { status: 'blocked', note: refused.map((a) => `Gate 2 ${a.status === 'expired' ? 'got no answer' : 'denied'}: ${a.label}`).join('; ') };
+}
+
 /** The `coverage.summary` event data: what was and was not tested, and which test accounts were actually used. */
 export function coverageOf(ctx: HuntContext, endReason: string | null): Record<string, unknown> {
   return {
-    cases: [...ctx.state.cases].map(([id, c]) => ({ id, title: c.title, agent: c.agent, status: caseOutcome(c), note: c.note, requests: c.requests, candidates: c.candidates })),
+    cases: [...ctx.state.cases].map(([id, c]) => ({ id, title: c.title, agent: c.agent, ...caseResult(ctx, id, c), requests: c.requests, candidates: c.candidates })),
     rolesConfigured: ctx.run.testAccounts.map((a) => a.role),
     rolesUsed: Object.fromEntries(ctx.state.roleCounts),
     requestsSent: ctx.state.requestsUsed,
@@ -254,7 +263,7 @@ export function coverageOf(ctx: HuntContext, endReason: string | null): Record<s
 }
 
 async function emitCoverage(ctx: HuntContext, endReason: string | null): Promise<void> {
-  const cases = [...ctx.state.cases.values()].map((c) => caseOutcome(c));
+  const cases = [...ctx.state.cases].map(([id, c]) => caseResult(ctx, id, c).status);
   const count = (status: string): number => cases.filter((c) => c === status).length;
   const message = cases.length === 0
     ? 'Coverage: no test cases were recorded'

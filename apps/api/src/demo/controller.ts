@@ -477,6 +477,13 @@ export class DemoController {
     return this.service.triage(await this.actor(headers), uuid(id, 'finding'), body.decision, body.reason);
   }
 
+  /** Retest: the runner replays the proven probe and its control once more (state-changing probes excluded). */
+  @Post('findings/:id/replay')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async replay(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+    return this.service.requestRetest(await this.actor(headers), uuid(id, 'finding'));
+  }
+
   @Get('findings/:id/report')
   async report(
     @Headers() headers: RequestHeaders,

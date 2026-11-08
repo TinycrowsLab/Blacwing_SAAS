@@ -520,15 +520,7 @@ export class DemoService {
    * failure the asset goes back to unverified, the ledger records why, and the caller is refused.
    */
   private async recheckOwnership(actor: DemoActor, asset: AssetRow, at: 'gate1' | 'run_start' | 'retest'): Promise<void> {
-    let reason = await this.targetRefusal(asset.allowed_origins);
-    if (reason === null) {
-      reason =
-        asset.verification_method === 'http_token'
-          ? await this.wellKnownProblem(asset)
-          : assetIsLab(asset, this.origins)
-            ? null
-            : 'an owner attestation covers listed labs only, and this site is not one';
-    }
+    const reason = (await this.targetRefusal(asset.allowed_origins)) ?? (await this.proofProblem(asset));
     if (reason === null) return;
     const origin = new URL(asset.base_url).origin;
     const cause = reason.replace(/\.$/, '');
@@ -621,6 +613,14 @@ export class DemoService {
       lab,
     });
     return this.asset(id);
+  }
+
+  /** Why the recorded ownership proof no longer holds, in plain words, or null when it does. */
+  private async proofProblem(asset: AssetRow): Promise<string | null> {
+    if (asset.verification_method === 'http_token') return this.wellKnownProblem(asset);
+    return assetIsLab(asset, this.origins)
+      ? null
+      : 'an owner attestation covers listed labs only, and this site is not one';
   }
 
   /** What is wrong with the well-known proof of `asset`, in plain words, or null when it holds. */
@@ -1030,7 +1030,7 @@ export class DemoService {
       ...this.runView(row),
       lastSeq: events.at(-1)?.seq ?? afterSeq,
       // Suspected findings are for analysts only, so their events are too.
-      events: events.filter((e) => analyst || e.kind !== 'finding.suspected').map(eventDto),
+      events: events.filter((e) => analyst || e.kind !== 'finding.suspected').map((e) => eventDto(e)),
       findings: findings.map((f) => findingSummaryDto(f)),
       gate2: gate2.map((g) => gate2Dto(g, now)),
       stats,
@@ -1127,9 +1127,9 @@ export class DemoService {
         shortId: shortId(run.id),
         state: run.state,
         assetName: run.asset_name,
-        pins: run.pins,
+        pins: scrubDeep(run.pins),
         startedBy: run.started_by_name === null ? null : { id: run.created_by, name: run.started_by_name },
-        viewerIsRequester: viewer !== undefined && viewer.id === row.requester_id,
+        viewerIsRequester: viewer?.id === row.requester_id,
       },
     };
   }
@@ -1199,7 +1199,46 @@ export class DemoService {
     audit?: AuditRef,
   ): Promise<Record<string, unknown>> {
     const row = await this.finding(actor, id);
-    return findingDto(row, audit ?? (await this.store.latestAudit(this.tenantId, 'finding', id)));
+    const [latest, retests] = await Promise.all([
+      audit ?? this.store.latestAudit(this.tenantId, 'finding', id),
+      this.store.listRetests(this.tenantId, id, RETESTS_SHOWN),
+    ]);
+    return {
+      ...findingDto(row, latest),
+      retests: retests.map((r) => ({
+        id: r.id,
+        status: r.status,
+        result: r.result,
+        requestedBy: r.requested_by_name,
+        createdAt: r.created_at.toISOString(),
+        finishedAt: iso(r.finished_at),
+        detail: scrubDeep(r.detail),
+      })),
+    };
+  }
+
+  /**
+   * Asks the runner to replay a proven finding (probe and control) against the live site. Only probes that do not
+   * change state: anything else needs a human at Gate 2, so it needs a new audit. Ownership is rechecked first.
+   */
+  async requestRetest(actor: DemoActor, id: string): Promise<{ retestId: string; status: 'queued' }> {
+    requireRole(actor, ['appsec-engineer'], 'Only an AppSec engineer can retest a finding.');
+    const finding = await this.finding(actor, id);
+    if (finding.status !== 'confirmed' && finding.status !== 'released') {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_retestable', 'Only a proven finding can be retested.');
+    }
+    const evidence = finding.evidence as { probe?: { request?: { method?: unknown } }; control?: { request?: { method?: unknown } } };
+    const methods = [evidence.probe?.request?.method ?? finding.location.method, evidence.control?.request?.method];
+    if (methods.some((m, index) => (index === 0 || m !== undefined) && !(typeof m === 'string' && SAFE_METHODS.has(m.toUpperCase())))) {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'retest_needs_gate2', 'Run the audit again to retest this one.');
+    }
+    await this.recheckOwnership(actor, await this.assetRow(finding.asset_id), 'retest');
+    const retestId = newId();
+    if (!(await this.store.insertRetest({ id: retestId, tenant_id: this.tenantId, finding_id: id, requested_by: actor.id }))) {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'retest_in_progress', 'A retest of this finding is already under way.');
+    }
+    await this.audit(actor, 'finding.retest', 'finding', id, { retestId, runId: finding.run_id });
+    return { retestId, status: 'queued' };
   }
 
   /** Context the report needs: the finding, its run, asset and request. Only released findings are reported. */

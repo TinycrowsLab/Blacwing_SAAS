@@ -13,7 +13,7 @@ import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
 import { IssueStatus } from './issue-list';
 import { LocalTime } from './local-time';
-import { FINDING_STATUSES, SEVERITIES, type FindingSummary } from './model';
+import { FINDING_STATUSES, seenBeforeText, SEVERITIES, type FindingSummary } from './model';
 import { NavLink } from './nav-link';
 
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
@@ -352,6 +352,9 @@ export function FindingsTable({
                   <span className="text-[14.5px] font-medium leading-[21px] text-foreground">
                     {f.title}
                   </span>
+                  {seenBeforeText(f) === null ? null : (
+                    <span className="text-[12.5px] font-medium text-gold-ink">{seenBeforeText(f)}</span>
+                  )}
                   <span className="text-[12.5px] text-muted-foreground">
                     {[f.assetName, f.agent === null ? null : `found by the ${agentName(f.agent)}`]
                       .filter(Boolean)

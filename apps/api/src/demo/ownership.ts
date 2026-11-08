@@ -90,8 +90,13 @@ export function normaliseOrigin(value: string): string | null {
   }
 }
 
+const HTTP_PORT = 80;
+const HTTPS_PORT = 443;
+
 const hostOf = (url: URL): string => url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
-const portOf = (url: URL): number => (url.port === '' ? (url.protocol === 'https:' ? 443 : 80) : Number(url.port));
+/** The port an http(s) URL connects to (the scheme's default when none is written). */
+export const portOf = (url: URL): number =>
+  url.port === '' ? (url.protocol === 'https:' ? HTTPS_PORT : HTTP_PORT) : Number(url.port);
 
 /** The checks that need no DNS: Blackwing's own origins and metadata or link-local literals. */
 export function staticClass(origin: string, policy: OriginPolicy): 'platform' | 'forbidden' | null {

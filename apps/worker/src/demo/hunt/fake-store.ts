@@ -1,5 +1,5 @@
 // In-memory HuntStore for unit tests and the live smoke script. Not used by the product.
-import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RunControl, RunEvent, RunOutcome, StaleRun } from './types.js';
+import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun } from './types.js';
 
 const FAKE_KILL_HALT_MS = 5;
 
@@ -93,5 +93,14 @@ export class FakeStore implements HuntStore {
   markKilled(): Promise<number> {
     this.killedHaltMs = FAKE_KILL_HALT_MS;
     return Promise.resolve(FAKE_KILL_HALT_MS);
+  }
+  readonly retests: RetestJob[] = [];
+  readonly retestResults = new Map<string, RetestResult>();
+  claimQueuedRetest(): Promise<RetestJob | null> {
+    return Promise.resolve(this.retests.shift() ?? null);
+  }
+  finishRetest(id: string, result: RetestResult): Promise<void> {
+    this.retestResults.set(id, result);
+    return Promise.resolve();
   }
 }

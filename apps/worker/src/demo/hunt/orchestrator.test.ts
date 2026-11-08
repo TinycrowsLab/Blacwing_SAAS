@@ -78,6 +78,15 @@ describe('coverage', () => {
       endReason: 'request_budget',
     });
   });
+
+  it('marks a case blocked when the only request it needed was denied at Gate 2', () => {
+    const ctx = context();
+    ctx.state.cases.set('email', { ...base, status: 'executing' });
+    ctx.state.asks.set('g1', { id: 'g1', key: 'k', label: 'PUT /users/v1/name2/email as reader1', agent: 'authz-specialist', caseId: 'email', deadlineAt: 0, status: 'denied' });
+    expect(coverageOf(ctx, null).cases).toEqual([
+      { id: 'email', title: 't', agent: 'web-api-specialist', status: 'blocked', note: 'Gate 2 denied: PUT /users/v1/name2/email as reader1', requests: 0, candidates: 0 },
+    ]);
+  });
 });
 
 describe('toolGate (PreToolUse)', () => {

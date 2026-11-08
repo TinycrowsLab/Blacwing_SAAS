@@ -77,9 +77,14 @@ const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
 export const recommendedCare = (host: string): Care =>
   isPrivateHost(host) || STAGING.test(host.replace(/:\d+$/, '')) ? 'active_safe' : 'passive';
 
+/** The owner's word is accepted only where the API says so (an address the operator listed as a lab). */
+export const attestationAllowed = (a: Pick<Asset, 'verification'> | null): boolean =>
+  a?.verification?.methods.includes('owner_attestation') ?? true;
+
 /** Q2's recommendation: a file for a public site, the owner's word for a private one (a lab app may not serve files,
- * and the check comes from Blackwing's server, which may not reach it). */
-export const recommendedProof = (host: string): 'file' | 'attest' => (isPrivateHost(host) ? 'attest' : 'file');
+ * and the check comes from Blackwing's server, which may not reach it), but never a way the API does not accept. */
+export const recommendedProof = (host: string, asset: Pick<Asset, 'verification'> | null = null): 'file' | 'attest' =>
+  isPrivateHost(host) && attestationAllowed(asset) ? 'attest' : 'file';
 
 /** "Recommended" and the Q4 hints: a white pill with a gold ring, legible on a selected (gold-soft) card too. */
 export const RECOMMEND_PILL =
@@ -101,10 +106,13 @@ export const dayLabel = (iso: string): string =>
 export const isVerified = (a: Pick<Asset, 'ownership'>): boolean => a.ownership.status === 'verified';
 
 /**
- * A plan someone said yes to at Gate 1. The run moves the request on ('running', then 'completed', or back to
- * 'approved' after a stop), so anything past pending that is not a refusal was approved.
+ * A plan someone said yes to at Gate 1. The run moves the request on ('running', then 'completed', 'failed' or
+ * 'killed'), so anything past pending that is not a refusal was approved.
  */
 export const wasApproved = (status: string): boolean => status !== 'pending_gate1' && status !== 'rejected';
+
+/** The run of this approval stopped or failed: the approval is used up, and only a new plan can run again. */
+export const approvalEnded = (status: string): boolean => status === 'failed' || status === 'killed';
 
 /** The site's origin from what the API stored. */
 export const originOf = (a: Pick<Asset, 'baseUrl'>): string => {
