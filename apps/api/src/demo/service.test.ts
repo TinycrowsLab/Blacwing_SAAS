@@ -905,7 +905,7 @@ describe('clone with untried cases (P1-cov2)', () => {
     ]);
     await service.cloneRequest(engineer, 'q1', runId);
     expect(store.insertRequest).toHaveBeenCalledWith(expect.objectContaining({
-      objective: 'Look.\n\nContinue with the test cases left untried in audit 0197a5d0: SQL injection in search; Reflected XSS',
+      objective: 'Look.\n\nContinue with the test cases left untried in audit 00000001: SQL injection in search; Reflected XSS',
     }));
   });
 
