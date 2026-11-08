@@ -2,6 +2,7 @@
 // API is busy (429) or slow at that moment, the page still opens and the client loader keeps trying: a person who just
 // approved an audit never lands on an error page while it runs.
 import Link from 'next/link';
+import { cache, type ReactNode } from 'react';
 
 import { buttonClass } from '../../../../components/console/design';
 import { RunView, RunViewLoader } from '../../../../components/console/run-view';
@@ -10,7 +11,6 @@ import { getViewer } from '../../../../lib/auth';
 import { runSchema } from '../../../../lib/schemas';
 
 import type { Metadata } from 'next';
-import { cache, type ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 

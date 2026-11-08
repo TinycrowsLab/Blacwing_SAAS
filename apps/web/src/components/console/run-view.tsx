@@ -183,8 +183,12 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
       </span>
       {/* The card's colours for the same clock: gold, amber under 5 min, red with a pulse in the last minute. */}
       <span className={`font-semibold tabular-nums ${CLOCK_TONE[clock?.tone ?? 'normal']}`}>
-        {clock?.label ?? ''}
-        <span className="text-[11.5px] font-normal text-muted-foreground max-md:hidden"> left</span>
+        {clock === null ? null : (
+          <>
+            {clock.label}
+            <span className="text-[11.5px] font-normal text-muted-foreground max-md:hidden"> left</span>
+          </>
+        )}
       </span>
       <span className={buttonClass('primary', 'h-11 px-3.5 md:h-9')}>
         <span className="md:hidden">Decide</span>
@@ -749,7 +753,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             {copied ? 'Run id copied' : ''}
           </span>
         </div>
-        <div className="flex basis-full items-center gap-2.5 md:hidden">
+        {/* min-w-0: the pill truncates so liveness is never clipped at 390 px. */}
+        <div className="flex min-w-0 basis-full items-center gap-2.5 md:hidden">
           {statePillEl}
           {liveShown ? <Liveness tone={live.tone} text={live.text} short={live.short} /> : null}
         </div>

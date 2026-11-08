@@ -922,7 +922,7 @@ export function Gate2Card({
       className="overflow-hidden rounded-2xl border-[1.5px] border-gold-ink bg-card shadow-[0_10px_30px_rgba(138,99,16,.12)]"
     >
       <header className="flex min-h-10 items-center gap-2.5 border-b border-gold-line bg-gold-soft px-4 py-2">
-        <span className="flex items-center gap-2 text-[13px] font-semibold text-gold-ink">
+        <span className="flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold text-gold-ink">
           <Icon name="hand" size={15} />
           Your decision
         </span>
@@ -935,8 +935,9 @@ export function Gate2Card({
               suffix=""
               className={`text-[19px] leading-6 ${ink}`}
             />
-            <small className="text-[11.5px] text-muted-foreground">
-              left, then it&apos;s denied
+            {/* Phones keep the header on one line: "0:32 left". */}
+            <small className="whitespace-nowrap text-[11.5px] text-muted-foreground">
+              left<span className="max-sm:hidden">, then it&apos;s denied</span>
             </small>
           </span>
         )}
