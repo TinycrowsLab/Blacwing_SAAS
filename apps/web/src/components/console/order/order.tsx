@@ -235,7 +235,7 @@ export function Order({
       (carried === undefined || first === null
         ? undefined
         : { id: draftId, origin: first.origin, host: first.host, step: initialStep, answers: carried, savedAt: '' });
-    if (kept !== null && d !== undefined && d.step === initialStep && kept.step > initialStep) d.step = kept.step;
+    if (kept !== null && d?.step === initialStep && kept.step > initialStep) d.step = kept.step;
     if (d === undefined || (!restoreDraft && d.origin !== first?.origin)) return;
     const a = answersSchema.safeParse(d.answers);
     if (!a.success) return;

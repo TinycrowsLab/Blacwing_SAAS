@@ -5,7 +5,8 @@ import { getAsUser } from '../../../lib/post-route';
 
 export const dynamic = 'force-dynamic';
 
-const originSchema = z.url({ protocol: /^https?$/ }).max(2048);
+const MAX_URL = 2048;
+const originSchema = z.url({ protocol: /^https?$/ }).max(MAX_URL);
 const answerSchema = z.object({ refusal: z.string().nullable() });
 
 export function GET(request: Request): Promise<Response> {

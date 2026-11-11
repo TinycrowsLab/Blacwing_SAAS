@@ -1,5 +1,6 @@
 import './globals.css';
 import { THEME_INIT_SCRIPT } from '@blackwing/ui';
+
 import { Providers } from './providers';
 
 import type { Metadata } from 'next';

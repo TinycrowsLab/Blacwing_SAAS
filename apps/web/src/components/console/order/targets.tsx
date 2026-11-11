@@ -3,12 +3,20 @@
 // Targets (experience spec §2, §4, bug 13): the sites in this workspace. "Add target" runs the order's first two
 // steps inline; verification shows only for the row where the person picks Verify.
 import { useEffect, useState } from 'react';
-
 import { z } from 'zod';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { LocalTime } from './local-time';
-import { dayLabel, FORBIDDEN_MESSAGE, isForbiddenHost, isVerified, originOf, recommendedProof, refreshSidebar, unverifiableHost } from './shared';
+import {
+  dayLabel,
+  FORBIDDEN_MESSAGE,
+  isForbiddenHost,
+  isVerified,
+  originOf,
+  recommendedProof,
+  refreshSidebar,
+  unverifiableHost,
+} from './shared';
 import { type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { ensureTargetAction, removeTargetAction } from '../../../app/(console)/audits/actions';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
@@ -28,7 +36,9 @@ function VerifyPanel({
   readonly onVerified: (a: Asset) => void;
   readonly onClose: () => void;
 }) {
-  const [method, setMethod] = useState<ProofMethod>(() => recommendedProof(new URL(originOf(asset)).host, asset));
+  const [method, setMethod] = useState<ProofMethod>(() =>
+    recommendedProof(new URL(originOf(asset)).host, asset),
+  );
   const [attested, setAttested] = useState(false);
   if (isVerified(asset)) {
     const origin = originOf(asset);
@@ -42,8 +52,13 @@ function VerifyPanel({
             <Icon name="check" size={12} />
           </span>
           <span className="text-[13.5px] leading-5 text-foreground">
-            <b className="font-semibold">{asset.ownership.method === 'http_token' ? 'Found it. ' : ''}The site is verified as yours.</b>{' '}
-            <span className="text-muted-foreground">Blackwing may audit it once you approve a plan.</span>
+            <b className="font-semibold">
+              {asset.ownership.method === 'http_token' ? 'Found it. ' : ''}The site is verified as
+              yours.
+            </b>{' '}
+            <span className="text-muted-foreground">
+              Blackwing may audit it once you approve a plan.
+            </span>
           </span>
         </span>
         <LinkButton
@@ -54,7 +69,11 @@ function VerifyPanel({
           Start an audit of {new URL(origin).host}
           <Icon name="arrow" size={15} />
         </LinkButton>
-        <button type="button" onClick={onClose} className={buttonClass('ghost', 'h-10 max-sm:w-full')}>
+        <button
+          type="button"
+          onClick={onClose}
+          className={buttonClass('ghost', 'h-10 max-sm:w-full')}
+        >
           Close
         </button>
       </div>
@@ -96,7 +115,9 @@ const MAX_ORIGINS = 50;
 const isUnroutableHost = (host: string): boolean => /^(0(\.0){0,3}|\[::\])(:\d+)?$/.test(host);
 /** A loopback address on the port this console is served from. */
 const isOwnConsole = (host: string, port: string): boolean =>
-  port !== '' && /^(localhost|127(\.\d{1,3}){3}|\[::1\])$/i.test(host.replace(/:\d+$/, '')) && host.endsWith(`:${port}`);
+  port !== '' &&
+  /^(localhost|127(\.\d{1,3}){3}|\[::1\])$/i.test(host.replace(/:\d+$/, '')) &&
+  host.endsWith(`:${port}`);
 /** How long typing pauses before the API is asked about the address. */
 const ASK_PAUSE_MS = 350;
 const HTTP_BAD_REQUEST = 400;
@@ -105,10 +126,16 @@ const HTTP_TOO_MANY = 429;
 const HTTP_SERVER_ERROR = 500;
 /** A client-side refusal of the address itself (not a signed-out session, a busy server or an outage). */
 const isRefusal = (status: number): boolean =>
-  status >= HTTP_BAD_REQUEST && status < HTTP_SERVER_ERROR && status !== HTTP_UNAUTHORIZED && status !== HTTP_TOO_MANY;
+  status >= HTTP_BAD_REQUEST &&
+  status < HTTP_SERVER_ERROR &&
+  status !== HTTP_UNAUTHORIZED &&
+  status !== HTTP_TOO_MANY;
 
 /** Extra origins typed or pasted as a list, through the same forgiving normaliser as the site itself. */
-function addOrigins(raw: string, existing: readonly string[]): { values: readonly string[]; error: string | null } {
+function addOrigins(
+  raw: string,
+  existing: readonly string[],
+): { values: readonly string[]; error: string | null } {
   const values = [...existing];
   let error: string | null = null;
   for (const token of raw.split(/[\s,]+/).filter(Boolean)) {
@@ -150,9 +177,18 @@ function AddTarget({
     const ctrl = new AbortController();
     const timer = window.setTimeout(() => {
       void (async () => {
-        const res = await fetch(`/api/target-check?origin=${encodeURIComponent(askOrigin)}`, { cache: 'no-store', signal: ctrl.signal }).catch(() => null);
-        const parsed = res?.ok === true ? z.object({ refusal: z.string().nullable() }).safeParse(await res.json().catch(() => null)) : null;
-        if (parsed?.success === true && !ctrl.signal.aborted) setAsked({ origin: askOrigin, message: parsed.data.refusal });
+        const res = await fetch(`/api/target-check?origin=${encodeURIComponent(askOrigin)}`, {
+          cache: 'no-store',
+          signal: ctrl.signal,
+        }).catch(() => null);
+        const parsed =
+          res?.ok === true
+            ? z
+                .object({ refusal: z.string().nullable() })
+                .safeParse(await res.json().catch(() => null))
+            : null;
+        if (parsed?.success === true && !ctrl.signal.aborted)
+          setAsked({ origin: askOrigin, message: parsed.data.refusal });
       })();
     }, ASK_PAUSE_MS);
     return () => {
@@ -162,17 +198,16 @@ function AddTarget({
   }, [askOrigin]);
   const askedRefusal = typed.ok && asked?.origin === typed.origin ? asked.message : null;
   const refusal =
-    askedRefusal !== null
-      ? askedRefusal
-      : typed.ok && isForbiddenHost(typed.host)
+    askedRefusal ??
+    (typed.ok && isForbiddenHost(typed.host)
       ? FORBIDDEN_MESSAGE
       : typed.ok && isUnroutableHost(typed.host)
-        ? 'That is not an address a site can be reached at. Use the site\'s real address.'
+        ? "That is not an address a site can be reached at. Use the site's real address."
         : typed.ok && consoleHost !== null && isOwnConsole(typed.host, consoleHost.port)
           ? 'Blackwing cannot test its own console or API.'
           : refusedFor?.text === text
             ? refusedFor.message
-            : null;
+            : null);
   const result: TargetResult = refusal === null ? typed : { ok: false, message: refusal };
   const add = async (): Promise<boolean> => {
     setError(null);
@@ -201,7 +236,10 @@ function AddTarget({
     return true;
   };
   return (
-    <section aria-labelledby="add-target-h" className="flex flex-col gap-3 rounded-[16px] border border-gold-line bg-card p-4 sm:p-5">
+    <section
+      aria-labelledby="add-target-h"
+      className="flex flex-col gap-3 rounded-[16px] border border-gold-line bg-card p-4 sm:p-5"
+    >
       <h2 id="add-target-h" className="m-0 text-[15px] font-semibold text-foreground">
         Add a target
       </h2>
@@ -245,22 +283,28 @@ function AddTarget({
             placeholder="api.example.com, cdn.example.com"
           />
           <p className="m-0 text-[12.5px] text-muted-foreground">
-            Blackwing may send requests to these too, for example the app&apos;s API on its own address. Each one must
-            serve the same verification file before testing starts.
+            Blackwing may send requests to these too, for example the app&apos;s API on its own
+            address. Each one must serve the same verification file before testing starts.
           </p>
         </div>
       )}
       {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
       <div className="flex flex-wrap items-center gap-2.5">
         <span data-add-target className="contents">
-          <PendingButton onAction={add} disabled={text.trim() === '' || refusal !== null} pendingLabel="Adding…">
+          <PendingButton
+            onAction={add}
+            disabled={text.trim() === '' || refusal !== null}
+            pendingLabel="Adding…"
+          >
             Add target
           </PendingButton>
         </span>
         <button type="button" onClick={onCancel} className={buttonClass('ghost')}>
           Cancel
         </button>
-        <span className="text-[12px] text-muted-foreground">Nothing is sent to the site until you choose how to verify it.</span>
+        <span className="text-[12px] text-muted-foreground">
+          Nothing is sent to the site until you choose how to verify it.
+        </span>
       </div>
     </section>
   );
@@ -268,7 +312,10 @@ function AddTarget({
 
 const FIRST_STEPS = [
   { title: 'Add the address', body: 'The web app you want audited.' },
-  { title: "Prove it's yours", body: "A small file on the site, or your word for an internal system." },
+  {
+    title: "Prove it's yours",
+    body: 'A small file on the site, or your word for an internal system.',
+  },
   { title: 'Start an audit', body: 'Blackwing plans it; nothing runs until you approve.' },
 ] as const;
 
@@ -287,8 +334,8 @@ function FirstTarget({ onAdd }: { readonly onAdd: () => void }) {
           No targets yet.
         </h2>
         <p className="m-0 text-[13.5px] leading-[21px] text-muted-foreground">
-          A target is a web app Blackwing may audit. Add its address, then show it&apos;s yours. Nothing is sent to the site
-          until you choose how.
+          A target is a web app Blackwing may audit. Add its address, then show it&apos;s yours.
+          Nothing is sent to the site until you choose how.
         </p>
       </div>
       <ol className="m-0 grid w-full max-w-[640px] list-none gap-2.5 p-0 text-left sm:grid-cols-3">
@@ -304,7 +351,11 @@ function FirstTarget({ onAdd }: { readonly onAdd: () => void }) {
           </li>
         ))}
       </ol>
-      <button type="button" onClick={onAdd} className={buttonClass('primary', 'h-11 rounded-xl px-5')}>
+      <button
+        type="button"
+        onClick={onAdd}
+        className={buttonClass('primary', 'h-11 rounded-xl px-5')}
+      >
         <Icon name="plus" size={16} />
         Add target
       </button>
@@ -319,7 +370,13 @@ const byReadiness = (a: Asset, b: Asset): number =>
 /** One width for every row's action (Verify, Close, New audit), so the status column lines up. */
 const ACTION_WIDTH = 'sm:w-[112px]';
 
-export function Targets({ initial, viewerName }: { readonly initial: readonly Asset[]; readonly viewerName: string }) {
+export function Targets({
+  initial,
+  viewerName,
+}: {
+  readonly initial: readonly Asset[];
+  readonly viewerName: string;
+}) {
   const [assets, setAssets] = useState<readonly Asset[]>(() => [...initial].sort(byReadiness));
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
@@ -344,25 +401,34 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
   const justVerified = open !== null && assets.some((a) => a.id === open && isVerified(a));
   useEffect(() => {
     if (again === null) return;
-    document.getElementById(`target-${again}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    document
+      .getElementById(`target-${again}`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [again]);
   // An opened Verify panel comes fully into view (a row low on the page would open below the fold).
   useEffect(() => {
     if (open === null) return;
-    document.getElementById(`target-${open}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    document
+      .getElementById(`target-${open}`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [open]);
 
   const upsert = (a: Asset): void => {
-    setAssets((list) => (list.some((x) => x.id === a.id) ? list.map((x) => (x.id === a.id ? a : x)) : [a, ...list]));
+    setAssets((list) =>
+      list.some((x) => x.id === a.id) ? list.map((x) => (x.id === a.id ? a : x)) : [a, ...list],
+    );
   };
 
   return (
     <div className="mx-auto flex w-full max-w-[780px] flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <h1 className="m-0 text-[28px] font-semibold leading-[36px] tracking-[-0.01em] text-foreground">Targets</h1>
+          <h1 className="m-0 text-[28px] font-semibold leading-[36px] tracking-[-0.01em] text-foreground">
+            Targets
+          </h1>
           <p className="m-0 text-[14.5px] text-muted-foreground">
-            The sites in this workspace. Blackwing audits only the ones you&apos;ve proven are yours.
+            The sites in this workspace. Blackwing audits only the ones you&apos;ve proven are
+            yours.
           </p>
         </div>
         {adding || assets.length === 0 ? null : (
@@ -418,7 +484,10 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                 className={`overflow-hidden rounded-[14px] border bg-card transition-shadow ${again === a.id ? 'border-gold-ink shadow-[0_0_0_3px_var(--gold-line)]' : 'border-border'}`}
               >
                 {again === a.id ? (
-                  <p role="status" className="m-0 flex items-center gap-2 border-b border-gold-line bg-gold-soft px-4 py-2 text-[12.5px] text-gold-ink sm:px-5">
+                  <p
+                    role="status"
+                    className="m-0 flex items-center gap-2 border-b border-gold-line bg-gold-soft px-4 py-2 text-[12.5px] text-gold-ink sm:px-5"
+                  >
                     <Icon name="info" size={13} />
                     You already added this site{isVerified(a) ? ', and it is verified' : ''}.
                   </p>
@@ -428,17 +497,24 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     <Icon name="web" size={18} />
                   </span>
                   <span className="flex min-w-0 flex-1 basis-[220px] flex-col gap-0.5">
-                    <span className="truncate text-[14.5px] font-semibold text-foreground">{a.name}</span>
-                    <span className="truncate font-mono text-[12px] text-muted-foreground">{origin}</span>
+                    <span className="truncate text-[14.5px] font-semibold text-foreground">
+                      {a.name}
+                    </span>
+                    <span className="truncate font-mono text-[12px] text-muted-foreground">
+                      {origin}
+                    </span>
                     {a.allowedOrigins.some((o) => o !== origin) ? (
                       <span className="truncate text-[12px] text-muted-foreground">
                         Also calls:{' '}
-                        <span className="font-mono">{a.allowedOrigins.filter((o) => o !== origin).join(', ')}</span>
+                        <span className="font-mono">
+                          {a.allowedOrigins.filter((o) => o !== origin).join(', ')}
+                        </span>
                       </span>
                     ) : null}
                     {a.excludedPaths.length === 0 ? null : (
                       <span className="truncate text-[12px] text-muted-foreground">
-                        Always avoided: <span className="font-mono">{a.excludedPaths.join(', ')}</span>
+                        Always avoided:{' '}
+                        <span className="font-mono">{a.excludedPaths.join(', ')}</span>
                       </span>
                     )}
                   </span>
@@ -461,7 +537,9 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                       // Who on one line, the day on its own: a date never breaks across lines.
                       <span className="flex flex-col text-[11.5px] text-muted-foreground sm:items-end">
                         <span>
-                          {a.ownership.method === 'http_token' ? 'Verified with a file' : 'Confirmed'}
+                          {a.ownership.method === 'http_token'
+                            ? 'Verified with a file'
+                            : 'Confirmed'}
                           {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`}
                         </span>
                         <span className="whitespace-nowrap">
@@ -501,15 +579,14 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5"
                   >
                     <p className="m-0 text-[13.5px] text-foreground">
-                      Remove <b className="font-semibold">{a.name}</b> from this workspace? Past audits and the ledger keep
-                      their record of it. You can add it again later.
+                      Remove <b className="font-semibold">{a.name}</b> from this workspace? Past
+                      audits and the ledger keep their record of it. You can add it again later.
                     </p>
-                    {removeError === null ? null : <InlineMessage tone="bad">{removeError}</InlineMessage>}
+                    {removeError === null ? null : (
+                      <InlineMessage tone="bad">{removeError}</InlineMessage>
+                    )}
                     <div className="flex flex-wrap gap-2.5">
-                      <PendingButton
-                        onAction={() => remove(a.id)}
-                        pendingLabel="Removing…"
-                      >
+                      <PendingButton onAction={() => remove(a.id)} pendingLabel="Removing…">
                         Remove target
                       </PendingButton>
                       <button
