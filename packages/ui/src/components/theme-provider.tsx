@@ -3,8 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import * as React from 'react';
 
-/** localStorage key of the persisted choice (next-themes default); client-only, never sent to a server. */
-export const THEME_STORAGE_KEY = 'bw-theme';
+import { THEME_STORAGE_KEY } from '../theme-init';
 
 export type ThemeProviderProps = Omit<
   React.ComponentProps<typeof NextThemesProvider>,

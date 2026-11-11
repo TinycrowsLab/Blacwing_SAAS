@@ -143,7 +143,7 @@ export { QueryState, type QueryStateProps } from './components/states/query-stat
 export { useTheme } from 'next-themes';
 export { ModeToggle } from './components/mode-toggle';
 export {
-  THEME_STORAGE_KEY,
   ThemeProvider,
   type ThemeProviderProps,
 } from './components/theme-provider';
+export { THEME_INIT_SCRIPT, THEME_STORAGE_KEY } from './theme-init';

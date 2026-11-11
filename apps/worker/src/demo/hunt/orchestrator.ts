@@ -170,6 +170,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
       .then(async (control) => {
         ctx.state.paused = control.paused;
         if (control.kill !== null && halted.reason === null) {
+          logger.info({ event: 'dbg.detected', t: Date.now() }, 'dbg');
           halted.reason = 'killed';
           halted.killedBy = control.kill.by;
           abort.abort();
@@ -237,8 +238,10 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
 
   const used = { requestsUsed: ctx.state.requestsUsed, costUsd: router.totalCost };
   if (halted.reason === 'killed') {
+    logger.info({ event: 'dbg.afterloop', t: Date.now() }, 'dbg');
     await store.saveProgress(run.id, used.requestsUsed, used.costUsd);
     await closePendingAsks(ctx, 'killed');
+    logger.info({ event: 'dbg.beforeMark', t: Date.now() }, 'dbg');
     const haltMs = await store.markKilled(run);
     await emitCoverage(ctx, 'killed');
     await log.emit('run.killed', 'control', `Run killed. Halt measured in ${haltMs} ms.`, { by: halted.killedBy, haltMs });
