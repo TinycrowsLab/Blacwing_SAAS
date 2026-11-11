@@ -53,8 +53,8 @@ export default async function FindingsPage(): Promise<ReactNode> {
         </h1>
         <p className="m-0 max-w-[68ch] text-[14px] leading-[22px] text-muted-foreground">
           {items.length === 0
-            ? 'The issues Claude finds on your sites appear here.'
-            : 'Every issue Claude’s team raised. Proven ones were replayed with a control; kept-back ones were not proven and stay off reports unless you release them.'}
+            ? 'The issues Blackwing finds on your sites appear here.'
+            : 'Every issue Blackwing’s team raised. Proven ones were replayed with a control; kept-back ones were not proven and stay off reports unless you release them.'}
         </p>
       </div>
 
@@ -62,7 +62,7 @@ export default async function FindingsPage(): Promise<ReactNode> {
         <EmptyState
           icon="findings"
           title="No findings yet."
-          body="Start an audit of a site you own. Each issue Claude proves shows up here, ready for you to release."
+          body="Start an audit of a site you own. Each issue Blackwing proves shows up here, ready for you to release."
           action={
             <LinkButton href="/audits/new" variant="primary" icon="plus">
               New audit

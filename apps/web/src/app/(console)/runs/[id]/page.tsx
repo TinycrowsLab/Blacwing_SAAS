@@ -1,4 +1,4 @@
-// Watch Claude work (experience spec §5). The first render is server-side; the client polls the run route. When the
+// Watch Blackwing work (experience spec §5). The first render is server-side; the client polls the run route. When the
 // API is busy (429) or slow at that moment, the page still opens and the client loader keeps trying: a person who just
 // approved an audit never lands on an error page while it runs.
 import Link from 'next/link';

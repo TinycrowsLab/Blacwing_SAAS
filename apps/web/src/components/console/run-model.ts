@@ -370,8 +370,17 @@ export interface Candidate {
   readonly title: string;
   readonly severity: string;
   readonly status:
-    'validating' | 'confirmed' | 'released' | 'suspected' | 'dismissed' | 'not_confirmed';
+    | 'validating'
+    | 'confirmed'
+    | 'released'
+    | 'suspected'
+    | 'dismissed'
+    | 'not_confirmed'
+    | 'merged'
+    | 'unfinished';
   readonly replays: number;
+  /** Title of the finding this candidate was merged into (status `merged`), else null. */
+  readonly mergedInto?: string | null;
   readonly findingId: string | null;
   /** The validator confirmed it (a `finding.confirmed` event): stays true whatever a person decides at Gate 3. */
   readonly proven: boolean;
@@ -386,7 +395,10 @@ const CANDIDATE_STATUS: Readonly<Record<string, Candidate['status']>> = {
 };
 
 /** Candidate findings come from validator events, so unconfirmed ones show too. Gate 3 events may carry only a findingId. */
-export function candidates(events: readonly RunEvent[]): Candidate[] {
+export function candidates(
+  events: readonly RunEvent[],
+  opts: { readonly terminal?: boolean; readonly findings?: readonly { readonly title: string }[] } = {},
+): Candidate[] {
   const byId = new Map<string, Candidate>();
   for (const e of events) {
     const findingId = str(e.data.findingId) || null;
@@ -407,6 +419,13 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
         replays: 0,
         findingId: null,
         proven: false,
+      });
+    } else if (prev && e.kind === 'candidate.merged') {
+      byId.set(id, {
+        ...prev,
+        status: 'merged',
+        findingId: findingId ?? prev.findingId,
+        mergedInto: str(e.data.findingTitle) || str(e.data.into) || null,
       });
     } else if (prev && e.kind === 'validator.replay') {
       byId.set(id, { ...prev, replays: Math.max(prev.replays, num(e.data.n)) });
@@ -433,7 +452,18 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
     else continue;
     byKey.set(key, c);
   }
-  return out;
+  // A finished or stopped run never proves anything more: a candidate with no outcome is not "Proving". It was merged
+  // into the finding for the same path when there is one, else it did not finish.
+  if (opts.terminal !== true) return out;
+  return out.map((c) => {
+    if (c.status !== 'validating') return c;
+    const path = /\/[^\s)]*/.exec(c.title)?.[0];
+    const into =
+      path === undefined ? undefined : opts.findings?.find((f) => f.title.includes(path) && f.title !== c.title);
+    return into === undefined
+      ? { ...c, status: 'unfinished' as const }
+      : { ...c, status: 'merged' as const, mergedInto: into.title };
+  });
 }
 
 export type CaseStatus = 'executed' | 'executing' | 'proposed' | 'skipped' | 'blocked' | 'model_declined';
@@ -527,7 +557,7 @@ export function auditLine(audit: { eventId: string; hash: string } | null): stri
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Watch Claude work (experience spec §5): the conversation, the stage spine and the team map, all derived from the
+// Watch Blackwing work (experience spec §5): the conversation, the stage spine and the team map, all derived from the
 // run's events. Nothing here invents a step: an item exists only because an event says so.
 
 /** The validator replays every probe this many times (worker hunt/validator.ts). */
@@ -1048,7 +1078,7 @@ export function stages(
   const reconTasks = delegations(events).filter((x) => x.to === 'recon').length;
   const planTotal = num(events.findLast((e) => e.kind === 'plan.cases')?.data.total);
   const plan = testCases(events);
-  const cands = candidates(events);
+  const cands = candidates(events, { terminal: opts.terminal });
   const proven = cands.filter((c) => c.proven).length;
   const tested = events.some(
     (e) =>
@@ -1146,7 +1176,7 @@ export const isOpenGate2 = (g: Gate2, nowMs: number): boolean =>
   g.status === 'pending' && (nowMs === 0 || Date.parse(g.deadlineAt) > nowMs);
 
 /**
- * Claude's team map (spec §5.2 item 3): only agents in the `run.started` manifest are drawn. Waiting beats working: a
+ * Blackwing's team map (spec §5.2 item 3): only agents in the `run.started` manifest are drawn. Waiting beats working: a
  * pending Gate 2 for the agent makes it gold. Done means every delegation to it has a reply (or the run is over).
  */
 export function teamNodes(
@@ -1161,7 +1191,7 @@ export function teamNodes(
 ): Team {
   const agents = manifest(events);
   const tasks = delegations(events);
-  const cands = candidates(events);
+  const cands = candidates(events, { terminal });
   const proven = cands.filter((c) => c.proven).length;
   const openAsks = gate2.filter((g) => isOpenGate2(g, nowMs));
   const blocking = new Set(blockingAsks(events, openAsks).map((g) => g.id));

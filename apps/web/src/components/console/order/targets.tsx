@@ -43,7 +43,7 @@ function VerifyPanel({
           </span>
           <span className="text-[13.5px] leading-5 text-foreground">
             <b className="font-semibold">{asset.ownership.method === 'http_token' ? 'Found it. ' : ''}The site is verified as yours.</b>{' '}
-            <span className="text-muted-foreground">Claude may audit it once you approve a plan.</span>
+            <span className="text-muted-foreground">Blackwing may audit it once you approve a plan.</span>
           </span>
         </span>
         <LinkButton
@@ -245,7 +245,7 @@ function AddTarget({
             placeholder="api.example.com, cdn.example.com"
           />
           <p className="m-0 text-[12.5px] text-muted-foreground">
-            Claude may send requests to these too, for example the app&apos;s API on its own address. Each one must
+            Blackwing may send requests to these too, for example the app&apos;s API on its own address. Each one must
             serve the same verification file before testing starts.
           </p>
         </div>
@@ -269,7 +269,7 @@ function AddTarget({
 const FIRST_STEPS = [
   { title: 'Add the address', body: 'The web app you want audited.' },
   { title: "Prove it's yours", body: "A small file on the site, or your word for an internal system." },
-  { title: 'Start an audit', body: 'Claude plans it; nothing runs until you approve.' },
+  { title: 'Start an audit', body: 'Blackwing plans it; nothing runs until you approve.' },
 ] as const;
 
 /** No targets yet: what a target is, how proving it works, and the one way forward. */
@@ -287,7 +287,7 @@ function FirstTarget({ onAdd }: { readonly onAdd: () => void }) {
           No targets yet.
         </h2>
         <p className="m-0 text-[13.5px] leading-[21px] text-muted-foreground">
-          A target is a web app Claude may audit. Add its address, then show it&apos;s yours. Nothing is sent to the site
+          A target is a web app Blackwing may audit. Add its address, then show it&apos;s yours. Nothing is sent to the site
           until you choose how.
         </p>
       </div>
@@ -362,7 +362,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
         <div className="flex flex-col gap-1.5">
           <h1 className="m-0 text-[28px] font-semibold leading-[36px] tracking-[-0.01em] text-foreground">Targets</h1>
           <p className="m-0 text-[14.5px] text-muted-foreground">
-            The sites in this workspace. Claude audits only the ones you&apos;ve proven are yours.
+            The sites in this workspace. Blackwing audits only the ones you&apos;ve proven are yours.
           </p>
         </div>
         {adding || assets.length === 0 ? null : (

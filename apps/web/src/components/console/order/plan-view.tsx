@@ -38,8 +38,8 @@ const ANSWERED = [1, 2, 3, 4] as const; // eslint-disable-line @typescript-eslin
 
 const FIELD_LABEL: Record<PlanField, string> = {
   host: 'The site',
-  objective: 'What Claude looks for',
-  intrusiveness: 'How careful Claude is',
+  objective: 'What Blackwing looks for',
+  intrusiveness: 'How careful Blackwing is',
   paths: 'Paths to avoid',
   accounts: 'Signed-in testing',
   limits: 'Limits',
@@ -71,7 +71,7 @@ function valuesOf(r: AssessmentRequest): Values {
 const NEXT_STEPS = (auto: boolean): readonly { title: string; voice: Voice; body: string }[] =>
   [
     { title: 'You approve', voice: 'you', body: 'Your reason goes on the ledger.' },
-    { title: 'Claude maps the site', voice: 'claude', body: 'Recon, then the planner writes test cases you can read.' },
+    { title: 'Blackwing maps the site', voice: 'claude', body: 'Recon, then the planner writes test cases you can read.' },
     { title: 'Testing, live', voice: 'claude', body: 'You watch the agents talk. Risky requests wait for you.' },
     auto
       ? { title: 'Proof, then release', voice: 'blackwing', body: 'Each issue is replayed with a control. Proven ones are released, as you chose.' }
@@ -438,13 +438,13 @@ export function PlanView({
         ) : null}
         {conflicts.excluded.length > 0 ? (
           <InlineMessage tone="gold">
-            What Claude looks for names {conflicts.excluded.join(', ')}, which the plan excludes. The agents stay out of it
+            What Blackwing looks for names {conflicts.excluded.join(', ')}, which the plan excludes. The agents stay out of it
             anyway.
           </InlineMessage>
         ) : null}
         {conflicts.hosts.length > 0 ? (
           <InlineMessage tone="gold">
-            What Claude looks for names {conflicts.hosts.length === 1 ? 'another address' : 'other addresses'} (
+            What Blackwing looks for names {conflicts.hosts.length === 1 ? 'another address' : 'other addresses'} (
             {conflicts.hosts.join(', ')}). Only {host} is in scope: requests anywhere else are blocked.
           </InlineMessage>
         ) : null}

@@ -154,7 +154,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
           Decisions
         </h1>
         <p className="m-0 text-[14px] leading-[22px] text-muted-foreground">
-          What waits for you. Requests with a deadline come first. Claude never decides these for
+          What waits for you. Requests with a deadline come first. Blackwing never decides these for
           you.
         </p>
       </header>
@@ -170,7 +170,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
         <EmptyState
           icon="check"
           title="Nothing needs you right now."
-          body="When Claude asks to send a request that changes data, a plan waits for your approval, or an issue is ready for your review, it shows up here."
+          body="When Blackwing asks to send a request that changes data, a plan waits for your approval, or an issue is ready for your review, it shows up here."
           action={
             <LinkButton href="/audits/new" icon="plus">
               New audit
@@ -241,7 +241,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 href="/findings?status=suspected"
                 lead={<Icon name="eye" size={16} className="shrink-0 text-muted-foreground" />}
                 title={`${keptBack} kept back, not proven`}
-                sub="Optional · Claude raised them but the validator could not prove them"
+                sub="Optional · Blackwing AI raised them but the validator could not prove them"
               />
             )}
           </ul>

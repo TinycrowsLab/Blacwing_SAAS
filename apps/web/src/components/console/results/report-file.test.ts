@@ -114,9 +114,9 @@ describe('run report file', () => {
     expect(md).toContain('**Test cases:** 1 of 4 planned test cases ran');
     expect(md).toContain('- **Basket IDOR:** Not tried: the time limit came first');
     expect(md).toContain('- **Admin page:** Blocked: needed a denied POST');
-    expect(md).toContain('- **Account takeover:** Declined by Claude: out of the agreed scope');
+    expect(md).toContain('- **Account takeover:** Declined by Blackwing AI: out of the agreed scope');
     expect(md).toContain('- **/setup.php:** Left out on purpose: the plan excluded these paths');
-    expect(md).toContain('Claude’s own note (not verified):');
+    expect(md).toContain('Blackwing AI’s own note (not verified):');
     expect(md).not.toContain('eyJhbGciOiJIUzI1NiJ9');
     expect(md).not.toContain('Tested A.');
     const none = reportSourceSchema.parse({ ...raw, request: { ...raw.request, testAccounts: [{ role: 'alice' }] }, coverage: { cases: [], rolesUsed: {} } });

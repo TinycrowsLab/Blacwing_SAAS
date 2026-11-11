@@ -1,4 +1,4 @@
-// Which audit asked (target name, start time, whose audit it is), what Claude asked with (the request body and the
+// Which audit asked (target name, start time, whose audit it is), what Blackwing asked with (the request body and the
 // test-account role) and the audit's other Gate 2 requests (so a second ask says what was decided before). The Gate 2
 // answer carries the asker's details itself; the run's gate2.requested events are the fallback for older requests.
 // An owner that could not be read is said to be unknown, never guessed. Server only: shared by the Decisions inbox and

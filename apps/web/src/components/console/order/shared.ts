@@ -14,7 +14,7 @@ export const refreshSidebar = (): void => {
   window.dispatchEvent(new Event('bw:refresh'));
 };
 
-/** What Claude looks for (Q3). `phrase` composes the objective and must start lower-case (it is read mid-sentence). */
+/** What Blackwing looks for (Q3). `phrase` composes the objective and must start lower-case (it is read mid-sentence). */
 export const FOCUS_CHIPS = [
   { key: 'access', label: 'Who can see whose data', hint: 'access control, IDOR', phrase: 'broken access control' },
   { key: 'login', label: 'Login and sessions', hint: 'sign-in, tokens, session handling', phrase: 'weak login and session handling' },

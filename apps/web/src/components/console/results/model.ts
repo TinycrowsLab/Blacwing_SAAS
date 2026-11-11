@@ -205,7 +205,7 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone:
   const rest = cases.total - cases.executed - cases.skipped - cases.blocked;
   return [
     blocked,
-    cases.skipped > 0 && !planDone ? `${cases.skipped} ${were(cases.skipped)} skipped by Claude` : null,
+    cases.skipped > 0 && !planDone ? `${cases.skipped} ${were(cases.skipped)} skipped by Blackwing AI` : null,
     rest > 0 ? `${rest} ${were(rest)} not tried` : null,
   ].filter((x): x is string => x !== null);
 }
@@ -215,13 +215,13 @@ const NOT_RUN_BECAUSE: Readonly<Record<string, string>> = {
   duration_budget: 'the time limit came first',
   request_budget: 'the request budget ran out first',
   cost_cap: 'the spend cap came first',
-  max_turns: 'Claude reached its turn limit first',
+  max_turns: 'Blackwing reached its turn limit first',
 };
 
 const NOTE_MAX = 1200;
 
 /**
- * Claude's own "what was not covered" from its run summary (the part after a line that says so), scrubbed and clipped.
+ * Blackwing AI's own "what was not covered" from its run summary (the part after a line that says so), scrubbed and clipped.
  * The rest of the summary never goes in: it is written about suspected and dismissed issues too.
  */
 function claudeNotCovered(summary: string | null): string | null {
@@ -231,7 +231,7 @@ function claudeNotCovered(summary: string | null): string | null {
   if (at === -1) return null;
   const rest: string[] = [];
   for (const [i, line] of lines.slice(at).entries()) {
-    // The note ends at the next heading, however Claude marked it (#, a bold line, or a short "Title:" line): what
+    // The note ends at the next heading, however Blackwing marked it (#, a bold line, or a short "Title:" line): what
     // follows is about confirmed, suspected or dismissed issues and must never reach a report.
     if (i > 0 && (/^\s*#/.test(line) || /^\s*(\*\*|__)[^*_]+(\*\*|__):?\s*$/.test(line) || /^\s*[A-Z][^.:]{0,60}:\s*$/.test(line))) break;
     rest.push(line);
@@ -260,7 +260,7 @@ export interface NotTested {
   /** False when the runner recorded no coverage for this run (older runs): the rows then hold only what the plan says. */
   readonly recorded: boolean;
   readonly rows: readonly { readonly what: string; readonly why: string }[];
-  /** Claude's own "not covered" from its run summary (not verified), or null. */
+  /** Blackwing AI's own "not covered" from its run summary (not verified), or null. */
   readonly note: string | null;
 }
 
@@ -278,17 +278,17 @@ export function notTested(input: {
   const ended =
     typeof endReason === 'string' && endReason !== ''
       ? (NOT_RUN_BECAUSE[endReason] ?? 'the run stopped with an error first')
-      : 'Claude ended the audit before trying it';
+      : 'Blackwing ended the audit before trying it';
   const rows: { what: string; why: string }[] = (coverage?.cases ?? []).flatMap((c) => {
     if (c.status === 'executed') return [];
     const note = c.note === null || c.note.trim() === '' ? null : plainGate(scrub(c.note.trim()));
     const why =
       c.status === 'skipped'
-        ? `Skipped: ${note ?? 'Claude judged it not relevant'}`
+        ? `Skipped: ${note ?? 'Blackwing AI judged it not relevant'}`
         : c.status === 'blocked'
           ? `Blocked: ${note ?? 'a request it needed was refused or denied'}`
           : c.status === 'model_declined'
-            ? `Declined by Claude: ${note ?? 'no reason given'}`
+            ? `Declined by Blackwing AI: ${note ?? 'no reason given'}`
             : `Not tried: ${ended}`;
     return [{ what: scrub(c.title) || c.id, why }];
   });
@@ -304,7 +304,7 @@ const listWords = (parts: readonly string[]): string =>
     : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
 
 /**
- * Why a completed run ended, always as a sentence about Claude (the run page's template, lib/host-lines): the runner's
+ * Why a completed run ended, always as a sentence about Blackwing (the run page's template, lib/host-lines): the runner's
  * reason (time limit, request budget, spend cap), then how far it got through its plan and why the rest did not run.
  */
 function completedWhy(
@@ -313,11 +313,11 @@ function completedWhy(
   run: Pick<Run, 'events' | 'gate2'> & Partial<Pick<Run, 'summary'>>,
 ): { text: string; complete: boolean } {
   const why = finishedWhy(reason, cases ?? null);
-  // A plan that ran in full is still not "complete" when Claude itself names what it did not cover: no green tick.
+  // A plan that ran in full is still not "complete" when Blackwing AI itself names what it did not cover: no green tick.
   if (why.complete && claudeNotCovered(run.summary ?? null) !== null)
-    return { text: `${why.text}; Claude names what it did not cover below`, complete: false };
-  // "finished its plan … and skipped N" already names the skips; the not-tested list gives Claude's reasons.
-  const rest = cases === undefined || why.complete ? [] : notRun(cases, run, why.text.startsWith('Claude finished its plan'));
+    return { text: `${why.text}; Blackwing AI names what it did not cover below`, complete: false };
+  // "finished its plan … and skipped N" already names the skips; the not-tested list gives Blackwing AI's reasons.
+  const rest = cases === undefined || why.complete ? [] : notRun(cases, run, why.text.startsWith('Blackwing finished its plan'));
   return { text: `${why.text}${rest.length === 0 ? '' : `; ${listWords(rest)}`}`, complete: why.complete };
 }
 

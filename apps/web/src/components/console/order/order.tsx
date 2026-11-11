@@ -512,14 +512,14 @@ export function Order({
           : 'We only test sites you can show you control. Pick the way that suits you.',
     },
     3: {
-      h1: 'What should Claude look for?',
+      h1: 'What should Blackwing look for?',
       lede: "Pick areas to focus on, or keep the broad OWASP sweep. I'll turn your choice into the objective, and you can change it on the plan.",
     },
     4: {
-      h1: 'How careful should Claude be?',
+      h1: 'How careful should Blackwing be?',
       lede: (
         <>
-          How Claude&apos;s agents may touch{' '}
+          How Blackwing&apos;s agents may touch{' '}
           <b className="font-medium text-foreground">
             <Host text={host} after="." />
           </b>

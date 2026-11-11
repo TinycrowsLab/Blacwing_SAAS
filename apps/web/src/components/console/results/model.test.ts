@@ -148,12 +148,12 @@ describe('duration and stopLine', () => {
       ),
     ).toEqual({
       tone: 'warn',
-      text: 'Finished in 18m 12s · Claude stopped at the time limit',
+      text: 'Finished in 18m 12s · Blackwing stopped at the time limit',
     });
     // No plan recorded: never "finished its plan", and never a green tick.
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0),
-    ).toEqual({ tone: 'warn', text: 'Finished in 18m 12s · Claude ended the audit' });
+    ).toEqual({ tone: 'warn', text: 'Finished in 18m 12s · Blackwing ended the audit' });
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, {
         executed: 4,
@@ -161,7 +161,7 @@ describe('duration and stopLine', () => {
         blocked: 0,
         total: 4,
       }),
-    ).toEqual({ tone: 'ok', text: 'Finished in 18m 12s · Claude finished its plan: it ran all 4 planned test cases' });
+    ).toEqual({ tone: 'ok', text: 'Finished in 18m 12s · Blackwing finished its plan: it ran all 4 planned test cases' });
     // Queued: no clock runs before the run starts.
     expect(stopLine({ ...base, startedAt: null, finishedAt: null, state: 'queued', events: [], gate2: [] }, 0).text).toBe(
       'Waiting to start. Nothing has been sent to the site yet.',
@@ -175,7 +175,7 @@ describe('duration and stopLine', () => {
         total: 9,
       }).text,
     ).toBe(
-      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 9 planned test cases; 2 were skipped by Claude and 1 was not tried',
+      'Finished in 18m 12s · Blackwing ended the audit early: it ran 6 of 9 planned test cases; 2 were skipped by Blackwing AI and 1 was not tried',
     );
     // Every case ran or was skipped with a reason: the plan is done, never "ended early", and still no green tick.
     const done = stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, {
@@ -184,7 +184,7 @@ describe('duration and stopLine', () => {
       blocked: 0,
       total: 5,
     });
-    expect(done.text).toBe('Finished in 18m 12s · Claude finished its plan: it ran 4 of 5 planned test cases and skipped 1');
+    expect(done.text).toBe('Finished in 18m 12s · Blackwing finished its plan: it ran 4 of 5 planned test cases and skipped 1');
     expect(done.tone).not.toBe('ok');
     // A named limit is the reason; the cases say how far it got.
     expect(
@@ -199,7 +199,7 @@ describe('duration and stopLine', () => {
         { executed: 5, skipped: 0, blocked: 0, total: 8 },
       ).text,
     ).toBe(
-      'Finished in 18m 12s · Claude reached the spend cap after it ran 5 of 8 planned test cases; 3 were not tried',
+      'Finished in 18m 12s · Blackwing reached the spend cap after it ran 5 of 8 planned test cases; 3 were not tried',
     );
     // "Blocked" is said in plain words: with a denied request, that is why.
     expect(
@@ -214,7 +214,7 @@ describe('duration and stopLine', () => {
         { executed: 6, skipped: 0, blocked: 2, total: 8 },
       ).text,
     ).toBe(
-      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was denied',
+      'Finished in 18m 12s · Blackwing ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was denied',
     );
     // Nobody answered (the run closed the ask at its end): never worded as a person's denial.
     expect(
@@ -229,7 +229,7 @@ describe('duration and stopLine', () => {
         { executed: 6, skipped: 0, blocked: 2, total: 8 },
       ).text,
     ).toBe(
-      'Finished in 18m 12s · Claude ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was not answered before the audit ended',
+      'Finished in 18m 12s · Blackwing ended the audit early: it ran 6 of 8 planned test cases; 2 were skipped because the request they needed was not answered before the audit ended',
     );
     expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe(
       'Stopped after 18m 12s · you stopped testing',
@@ -358,7 +358,7 @@ describe('issue proof copy', () => {
   it('states the replay count and the control from stored evidence', () => {
     expect(proofSentence(detail)).toEqual({
       proven: true,
-      text: 'Proven: replayed 3 of 3 times, the control behaved as expected. Blackwing replayed it deterministically; Claude proposed the check and the control.',
+      text: 'Proven: replayed 3 of 3 times, the control behaved as expected. Blackwing replayed it deterministically; Blackwing AI proposed the check and the control.',
     });
     expect(requestLine(detail.evidence.probe)).toBe('GET /metrics?a=1');
     expect(requestLine(detail.evidence.control)).toBeNull();
@@ -391,14 +391,14 @@ describe('headline and plain reasons', () => {
   it('counts every proven issue but advises only on open ones', () => {
     expect(headline([])).toBe('No issues were proven.');
     expect(headline([finding('a', 'high', 'confirmed'), finding('b', 'low', 'released')])).toBe(
-      'Claude proved 2 issues. Start with the high\u2011severity one.',
+      'Blackwing proved 2 issues. Start with the high\u2011severity one.',
     );
     expect(headline([finding('a', 'critical', 'dismissed'), finding('b', 'low', 'released')])).toBe(
-      'Claude proved 2 issues. 1 is dismissed.',
+      'Blackwing proved 2 issues. 1 is dismissed.',
     );
     // Everything decided: no stale "start with" advice.
     expect(headline([finding('a', 'high', 'released'), finding('b', 'low', 'dismissed')])).toBe(
-      'Claude proved 2 issues. 1 is dismissed.',
+      'Blackwing proved 2 issues. 1 is dismissed.',
     );
   });
   it('rewrites the engine word "oracle"', () => {
@@ -417,7 +417,7 @@ describe('headline and plain reasons', () => {
 
 describe('honest finish and not-tested', () => {
   const summary = 'Tested SQLi.\n\n## Not covered\n- register and login\n- JWT';
-  it('never gives a green tick when Claude itself names what it did not cover', () => {
+  it('never gives a green tick when Blackwing AI itself names what it did not cover', () => {
     const run = {
       createdAt: '2026-11-06T10:00:00.000Z',
       startedAt: '2026-11-06T10:00:00.000Z',
@@ -430,10 +430,10 @@ describe('honest finish and not-tested', () => {
     expect(stopLine(run, 0, cases).tone).toBe('ok');
     expect(stopLine({ ...run, summary }, 0, cases)).toEqual({
       tone: 'warn',
-      text: 'Finished in 1m 14s · Claude finished its plan: it ran all 7 planned test cases; Claude names what it did not cover below',
+      text: 'Finished in 1m 14s · Blackwing finished its plan: it ran all 7 planned test cases; Blackwing AI names what it did not cover below',
     });
   });
-  it('lists Claude\'s own not-covered note next to the runner\'s rows', () => {
+  it('lists Blackwing\'s own not-covered note next to the runner\'s rows', () => {
     const gaps = notTested({ coverage: null, endReason: null, excludedPaths: ['/createdb'], summary });
     expect(gaps.rows).toEqual([{ what: '/createdb', why: 'Left out on purpose: the plan excluded these paths' }]);
     expect(gaps.note).toBe('## Not covered\n- register and login\n- JWT');
@@ -446,7 +446,7 @@ describe('honest finish and not-tested', () => {
       evidence: { probe: { request: { method: 'GET', url: 'http://h/users/v1/_debug' } }, control: {}, replays: [{ n: 1, status: 200, matched: true }], proof: { kind: 'exposure_replay', replays: 1, delta: 'none', proposedBy: 'claude' } },
     });
     expect(proofSentence(exposure).text).toBe(
-      'Proven: replayed once, signed out. No control is possible for data open to everyone. Blackwing replayed it deterministically; Claude proposed the check.',
+      'Proven: replayed once, signed out. No control is possible for data open to everyone. Blackwing replayed it deterministically; Blackwing AI proposed the check.',
     );
   });
 });

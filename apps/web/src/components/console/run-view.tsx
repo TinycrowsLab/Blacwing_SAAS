@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- design pixel and timing values, see design/README.md */
 'use client';
 
-// Watch Claude work (experience spec §5): the live audit. The first render comes from the server; the client polls the
+// Watch Blackwing work (experience spec §5): the live audit. The first render comes from the server; the client polls the
 // run route (afterSeq) at once on mount (a cached first paint after Back must not pose as the present), then every 1.5 s
 // while the tab is visible, backs off on failure (1.5, 3, 6, 10 s) and keeps the data it has. Everything shown is
 // derived from the run DTO and its events in run-model.ts. The open tab and agent filter live in the URL, so Back
@@ -501,7 +501,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     [events, gate2, nowMs, terminal, stopped, run.paused],
   );
   const cases = useMemo(() => caseList(events), [events]);
-  const cands = useMemo(() => candidates(events), [events]);
+  const cands = useMemo(() => candidates(events, { terminal, findings: run.findings }), [events, terminal, run.findings]);
   const pending = run.gate2.filter((g) => isOpenGate2(g, nowMs));
   const pendingIds = pending.map((g) => g.id).join(',');
   // Only an ask the runner waits on holds its agent; a non-blocking ask leaves it testing other cases.
@@ -634,7 +634,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </>
       )}
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
-        Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
+        Counts, limits and times come from the runner. Blackwing AI&apos;s messages are its own words and stay unverified until the
         validator proves them.
       </p>
     </>
@@ -728,8 +728,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           <KillButton run={terminal ? null : { id: run.id, assetName: host, startedAt: run.startedAt }} className="h-10 px-4 max-md:hidden" />
           <button
             type="button"
-            aria-label="Claude's team"
-            title="Claude's team"
+            aria-label="Blackwing's team"
+            title="Blackwing's team"
             onClick={() => {
               setTeam(true);
             }}
@@ -1037,7 +1037,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       />
       <Sheet open={team} onOpenChange={setTeam}>
         <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto border-border bg-card p-4 pt-5 text-foreground">
-          <SheetTitle className="sr-only">Claude&apos;s team</SheetTitle>
+          <SheetTitle className="sr-only">Blackwing&apos;s team</SheetTitle>
           <TeamMap {...mapProps} layout="column" />
         </SheetContent>
       </Sheet>

@@ -1,4 +1,4 @@
-// Help (experience spec §2): how an audit works, where you stay in control (the gates and Stop), Claude's team, the
+// Help (experience spec §2): how an audit works, where you stay in control (the gates and Stop), Blackwing's team, the
 // three voices, the words we use (plain first, technical second) and the keyboard shortcuts. It ends with the next step.
 import { LinkButton, VoiceTag, type Voice } from '../../../components/console/design';
 import { AGENT_IDS, agentDoes, agentName } from '../../../lib/agents';
@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 
 export const metadata: Metadata = { title: 'Help' };
 
-const STEPS: readonly { who: 'You' | 'Claude'; title: string; body: string }[] = [
+const STEPS: readonly { who: 'You' | 'Blackwing AI'; title: string; body: string }[] = [
   {
     who: 'You',
     title: 'Tell us what to audit',
@@ -20,8 +20,8 @@ const STEPS: readonly { who: 'You' | 'Claude'; title: string; body: string }[] =
     body: 'Blackwing reads the whole plan back in plain words. Nothing reaches the site until you approve it.',
   },
   {
-    who: 'Claude',
-    title: "Claude's team works",
+    who: 'Blackwing AI',
+    title: "Blackwing's team works",
     body: 'The planner hands work to specialists, and you watch their conversation live. Anything that would change data waits for your yes, or is refused outright when you chose “Look, don’t touch”.',
   },
   {
@@ -62,7 +62,7 @@ const GATES: readonly { name: string; term: string; body: string }[] = [
 const VOICES: readonly { voice: Voice; body: string }[] = [
   {
     voice: 'claude',
-    body: "Claude's own words: explanations, plans and fix suggestions. Useful, and never treated as proof.",
+    body: "Blackwing AI's own words: explanations, plans and fix suggestions. Useful, and never treated as proof.",
   },
   {
     voice: 'blackwing',
@@ -70,7 +70,7 @@ const VOICES: readonly { voice: Voice; body: string }[] = [
   },
   {
     voice: 'validator',
-    body: 'The validator: code, not a model. It replays each issue Claude raises against a control (a read three times, a change once) and checks the result Claude proposed. Only it can prove an issue.',
+    body: 'The validator: code, not a model. It replays each issue Blackwing AI raises against a control (a read three times, a change once) and checks the result Blackwing AI proposed. Only it can prove an issue.',
   },
   { voice: 'you', body: 'Your decisions, each with your name and reason on the ledger.' },
 ];
@@ -120,7 +120,7 @@ const SHORTCUTS: readonly [ReactNode, string][] = [
 const TOC = [
   ['how', 'How it works'],
   ['control', 'Where you stay in control'],
-  ['team', "Claude's team"],
+  ['team', "Blackwing's team"],
   ['voices', 'Who is speaking'],
   ['words', 'Words we use'],
   ['keys', 'Keyboard shortcuts'],
@@ -153,7 +153,7 @@ export default function HelpPage(): ReactNode {
           Help
         </h1>
         <p className="m-0 text-[15px] leading-6 text-muted-foreground">
-          Blackwing arranges a security audit of a web app you own. Claude&rsquo;s agents do the
+          Blackwing arranges a security audit of a web app you own. Blackwing&rsquo;s agents do the
           testing; you approve at every step that matters, and every decision is recorded.
         </p>
         <nav aria-label="On this page" className="mt-1 flex flex-wrap gap-1.5">
@@ -204,7 +204,7 @@ export default function HelpPage(): ReactNode {
         </dl>
       </Section>
 
-      <Section id="team" title="Claude's team">
+      <Section id="team" title="Blackwing's team">
         <ul className="m-0 grid list-none gap-2.5 p-0 sm:grid-cols-2">
           {AGENT_IDS.map((id) => (
             <li
@@ -270,7 +270,7 @@ export default function HelpPage(): ReactNode {
 
       <section className="flex flex-wrap items-center gap-3 rounded-[14px] border border-gold-line bg-gold-soft px-4 py-3.5">
         <p className="m-0 min-w-0 flex-1 basis-60 text-[14px] leading-[22px] text-foreground">
-          <b className="font-semibold">Ready?</b> Paste the address of a site you own. Claude
+          <b className="font-semibold">Ready?</b> Paste the address of a site you own. Blackwing
           proposes the plan; nothing runs until you approve it.
         </p>
         <LinkButton href="/audits/new" variant="primary" icon="plus">

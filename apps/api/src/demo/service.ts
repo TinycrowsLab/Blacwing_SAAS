@@ -184,7 +184,7 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
     version: row.version,
     requester: { id: row.requester_id, name: row.requester_name },
     approver: row.approver_id === null ? null : { id: row.approver_id, name: row.approver_name },
-    testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
+    testAccounts: row.test_accounts.map(accountView),
     decisionReason: row.decision_reason,
     decidedAt: iso(row.decided_at),
     createdAt: row.created_at.toISOString(),
@@ -202,7 +202,7 @@ export function owaspLabel(stored: string): string {
 }
 
 /**
- * An oracle is the check Claude wrote, shown so the reader can see what was matched. When its text would be scrubbed
+ * An oracle is the check Blackwing AI wrote, shown so the reader can see what was matched. When its text would be scrubbed
  * (it names a secret field and value), the scrubber's marker would land inside the pattern and leave it unreadable (and a
  * regex broken), so it is described in words instead: what kind of check, and which field, with the value hidden.
  */
@@ -420,9 +420,7 @@ export interface AmendRequestInput {
   readonly costCapUsd?: number | undefined;
   readonly excludedPaths?: readonly string[] | undefined;
   readonly releaseProven?: ReleaseMode | undefined;
-  readonly testAccounts?:
-    | readonly { role: string; headerName: string; headerValue?: string | undefined }[]
-    | undefined;
+  readonly testAccounts?: readonly TestAccountInput[] | undefined;
 }
 
 export interface TriageResult {
@@ -431,6 +429,37 @@ export interface TriageResult {
   readonly status?: string;
   readonly code?: 'finding_not_triageable' | 'not_found';
 }
+
+/** A test account as a client sends it: a header credential, or a login-form username and password. */
+export interface TestAccountInput {
+  readonly role: string;
+  readonly headerName?: string | undefined;
+  readonly headerValue?: string | undefined;
+  readonly username?: string | undefined;
+  readonly password?: string | undefined;
+  readonly loginUrl?: string | undefined;
+}
+
+function accountRow(a: TestAccountInput): TestAccountRow {
+  if (a.username === undefined) return { role: a.role, header_name: a.headerName ?? '', header_value: a.headerValue ?? '' };
+  return {
+    role: a.role,
+    header_name: 'Cookie',
+    header_value: '',
+    username: a.username,
+    password: a.password ?? '',
+    ...(a.loginUrl === undefined ? {} : { login_url: a.loginUrl }),
+  };
+}
+
+/** What a client may read back: never a value or a password. */
+function accountView(a: TestAccountRow): Record<string, string> {
+  return a.username === undefined
+    ? { role: a.role, headerName: a.header_name }
+    : { role: a.role, headerName: a.header_name, loginUsername: a.username, ...(a.login_url === undefined ? {} : { loginUrl: a.login_url }) };
+}
+
+const accountKey = (a: TestAccountRow): (string | undefined)[] => [a.role, a.header_name, a.header_value, a.username, a.password, a.login_url];
 
 export interface CreateRequestInput {
   readonly assetId: string;
@@ -441,7 +470,7 @@ export interface CreateRequestInput {
   readonly costCapUsd: number;
   readonly excludedPaths: readonly string[];
   readonly releaseProven: ReleaseMode;
-  readonly testAccounts: readonly { role: string; headerName: string; headerValue: string }[];
+  readonly testAccounts: readonly TestAccountInput[];
 }
 
 export interface WebhookOptions {
@@ -881,11 +910,7 @@ export class DemoService {
       budget_requests: input.budgetRequests,
       budget_seconds: input.budgetSeconds,
       cost_cap_usd: input.costCapUsd,
-      test_accounts: input.testAccounts.map((a) => ({
-        role: a.role,
-        header_name: a.headerName,
-        header_value: a.headerValue,
-      })),
+      test_accounts: input.testAccounts.map((a) => accountRow(a)),
     });
     return this.request(id);
   }
@@ -912,6 +937,8 @@ export class DemoService {
         role: a.role,
         headerName: a.header_name,
         headerValue: a.header_value,
+        ...(a.username === undefined ? {} : { username: a.username, password: a.password ?? '' }),
+        ...(a.login_url === undefined ? {} : { loginUrl: a.login_url }),
       })),
     });
   }
@@ -962,20 +989,20 @@ export class DemoService {
       input.testAccounts === undefined
         ? row.test_accounts.map((a) => ({ ...a }))
         : input.testAccounts.map((a) => {
-            if (a.headerValue !== undefined) return { role: a.role, header_name: a.headerName, header_value: a.headerValue };
-            const stored = row.test_accounts.find(
-              (s) =>
-                s.role.toLowerCase() === a.role.toLowerCase() &&
-                s.header_name.toLowerCase() === a.headerName.toLowerCase(),
-            );
-            if (stored === undefined) {
-              throw new DemoRefusal(
-                HttpStatus.UNPROCESSABLE_ENTITY,
-                'account_value_missing',
-                `Type the ${a.headerName} value for the test account "${a.role}": no value is saved for it.`,
-              );
+            const stored = row.test_accounts.find((s) => s.role.toLowerCase() === a.role.toLowerCase());
+            const kept = stored !== undefined && (a.username === undefined) === (stored.username === undefined) ? stored : undefined;
+            if (a.username !== undefined) {
+              const password = a.password ?? kept?.password;
+              if (password === undefined) {
+                throw new DemoRefusal(HttpStatus.UNPROCESSABLE_ENTITY, 'account_value_missing', `Type the password for the test account "${a.role}": none is saved for it.`);
+              }
+              return accountRow({ ...a, password });
             }
-            return { role: a.role, header_name: a.headerName, header_value: stored.header_value };
+            const value = a.headerValue ?? kept?.header_value;
+            if (value === undefined || a.headerName === undefined) {
+              throw new DemoRefusal(HttpStatus.UNPROCESSABLE_ENTITY, 'account_value_missing', `Type the ${a.headerName ?? 'header'} value for the test account "${a.role}": no value is saved for it.`);
+            }
+            return accountRow({ ...a, headerValue: value });
           });
     const next = {
       objective: input.objective ?? row.objective,
@@ -992,7 +1019,7 @@ export class DemoService {
       budget: [row.budget_requests, row.budget_seconds, Number(row.cost_cap_usd)],
       excludedPaths: row.scope.excludedPaths ?? [],
       releaseProven: releaseModeOf(row),
-      testAccounts: row.test_accounts.map((a) => [a.role, a.header_name, a.header_value]),
+      testAccounts: row.test_accounts.map(accountKey),
     };
     const after = {
       objective: next.objective,
@@ -1000,7 +1027,7 @@ export class DemoService {
       budget: [next.budget_requests, next.budget_seconds, next.cost_cap_usd],
       excludedPaths: next.excludedPaths,
       releaseProven: next.releaseProven,
-      testAccounts: accounts.map((a) => [a.role, a.header_name, a.header_value]),
+      testAccounts: accounts.map(accountKey),
     };
     const changed = (Object.keys(before) as (keyof typeof before)[]).filter(
       (key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]),
@@ -1152,7 +1179,7 @@ export class DemoService {
           seconds: row.budget_seconds,
           costUsd: Number(row.cost_cap_usd),
         },
-        testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
+        testAccounts: row.test_accounts.map(accountView),
         releaseProven: releaseModeOf(row),
         requesterId: row.requester_id,
         approverId: row.approver_id,

@@ -140,6 +140,8 @@ export interface HuntStore {
   closePendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]>;
   /** Returns the id of the inserted row (a proven row also upgrades a suspected one); a suspected copy returns the stored row's id; null for a proven duplicate. */
   insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
+  /** The stored finding a duplicate candidate merged into (same tenant and fingerprint), or null. */
+  findingByFingerprint(run: HuntRun, fingerprint: string): Promise<{ readonly id: string; readonly title: string } | null>;
   /**
    * Older copies of one issue (same asset and identity key) still awaiting Gate 3 are dismissed as superseded by the
    * newer proof `findingId`, each on the ledger; returns their ids. Nothing is released: the newest copy still waits.

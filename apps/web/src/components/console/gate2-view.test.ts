@@ -50,8 +50,8 @@ describe('Gate 2 question', () => {
   });
 
   it('asks with the role, or without signing in', () => {
-    expect(gate2Question('customer_a')).toBe('Allow Claude to send this request as customer_a?');
-    expect(gate2Question(null)).toBe('Allow Claude to send this request without signing in?');
+    expect(gate2Question('customer_a')).toBe('Allow Blackwing to send this request as customer_a?');
+    expect(gate2Question(null)).toBe('Allow Blackwing to send this request without signing in?');
   });
 
   it('names the authorisation level by the label people chose it by', () => {
@@ -94,7 +94,7 @@ describe('Gate 2 memory and plain words', () => {
 
   it('says what an allow really covers: every agent, any body, no further question', () => {
     expect(grantScope({ method: 'POST', url: 'http://x.test/api/Users?x=1' }, null)).toBe(
-      "Allowing covers every POST /api/Users sent without signing in, from any agent and with any body, until this audit ends. Claude won't ask about it again. If this becomes a finding, Blackwing sends it once more to check it.",
+      "Allowing covers every POST /api/Users sent without signing in, from any agent and with any body, until this audit ends. Blackwing won't ask about it again. If this becomes a finding, Blackwing sends it once more to check it.",
     );
     expect(
       grantScope({ method: 'POST', url: 'http://x.test/rest/basket' }, 'customer_a'),

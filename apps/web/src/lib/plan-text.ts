@@ -88,7 +88,7 @@ export function planSegments(p: PlanInput): PlanSegment[] {
     { text: p.host, field: 'host' },
     { text: ' for ' },
     { text: `${objectivePhrase(p.objective)}${note === null ? '' : `, with your note: \u201c${note}\u201d`}`, field: 'objective' },
-    { text: ". Claude's agents will " },
+    { text: ". Blackwing's agents will " },
     { text: gentle ? 'probe gently' : 'only look, never touch', field: 'intrusiveness' },
     {
       text: `: ${gentle ? 'crafted read requests that should not change data' : 'GET, HEAD and OPTIONS requests'}. Anything that would change data ${gentle ? 'waits for your yes' : 'is refused'}. They ${anywhere ? 'may go' : 'will stay out of'} `,
@@ -110,7 +110,7 @@ export function planSegments(p: PlanInput): PlanSegment[] {
     },
     { text: '. We stop at ' },
     { text: limitsPhrase(p), field: 'limits' },
-    { text: ', whichever comes first. Anything Claude proves ' },
+    { text: ', whichever comes first. Anything Blackwing proves ' },
     {
       text: p.releaseProven === 'hold' ? 'waits for your release' : 'is released to the report automatically',
       field: 'release',
@@ -124,11 +124,11 @@ export const planText = (p: PlanInput): string =>
     .map((s) => s.text)
     .join('');
 
-/** Results H1 (§7): "Claude proved 3 issues. Fix the critical one first." */
+/** Results H1 (§7): "Blackwing proved 3 issues. Fix the critical one first." */
 export function resultsHeadline(severities: readonly string[]): string {
   const n = severities.length;
   if (n === 0) return 'No issues were proven.';
-  const head = `Claude proved ${count(n, 'issue', 'issues')}.`;
+  const head = `Blackwing proved ${count(n, 'issue', 'issues')}.`;
   const crit = severities.filter((s) => s === 'critical').length;
   if (crit > 0) return `${head} Fix the critical ${crit === 1 ? 'one' : 'ones'} first.`;
   const high = severities.filter((s) => s === 'high').length;

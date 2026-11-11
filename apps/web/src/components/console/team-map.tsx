@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- design pixel values, see design/README.md */
 'use client';
 
-// Claude's team (experience spec §5.2 item 3): Your approval → Planner → one node per subagent in the run.started
+// Blackwing's team (experience spec §5.2 item 3): Your approval → Planner → one node per subagent in the run.started
 // manifest → Validator → Your review → Report. Node states come from teamNodes() in run-model.ts; clicking a node
 // filters the conversation to that agent. A node spins only while its agent spoke in the last 10 s, never under reduced
 // motion. Plain name first, the mono agent id second (spec §1, prototype 04); the gate names sit in tooltips. Every
@@ -260,10 +260,10 @@ export function TeamMap({
   );
 
   return (
-    <section aria-label="Claude's team" className={column ? '' : 'rounded-[14px] border border-border bg-surface px-3.5 pb-3 pt-2.5'}>
+    <section aria-label="Blackwing's team" className={column ? '' : 'rounded-[14px] border border-border bg-surface px-3.5 pb-3 pt-2.5'}>
       <div className={`flex flex-wrap items-center gap-2.5 text-[12.5px] font-semibold ${collapsed && !column ? '' : 'mb-2'}`}>
         <Icon name="team" size={15} />
-        Claude&apos;s team
+        Blackwing&apos;s team
         {filter === null ? null : (
           <button
             type="button"

@@ -300,7 +300,7 @@ export const findingSchema = findingSummarySchema.extend({
         .array(z.object({ n: z.number(), status: z.number(), matched: z.boolean() }))
         .default([]),
       reason: z.string().optional(),
-      /** Claude's fix suggestion (optional, not verified): the "How to fix it" block is hidden without it. */
+      /** Blackwing AI's fix suggestion (optional, not verified): the "How to fix it" block is hidden without it. */
       remediation: z.string().optional(),
       proof: z
         .object({ kind: z.string(), replays: z.number(), delta: z.string().nullable(), proposedBy: z.string() })

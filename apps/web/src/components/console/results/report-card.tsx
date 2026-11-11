@@ -166,7 +166,7 @@ export function ReportCard(props: {
           ) : n > 0 ? (
             'Every proven issue was dismissed, so the report lists what was tested and no issues.'
           ) : props.live ? (
-            'Nothing is proven yet. The report fills in as Claude proves issues.'
+            'Nothing is proven yet. The report fills in as Blackwing proves issues.'
           ) : (
             'Nothing was proven, so the report lists what was tested and no issues.'
           )}

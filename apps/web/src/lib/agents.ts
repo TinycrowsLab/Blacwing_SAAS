@@ -1,4 +1,4 @@
-// Plain-language names of Claude's agents (glossary, experience spec §1). The one map the console uses: the mono id is
+// Plain-language names of Blackwing's agents (glossary, experience spec §1). The one map the console uses: the mono id is
 // shown second. An unknown id shows as itself.
 
 interface AgentInfo {

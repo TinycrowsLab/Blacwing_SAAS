@@ -1,5 +1,5 @@
 // Deterministic validator. A finding is `confirmed` only if the probe matches the oracle on all replays and the
-// negative control, which differs from the probe in exactly one part, does not. Claude proposes the candidate, its
+// negative control, which differs from the probe in exactly one part, does not. Blackwing proposes the candidate, its
 // oracle and its control; it never decides confirmation.
 import { createHash } from 'node:crypto';
 
@@ -352,7 +352,7 @@ export function buildFindingRow(input: FindingRowInput): { proven: boolean; row:
   const trigger = probe?.request ?? unsentRequest(candidate.probe, input.credentialHeader);
   const identity = identityKey(run.assetId, candidate);
   const description = scrub(candidate.description);
-  // A probe refused before it was sent still shows what Claude asked for (request only, no response).
+  // A probe refused before it was sent still shows what Blackwing asked for (request only, no response).
   const sides = {
     probe: probe === null ? { request: scrubDeep(trigger) } : sideEvidence(probe, candidate.oracle),
     ...(control === null ? {} : { control: sideEvidence(control, candidate.oracle) }),

@@ -140,6 +140,17 @@ describe('test cases and coverage counting', () => {
     expect(ctx.state.cases.get('xss-search')).toMatchObject({ title: 'XSS in search', agent: 'web-api-specialist', candidates: 0 });
   });
 
+  it('a candidate merged into an already stored finding still ends with one candidate.merged event', async () => {
+    const { ctx, store } = setup('hold', 'bw7x');
+    await call(ctx, 'submit_candidate', { ...candidate, agent: 'web-api-specialist' });
+    await call(ctx, 'submit_candidate', { ...candidate, title: 'Same issue again', agent: 'web-api-specialist' });
+    const ends = store.events.filter((e) => ['finding.confirmed', 'finding.suspected', 'candidate.merged', 'candidate.rejected'].includes(e.kind));
+    expect(ends.map((e) => e.kind)).toEqual(['finding.confirmed', 'candidate.merged']);
+    expect(ends[1]?.message).toBe('Merged into: Reflected marker');
+    expect(ends[1]?.data).toMatchObject({ title: 'Reflected marker', findingId: store.findings[0]?.id });
+    expect(typeof ends[1]?.data.candidateId).toBe('string');
+  });
+
   it('counts http_request case_id and candidates per case; a skip keeps its note', async () => {
     const { ctx } = setup('hold', 'bw7x');
     await call(ctx, 'record_test_cases', {

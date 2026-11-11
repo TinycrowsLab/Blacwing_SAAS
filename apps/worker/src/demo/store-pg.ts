@@ -279,6 +279,10 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       );
       return r.rows[0]?.id ?? null;
     },
+    async findingByFingerprint(run: HuntRun, fingerprint: string): Promise<{ id: string; title: string } | null> {
+      const r = await pool.query<{ id: string; title: string }>('SELECT id, title FROM demo.findings WHERE tenant_id = $1 AND fingerprint = $2', [run.tenantId, fingerprint]);
+      return r.rows[0] ?? null;
+    },
     async supersedeCopies(run: HuntRun, findingId: string, identityKey: string): Promise<string[]> {
       const client = await pool.connect();
       try {

@@ -3,7 +3,7 @@
 // "Run this audit again" (experience spec §7, B5): the API copies the request, test accounts included, server-side,
 // so no secret travels to the browser. The new request waits at the plan for approval. The action returns the new
 // plan's id and the button navigates on the client: a redirect here would render the whole plan page inside the action.
-// With `untriedFromRunId` the copy also asks Claude to continue with the test cases that run left untried.
+// With `untriedFromRunId` the copy also asks Blackwing to continue with the test cases that run left untried.
 import { callApi, toResult, type ActionResult } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { requestSchema } from '../../../lib/schemas';

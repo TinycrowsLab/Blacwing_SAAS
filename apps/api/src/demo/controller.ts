@@ -67,6 +67,7 @@ const LIMITS = {
   roleName: 32,
   headerName: 64,
   headerValue: 4096,
+  loginField: 256,
   reasonMin: 8,
   batchIds: 200,
   emergencyLabel: 80,
@@ -102,14 +103,23 @@ const verifyAssetSchema = z
     message: 'owner_attestation needs a statement',
   });
 
-const testAccountSchema = z.strictObject({
-  role: z.string().trim().regex(/^[a-z][a-z0-9_-]{0,31}$/i),
+const roleField = z.string().trim().regex(/^[a-z][a-z0-9_-]{0,31}$/i);
+const headerAccountShape = {
+  role: roleField,
   headerName: z
     .string()
     .regex(/^[A-Za-z0-9-]{1,64}$/)
     .refine((name) => !RESERVED_HEADERS.includes(name.toLowerCase()), 'This header cannot carry a credential.'),
   headerValue: z.string().min(1).max(LIMITS.headerValue),
-});
+};
+/** Login-form mode: the runner signs in with these and keeps the session; the password is stored server-side only. */
+const loginAccountShape = {
+  role: roleField,
+  username: z.string().min(1).max(LIMITS.loginField),
+  password: z.string().min(1).max(LIMITS.loginField),
+  loginUrl: webUrl.optional(),
+};
+const testAccountSchema = z.union([z.strictObject(headerAccountShape), z.strictObject(loginAccountShape)]);
 
 const uniqueRoles = (accounts: readonly { role: string }[]): boolean =>
   new Set(accounts.map((a) => a.role.toLowerCase())).size === accounts.length;
@@ -151,9 +161,14 @@ export const amendRequestSchema = z
     costCapUsd: planFields.costCapUsd.optional(),
     excludedPaths: pathList.optional(),
     releaseProven: planFields.releaseProven.optional(),
-    /** Omitted = unchanged; an account without `headerValue` keeps the value stored for that role. */
+    /** Omitted = unchanged; an account without `headerValue` (or `password`) keeps the value stored for that role. */
     testAccounts: z
-      .array(testAccountSchema.extend({ headerValue: testAccountSchema.shape.headerValue.optional() }))
+      .array(
+        z.union([
+          z.strictObject({ ...headerAccountShape, headerValue: headerAccountShape.headerValue.optional() }),
+          z.strictObject({ ...loginAccountShape, password: loginAccountShape.password.optional() }),
+        ]),
+      )
       .max(LIMITS.testAccounts)
       .refine(uniqueRoles, { message: 'Test account roles must be unique.' })
       .optional(),

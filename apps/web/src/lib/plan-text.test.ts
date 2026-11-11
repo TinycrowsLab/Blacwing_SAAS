@@ -17,7 +17,7 @@ describe('plan read-back', () => {
 
   it('fills the template exactly', () => {
     expect(planText(plan)).toBe(
-      "We will audit staging.example.com for who can see whose data and injection, with your note: \u201cFocus on checkout\u201d. Claude's agents will probe gently: crafted read requests that should not change data. Anything that would change data waits for your yes. They will stay out of /admin and /internal, and everything under them. They test as 2 signed-in roles, customer_a and customer_b. We stop at 30 minutes, 1,000 requests or $8 of model spend, whichever comes first. Anything Claude proves waits for your release.",
+      "We will audit staging.example.com for who can see whose data and injection, with your note: \u201cFocus on checkout\u201d. Blackwing's agents will probe gently: crafted read requests that should not change data. Anything that would change data waits for your yes. They will stay out of /admin and /internal, and everything under them. They test as 2 signed-in roles, customer_a and customer_b. We stop at 30 minutes, 1,000 requests or $8 of model spend, whichever comes first. Anything Blackwing proves waits for your release.",
     );
   });
 
@@ -33,7 +33,7 @@ describe('plan read-back', () => {
     });
     expect(text).toContain('only look, never touch: GET, HEAD and OPTIONS requests. Anything that would change data is refused.');
     expect(text).toContain('They may go anywhere on the site and test as a visitor.');
-    expect(planText({ ...plan, objective: 'Look for injection flaws.' })).toContain('for injection flaws. Claude');
+    expect(planText({ ...plan, objective: 'Look for injection flaws.' })).toContain('for injection flaws. Blackwing');
     expect(text).toContain('We stop at 1 minute, 1,000 requests or $2.50 of model spend');
     expect(text).toContain('is released to the report automatically.');
   });
@@ -53,9 +53,9 @@ describe('plan read-back', () => {
 
   it('writes the results headline', () => {
     expect(resultsHeadline([])).toBe('No issues were proven.');
-    expect(resultsHeadline(['critical', 'low'])).toBe('Claude proved 2 issues. Fix the critical one first.');
-    expect(resultsHeadline(['high', 'high'])).toBe('Claude proved 2 issues. Start with the high-severity ones.');
-    expect(resultsHeadline(['low'])).toBe('Claude proved 1 issue.');
+    expect(resultsHeadline(['critical', 'low'])).toBe('Blackwing proved 2 issues. Fix the critical one first.');
+    expect(resultsHeadline(['high', 'high'])).toBe('Blackwing proved 2 issues. Start with the high-severity ones.');
+    expect(resultsHeadline(['low'])).toBe('Blackwing proved 1 issue.');
   });
 
   it('names a decision by its method and path, without the query', () => {

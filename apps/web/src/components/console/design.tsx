@@ -498,14 +498,14 @@ export function Kbd({ children, className = '' }: { readonly children: ReactNode
 export type Voice = 'claude' | 'blackwing' | 'validator' | 'you';
 
 const VOICE: Record<Voice, { label: string; className: string }> = {
-  claude: { label: 'Claude', className: 'bg-slate-soft text-slate' },
+  claude: { label: 'Blackwing AI', className: 'bg-slate-soft text-slate' },
   blackwing: { label: 'Blackwing', className: 'bg-surface-2 text-muted-foreground' },
   validator: { label: 'Blackwing · replay', className: 'bg-ok-soft text-ok' },
   you: { label: 'You', className: 'bg-gold-soft text-gold-ink shadow-[inset_0_0_0_1px_var(--gold-line)]' },
 };
 
 /**
- * Who is speaking, never blurred (spec §1): Claude (slate, its own words, not verified), Blackwing (grey, templates over
+ * Who is speaking, never blurred (spec §1): Blackwing AI (slate, its own words, not verified), Blackwing (grey, templates over
  * run events), the validator (green, deterministic replay) and You (gold, your decisions). `children` overrides the label.
  */
 export function VoiceTag({
@@ -520,7 +520,7 @@ export function VoiceTag({
   const v = VOICE[voice];
   return (
     <span
-      title={title ?? (voice === 'claude' ? "Claude's own words, not verified" : undefined)}
+      title={title ?? (voice === 'claude' ? "Blackwing AI's own words, not verified" : undefined)}
       className={`inline-flex h-[18px] shrink-0 items-center rounded-full px-[7px] text-[10.5px] font-semibold ${v.className}`}
     >
       {children ?? v.label}

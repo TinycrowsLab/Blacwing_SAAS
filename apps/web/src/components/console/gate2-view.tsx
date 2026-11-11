@@ -3,7 +3,7 @@
 
 // The Gate 2 decision card (experience spec §6.2): one component for the live conversation, the Decisions inbox and the
 // full page. Everything on it is the runner's data or a template: the question, the exact request and body from the
-// gate2.requested event, the deterministic whyOutside text. Only the dashed box holds Claude's words.
+// gate2.requested event, the deterministic whyOutside text. Only the dashed box holds Blackwing AI's words.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -74,7 +74,7 @@ export function intentLabel(method: string, url: string): string | null {
 }
 
 export const gate2Question = (role: string | null): string =>
-  `Allow Claude to send this request ${role === null ? 'without signing in' : `as ${role}`}?`;
+  `Allow Blackwing to send this request ${role === null ? 'without signing in' : `as ${role}`}?`;
 
 /** The runner's whyOutside, with the authorisation's internal term shown as the label people chose it by. */
 export const plainWhy = (text: string): string =>
@@ -91,7 +91,7 @@ const asWho = (role: string | null): string =>
  * body, no further question. Said before the person commits, because the card shows one body and one reason.
  */
 export const grantScope = (gate2: { method: string; url: string }, role: string | null): string =>
-  `Allowing covers every ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Claude won't ask about it again. If this becomes a finding, Blackwing sends it once more to check it.`;
+  `Allowing covers every ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent and with any body, until this audit ends. Blackwing won't ask about it again. If this becomes a finding, Blackwing sends it once more to check it.`;
 
 /**
  * The latest closed request in the same audit for the same method, path and role: decided before this one was raised
@@ -189,7 +189,7 @@ function Chips({ gate2 }: { readonly gate2: Card }) {
   );
 }
 
-function ClaudeReason({
+function AiReason({
   reason,
   phone = false,
 }: {
@@ -201,10 +201,10 @@ function ClaudeReason({
       className={`border border-dashed border-border-strong bg-code ${phone ? 'rounded-2xl px-[15px] py-[13px]' : 'mt-2.5 rounded-[10px] px-3 py-2'}`}
     >
       <span className="block text-[11.5px] text-muted-foreground">
-        Claude&apos;s reason, not verified
+        Blackwing AI&apos;s reason, not verified
       </span>
       <p className="m-0 mt-0.5 text-[13px] leading-5 text-foreground">
-        {reason === '' ? 'Claude gave no reason.' : reason}
+        {reason === '' ? 'Blackwing AI gave no reason.' : reason}
       </p>
     </div>
   );
@@ -224,7 +224,7 @@ function RuleRow({ tag, children }: { readonly tag: string; readonly children: R
 
 /**
  * Why this is outside the authorisation, as rule rows (deterministic: the runner's whyOutside and the pinned
- * authorisation, never Claude's words). Falls back to the runner's sentence when it does not split into a rule.
+ * authorisation, never Blackwing AI's words). Falls back to the runner's sentence when it does not split into a rule.
  */
 function WhyAsked({
   gate2,
@@ -405,8 +405,8 @@ function DecisionReceipt({
         title={title}
         detail={detail(
           gate2.status === 'approved'
-            ? `Claude may now send any ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent, until the run ends.`
-            : 'Not sent. Claude moves on to its next test.',
+            ? `Blackwing may now send any ${gate2.method} ${grantPath(gate2.url)} ${asWho(role)}, from any agent, until the run ends.`
+            : 'Not sent. Blackwing moves on to its next test.',
         )}
         hash={hash}
       />
@@ -426,7 +426,7 @@ function DecisionReceipt({
           {detail(
             stopped
               ? 'Not sent.'
-              : 'Not sent. If Claude still needs it, it asks again in this audit. To be sure it gets tested, use “Run this audit again” on the results once this audit ends.',
+              : 'Not sent. If Blackwing still needs it, it asks again in this audit. To be sure it gets tested, use “Run this audit again” on the results once this audit ends.',
           )}
         </span>
         <span className="text-[11.5px] text-muted-foreground">
@@ -687,7 +687,7 @@ function PageReceipt({
           {question}
         </h2>
         <RequestBox gate2={gate2} body={body} />
-        <ClaudeReason reason={gate2.reason} />
+        <AiReason reason={gate2.reason} />
       </section>
       <nav
         aria-label="What next"
@@ -966,7 +966,7 @@ export function Gate2Card({
           <RequestBox gate2={gate2} body={body} />
           <Chips gate2={gate2} />
           <WhyAsked gate2={gate2} auth={audit?.authorisation ?? null} />
-          <ClaudeReason reason={gate2.reason} />
+          <AiReason reason={gate2.reason} />
         </div>
         <Gate2Actions
           gate2Id={id}
@@ -1023,7 +1023,7 @@ export function Gate2Card({
             <Chips gate2={gate2} />
             <WhyAsked gate2={gate2} auth={audit?.authorisation ?? null} phone />
           </section>
-          <ClaudeReason reason={gate2.reason} phone />
+          <AiReason reason={gate2.reason} phone />
           <section className="rounded-2xl border border-border bg-card px-[15px] py-[13px]">
             <span className="block text-[11.5px] text-muted-foreground">
               {audit?.assetName ?? host}
@@ -1296,7 +1296,7 @@ export function Gate2Inbox({
       <InboxHeading
         title={INBOX_TITLE}
         term="Gate 2"
-        lede="Claude wants to send something that could change data. No answer means denied."
+        lede="Blackwing wants to send something that could change data. No answer means denied."
         count={open + more}
       />
       {groups.map((group, n) => {

@@ -223,6 +223,13 @@ function Verdict({ c }: { readonly c: Candidate }) {
         Proving, {Math.min(c.replays, VALIDATOR_REPLAYS)} of {VALIDATOR_REPLAYS}
       </span>
     );
+  if (c.status === 'merged' || c.status === 'unfinished')
+    return (
+      <span className="ml-auto inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground">
+        <span aria-hidden="true" className="h-[2px] w-2.5 rounded-full bg-current" />
+        {c.status === 'merged' ? `Merged into ${c.mergedInto ?? 'a finding'}` : 'Not finished'}
+      </span>
+    );
   const verdict = c.status === 'released' ? 'released' : c.status === 'not_confirmed' ? 'suspected' : c.status;
   // Kept back is a settled verdict: a flat dash, never a ring that reads as "still working".
   if (verdict === 'suspected')
@@ -937,6 +944,10 @@ function candidateVerdict(c: Candidate): { verdict: string; label: string } {
       return { verdict: 'released', label: 'Released' };
     case 'dismissed':
       return { verdict: 'dismissed', label: 'Dismissed' };
+    case 'merged':
+      return { verdict: 'merged', label: `Merged into ${c.mergedInto ?? 'a finding'}` };
+    case 'unfinished':
+      return { verdict: 'unfinished', label: 'Not finished' };
     default:
       return { verdict: 'suspected', label: 'Suspected' };
   }
@@ -1002,7 +1013,7 @@ function SummaryCard({ text }: { readonly text: string }) {
   return (
     <Card as="section" aria-labelledby="summary-h" className="p-4">
       <h2 id="summary-h" className="mb-2 text-sm font-semibold">
-        The planner&apos;s summary <span className="font-normal text-muted-foreground">· Claude, not verified</span>
+        The planner&apos;s summary <span className="font-normal text-muted-foreground">· Blackwing AI, not verified</span>
       </h2>
       <div className={open ? '' : 'max-h-36 overflow-hidden'}>
         <Markdown text={text} className="text-[13.5px] leading-6" />

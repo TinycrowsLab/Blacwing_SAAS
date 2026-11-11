@@ -210,7 +210,7 @@ export function PathsEditor({
         </div>
       )}
       <p className="m-0 text-[12.5px] text-muted-foreground">
-        A path keeps Claude out of it and everything under it. Paste a whole list: commas and new lines separate paths,
+        A path keeps Blackwing out of it and everything under it. Paste a whole list: commas and new lines separate paths,
         and so does a space before the next <code className="font-mono">/</code>.
       </p>
     </div>
@@ -304,7 +304,7 @@ export function AccountsEditor({
             if (!signedIn) onRows([EMPTY_ROW]);
           }}
           title="With test accounts"
-          description="Up to 3 roles, so Claude can check who sees whose data."
+          description="Up to 3 roles, so Blackwing can check who sees whose data."
         />
       </fieldset>
       {signedIn ? (
@@ -399,7 +399,7 @@ export function AccountsEditor({
           ) : null}
           <p className="m-0 flex items-start gap-2 text-[12.5px] leading-5 text-muted-foreground">
             <Icon name="lock" size={14} className="mt-[3px] shrink-0" />
-            Use throwaway accounts. Claude never sees these values; Blackwing adds them to requests itself.
+            Use throwaway accounts. Blackwing never sees these values; Blackwing adds them to requests itself.
           </p>
         </div>
       ) : null}
@@ -566,7 +566,7 @@ export function LimitsEditor({
         </div>
         </div>
       ) : null}
-      <p className="m-0 text-[12.5px] text-muted-foreground">Claude stops at the first limit it reaches.</p>
+      <p className="m-0 text-[12.5px] text-muted-foreground">Blackwing stops at the first limit it reaches.</p>
     </fieldset>
   );
 }

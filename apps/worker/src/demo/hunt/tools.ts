@@ -160,6 +160,12 @@ export function huntTools(ctx: HuntContext) {
       };
       if (proven) {
         const findingId = await recordProven(ctx, { ...row, id: newId() }, summary);
+        if (findingId === null) {
+          // A copy of an issue already stored: still one outcome event for this candidate.
+          const existing = await ctx.store.findingByFingerprint(ctx.run, row.fingerprint);
+          const title = existing?.title ?? candidate.title;
+          await ctx.log.emit('candidate.merged', 'validator', `Merged into: ${title}`, { candidateId, findingId: existing?.id ?? null, title });
+        }
         await finish();
         return text({ verdict: 'confirmed', findingId, released: ctx.run.releaseProven === 'auto', duplicate: findingId === null }, notices);
       }

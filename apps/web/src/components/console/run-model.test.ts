@@ -373,7 +373,7 @@ suite('conversationItems', () => {
 
   it('keeps the planner at top level, and Blackwing lines from the catalogue at the moment they happened', () => {
     expect(items[0]).toMatchObject({ type: 'host', text: 'Audit queued. Scope, limits and authorisation are pinned.' });
-    expect(items[1]).toMatchObject({ type: 'host', text: "Claude's team started work." });
+    expect(items[1]).toMatchObject({ type: 'host', text: "Blackwing's team started work." });
     const planner = items[2] as TurnItem;
     expect(planner).toMatchObject({ type: 'turn', agent: 'orchestrator', text: 'I will map the site first.' });
     // Recording the plan happened after recon reported back: no chip on the first turn, the plan line after the thread.
@@ -614,11 +614,11 @@ suite('client-ready run view', () => {
     const planDone = conversationItems([...RUN, skip, ev(31, 'run.completed', 'done', {}, at(40))], []);
     expect(planDone.at(-1)).toMatchObject({
       type: 'host',
-      text: 'Finished: Claude finished its plan: it ran 1 of 2 planned test cases and skipped 1. Your results are ready.',
+      text: 'Finished: Blackwing finished its plan: it ran 1 of 2 planned test cases and skipped 1. Your results are ready.',
     });
     expect([...accountUse(RUN)]).toEqual([['customer_a', 1]]);
     const done = conversationItems([...RUN, cov, ev(31, 'run.completed', 'done', {}, at(40))], []);
-    expect(done.at(-1)).toMatchObject({ type: 'host', text: 'Finished: Claude ended the audit early: it ran 1 of 3 planned test cases. Your results are ready.' });
+    expect(done.at(-1)).toMatchObject({ type: 'host', text: 'Finished: Blackwing ended the audit early: it ran 1 of 3 planned test cases. Your results are ready.' });
   });
   it('says when an allowed non-blocking request was actually sent', () => {
     const events = [

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- display truncation (hashes) */
-// Finding detail (experience spec §7, bug 16): the title is the breadcrumb, and the issue reads in three voices: Claude's
-// explanation (not verified), Blackwing's proof (probe, control, every replay) and Claude's fix suggestion when the run
+// Finding detail (experience spec §7, bug 16): the title is the breadcrumb, and the issue reads in three voices: Blackwing's
+// explanation (not verified), Blackwing's proof (probe, control, every replay) and Blackwing AI's fix suggestion when the run
 // recorded one. Gate 3, the reproduction command and the report download sit beside it.
 import { notFound } from 'next/navigation';
 import { cache, type ReactNode } from 'react';

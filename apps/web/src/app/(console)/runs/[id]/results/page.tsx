@@ -1,4 +1,4 @@
-// Results (experience spec §7; prototype 05): what Claude proved, in three voices, Gate 3 per issue, what was kept back,
+// Results (experience spec §7; prototype 05): what Blackwing proved, in three voices, Gate 3 per issue, what was kept back,
 // every decision you made, and the report. Every number is the runner's; the headline and lede are templates.
 import { notFound } from 'next/navigation';
 import { cache, Fragment, type ReactNode } from 'react';
@@ -196,8 +196,8 @@ export default async function ResultsPage({
             {/* Each sentence is one unit: when the line is full it breaks between them, never inside the first. */}
             {(live
               ? proven.length === 0
-                ? 'Claude is still testing. Nothing is proven yet.'
-                : `Claude has proved ${plural(proven.length, 'issue', 'issues')} so far.`
+                ? 'Blackwing is still testing. Nothing is proven yet.'
+                : `Blackwing has proved ${plural(proven.length, 'issue', 'issues')} so far.`
               : headline(proven)
             )
               .split(/(?<=\.) /)
@@ -243,7 +243,7 @@ export default async function ResultsPage({
             title={live ? 'Nothing to release yet.' : 'Nothing to release.'}
             body={
               live
-                ? 'Claude is still testing. Proven issues appear here as soon as the validator confirms them.'
+                ? 'Blackwing is still testing. Proven issues appear here as soon as the validator confirms them.'
                 : 'Nothing here means the validator could not reproduce an issue with a control, not that the site has none. Try a broader objective or a longer limit next time.'
             }
           />

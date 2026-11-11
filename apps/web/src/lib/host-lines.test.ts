@@ -17,7 +17,7 @@ describe('host lines', () => {
     expect(line('plan.cases', { agent: 'authz-specialist', cases: [1], total: 9 })).toBe(
       'The Access control specialist recorded 1 test case (9 in the plan).',
     );
-    expect(line('run.completed', {})).toBe('Finished: Claude ended the audit. Your results are ready.');
+    expect(line('run.completed', {})).toBe('Finished: Blackwing ended the audit. Your results are ready.');
     expect(
       hostLine({ kind: 'run.paused', data: {}, message: 'Run paused by Jatin Singh.' }, { viewerName: 'Jatin Singh' }),
     ).toBe('Paused by you.');
@@ -29,7 +29,7 @@ describe('host lines', () => {
     expect(line('run.killed', { haltMs: 1840 })).toBe('Stopped. Every agent halted in 1,840 ms.');
     expect(hostLine({ kind: 'run.killed', data: { haltMs: 0 } }, { started: false })).toBe('Stopped before testing began.');
     expect(line('run.completed', { reason: 'duration_budget' })).toBe(
-      'Finished: Claude stopped at the time limit. Your results are ready.',
+      'Finished: Blackwing stopped at the time limit. Your results are ready.',
     );
     expect(line('run.failed', { reason: 'no_result' })).toBe(
       'The run stopped with an error: no_result. Findings so far are kept.',
@@ -40,21 +40,21 @@ describe('host lines', () => {
 
   it('never calls an unfinished plan finished', () => {
     expect(finishedWhy(undefined, { executed: 6, total: 6 })).toEqual({
-      text: 'Claude finished its plan: it ran all 6 planned test cases',
+      text: 'Blackwing finished its plan: it ran all 6 planned test cases',
       complete: true,
     });
     expect(finishedWhy(undefined, { executed: 0, total: 6 })).toEqual({
-      text: 'Claude ended the audit early: it ran 0 of 6 planned test cases',
+      text: 'Blackwing ended the audit early: it ran 0 of 6 planned test cases',
       complete: false,
     });
     expect(finishedWhy('request_budget', { executed: 6, total: 6 }).complete).toBe(false);
     expect(finishedWhy('cost_cap', { executed: 2, total: 5 }).text).toBe(
-      'Claude reached the spend cap after it ran 2 of 5 planned test cases',
+      'Blackwing reached the spend cap after it ran 2 of 5 planned test cases',
     );
-    expect(finishedWhy(undefined, null)).toEqual({ text: 'Claude ended the audit', complete: false });
+    expect(finishedWhy(undefined, null)).toEqual({ text: 'Blackwing ended the audit', complete: false });
     expect(
       hostLine({ kind: 'run.completed', data: {} }, { cases: { executed: 0, total: 6 } }),
-    ).toBe('Finished: Claude ended the audit early: it ran 0 of 6 planned test cases. Your results are ready.');
+    ).toBe('Finished: Blackwing ended the audit early: it ran 0 of 6 planned test cases. Your results are ready.');
   });
 
   it('warns when the test accounts are not used', () => {

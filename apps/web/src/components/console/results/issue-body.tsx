@@ -1,5 +1,5 @@
-// One issue in three voices, never blurred (experience spec §1, §7): Claude's explanation (not verified), Blackwing's
-// proof by the validator (probe and control side by side, the replay count, the identity each was sent as) and Claude's
+// One issue in three voices, never blurred (experience spec §1, §7): Blackwing AI's explanation (not verified), Blackwing's
+// proof by the validator (probe and control side by side, the replay count, the identity each was sent as) and Blackwing's
 // fix suggestion, shown only when the run recorded one. Used by the results page and the finding detail page. Evidence
 // arrives scrubbed (results/model findingDetailSchema).
 import { agentName } from '../../../lib/agents';
@@ -67,8 +67,8 @@ export function plainReason(reason: string): string {
     .replace(/\boracle\b/gi, 'expected result');
 }
 
-/** Who did what in a proof: Blackwing replays deterministically, but the check and the control are Claude's proposal. */
-export const PROOF_BY = 'replayed by Blackwing; check and control proposed by Claude';
+/** Who did what in a proof: Blackwing replays deterministically, but the check and the control are Blackwing's proposal. */
+export const PROOF_BY = 'replayed by Blackwing; check and control proposed by Blackwing AI';
 
 /** What differs between the probe and the control (`evidence.proof.delta`), in words. */
 const DELTA_WORDS: Readonly<Record<string, string>> = {
@@ -102,7 +102,7 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
   if (isExposureProof(f))
     return {
       proven: true,
-      text: `Proven: ${times}, signed out. No control is possible for data open to everyone. Blackwing replayed it deterministically; Claude proposed the check.`,
+      text: `Proven: ${times}, signed out. No control is possible for data open to everyone. Blackwing replayed it deterministically; Blackwing AI proposed the check.`,
     };
   const control = f.replay?.control;
   const controlText =
@@ -113,7 +113,7 @@ export function proofSentence(f: FindingDetail): { proven: boolean; text: string
         : ', the control behaved as expected';
   return {
     proven: true,
-    text: `Proven: ${times}${controlText}. Blackwing replayed it deterministically; Claude proposed the check and the control.`,
+    text: `Proven: ${times}${controlText}. Blackwing replayed it deterministically; Blackwing AI proposed the check and the control.`,
   };
 }
 
@@ -210,7 +210,7 @@ export function IssueBody({
       {finding.description === null || finding.description.trim() === '' ? null : (
         <section className="flex flex-col gap-2">
           <Label voice="claude">
-            <b>What it means</b> · Claude&rsquo;s explanation, not verified
+            <b>What it means</b> · Blackwing AI&rsquo;s explanation, not verified
           </Label>
           <div className="rounded-xl border border-dashed border-border-strong bg-code px-4 py-3 text-[14px] leading-[22px] text-foreground">
             <Markdown text={finding.description} />
@@ -234,7 +234,7 @@ export function IssueBody({
           <ProofSide
             title="Probe"
             note={
-              proof.proven ? 'The request that shows the issue.' : 'The request Claude suspected.'
+              proof.proven ? 'The request that shows the issue.' : 'The request Blackwing AI suspected.'
             }
             side={probe}
             delta={delta}
@@ -288,7 +288,7 @@ export function IssueBody({
       {remediation === '' ? null : (
         <section className="flex flex-col gap-1.5">
           <Label voice="claude">
-            <b>How to fix it</b> · Claude&rsquo;s suggestion, not verified
+            <b>How to fix it</b> · Blackwing AI&rsquo;s suggestion, not verified
           </Label>
           <div className="text-[14px] leading-[22px] text-foreground">
             <Markdown text={remediation} />

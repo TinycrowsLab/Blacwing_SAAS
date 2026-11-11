@@ -7,6 +7,16 @@ import { GENESIS, auditHash, type AuditFields, type AuditPayload, type AuditRef 
 import type pg from 'pg';
 
 /** An audit-order draft (demo.drafts): the wizard's answers, kept per person. */
+/** A stored test account: a header credential, or (login-form mode) `username`/`password`; the password never leaves the server. */
+export interface TestAccountRow {
+  readonly role: string;
+  readonly header_name: string;
+  readonly header_value: string;
+  readonly username?: string;
+  readonly password?: string;
+  readonly login_url?: string;
+}
+
 export interface DraftRow {
   readonly id: string;
   readonly step: number;
@@ -74,11 +84,7 @@ export interface RequestRow {
   readonly budget_requests: number;
   readonly budget_seconds: number;
   readonly cost_cap_usd: string;
-  readonly test_accounts: readonly {
-    readonly role: string;
-    readonly header_name: string;
-    readonly header_value: string;
-  }[];
+  readonly test_accounts: readonly TestAccountRow[];
   readonly status: string;
   /** Plan version: every amend bumps it; Gate 1 decides one version. */
   readonly version: number;
@@ -251,7 +257,7 @@ export interface RequestAmend {
   readonly budget_requests: number;
   readonly budget_seconds: number;
   readonly cost_cap_usd: number;
-  readonly test_accounts: readonly { role: string; header_name: string; header_value: string }[];
+  readonly test_accounts: readonly TestAccountRow[];
 }
 
 export interface AuditEntry {
@@ -517,7 +523,7 @@ export class DemoStore {
     budget_requests: number;
     budget_seconds: number;
     cost_cap_usd: number;
-    test_accounts: { role: string; header_name: string; header_value: string }[];
+    test_accounts: TestAccountRow[];
   }): Promise<void> {
     await this.pool.query(
       `INSERT INTO demo.assessment_requests (id, tenant_id, asset_id, requester_id, objective, scope,

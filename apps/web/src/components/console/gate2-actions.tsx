@@ -16,7 +16,7 @@ import { gate2DetailSchema } from '../../lib/schemas';
 export type Gate2Detail = z.infer<typeof gate2DetailSchema>;
 
 export const FOOTNOTE =
-  'While this waits, Claude carries on with other test cases where it can. Allowing lets this method, path and role through until the audit ends. No answer means denied. Recorded in the audit ledger.';
+  'While this waits, Blackwing carries on with other test cases where it can. Allowing lets this method, path and role through until the audit ends. No answer means denied. Recorded in the audit ledger.';
 
 /** Fired with the decided request, so every card for it in this tab (and a "Deny all") shows the same receipt. */
 export const DECIDED_EVENT = 'bw:gate2-decided';

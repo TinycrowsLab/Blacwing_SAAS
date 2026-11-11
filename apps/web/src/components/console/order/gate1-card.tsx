@@ -257,7 +257,7 @@ export function Gate1Card({
         ) : null}
         {approved && request.runId !== null ? (
           <LinkButton href={`/runs/${request.runId}`} variant="primary" className="h-12 rounded-xl text-[14.5px]">
-            {request.status === 'running' ? <>Watch Claude&apos;s team work</> : 'Open the audit'}
+            {request.status === 'running' ? <>Watch Blackwing&apos;s team work</> : 'Open the audit'}
             <Icon name="arrow" size={16} />
           </LinkButton>
         ) : request.status === 'approved' ? (

@@ -1,4 +1,4 @@
-// Console shell (experience spec §2): a Claude-app layout, the 264 px sidebar and one main column; under 768 px a 52 px
+// Console shell (experience spec §2): a Blackwing-app layout, the 264 px sidebar and one main column; under 768 px a 52 px
 // top bar with the menu sheet. No search, no bell, no workspace switcher: every control works or is not rendered.
 import { ConsoleSidebar, type SidebarViewer } from './sidebar';
 

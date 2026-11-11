@@ -148,7 +148,7 @@ export function NotTestedList({ data }: { readonly data: NotTested }) {
         <div className="mt-2 flex flex-col gap-1.5">
           <p className="m-0 flex flex-wrap items-center gap-2 text-[11.5px] font-medium text-muted-foreground">
             <VoiceTag voice="claude" />
-            What Claude says it did not cover · its own words, not verified
+            What Blackwing says it did not cover · its own words, not verified
           </p>
           <div className="rounded-xl border border-dashed border-border-strong bg-code px-4 py-3 text-[13.5px] leading-[21px] text-foreground">
             <Markdown text={data.note} />

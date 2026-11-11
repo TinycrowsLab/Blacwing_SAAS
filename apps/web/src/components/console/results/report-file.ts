@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- report layout values */
 // The run report people download and send on (experience spec §7, §8). The API gives the run's released findings as
 // JSON; this file words them the way the console does: the target's name, plain words for every setting, the issues
-// most severe first, and the three voices kept apart (Blackwing's proof, Claude's explanation and Claude's fix, the
+// most severe first, and the three voices kept apart (Blackwing's proof, Blackwing AI's explanation and Blackwing AI's fix, the
 // last two marked "not verified"). It holds released issues only, so the agent's run summary (written about every
 // suspected issue, dismissed and unreleased ones too) never goes in. Pure functions, no IO; all text is escaped.
 import { z } from 'zod';
@@ -27,7 +27,7 @@ export const reportSourceSchema = z
         budget: z.object({ requests: z.number(), seconds: z.number(), costUsd: z.number() }),
         /** Why the run ended (from its run.completed, run.failed or run.killed event); null on older reports. */
         endReason: z.string().nullable().default(null),
-        /** Only Claude's own "not covered" note is read from it, marked not verified; the rest never goes in. */
+        /** Only Blackwing AI's own "not covered" note is read from it, marked not verified; the rest never goes in. */
         summary: z.string().nullable().default(null),
       })
       .loose(),
@@ -67,9 +67,9 @@ export const REPORT_FORMATS = ['html', 'md', 'json', 'sarif'] as const;
 export type ReportFormat = (typeof REPORT_FORMATS)[number];
 
 const LIMITS = [
-  'Severity is the label Claude proposed, not a computed CVSS score.',
-  'Explanations and fixes are written by Claude and are not verified. The proof (replays and control) is.',
-  'Claude proposed each check and its control; Blackwing replayed them. A finding holds for the state the site was in then.',
+  'Severity is the label Blackwing AI proposed, not a computed CVSS score.',
+  'Explanations and fixes are written by Blackwing AI and are not verified. The proof (replays and control) is.',
+  'Blackwing AI proposed each check and its control; Blackwing replayed them. A finding holds for the state the site was in then.',
   'Detection only: each probe is the least needed to show the issue.',
   'No browser is used, so DOM-based XSS is not tested.',
   'Tokens, cookies and passwords in the evidence are redacted by Blackwing.',
@@ -328,20 +328,20 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
       );
     if (f.description !== null && f.description.trim() !== '')
       out.push(
-        '### What it means (Claude’s explanation, not verified)',
+        '### What it means (Blackwing AI’s explanation, not verified)',
         '',
         f.description.trim(),
         '',
       );
     if (remediation !== '')
-      out.push('### How to fix it (Claude’s suggestion, not verified)', '', remediation, '');
+      out.push('### How to fix it (Blackwing AI’s suggestion, not verified)', '', remediation, '');
   });
   const gaps = notTestedOf(src);
   out.push('## What was not tested and why', '');
   if (!gaps.recorded) out.push(NOT_RECORDED, '');
   if (gaps.rows.length > 0) out.push(...gaps.rows.map((r) => `- **${r.what}:** ${r.why}`), '');
   else if (gaps.recorded) out.push(NO_GAPS, '');
-  if (gaps.note !== null) out.push('Claude’s own note (not verified):', '', ...gaps.note.split('\n').map((l) => `> ${l}`), '');
+  if (gaps.note !== null) out.push('Blackwing AI’s own note (not verified):', '', ...gaps.note.split('\n').map((l) => `> ${l}`), '');
   out.push('## Limits of this report', '', ...LIMITS.map((l) => `- ${l}`), '');
   return out.join('\n');
 }
@@ -384,8 +384,8 @@ th{background:var(--code);font-weight:600;width:110px}
 code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
 td code{word-break:break-all}
 pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;margin:6px 0}
-.claude{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;background:var(--code)}
-.claude p{margin:6px 0}
+.ai{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;background:var(--code)}
+.ai p{margin:6px 0}
 ul.limits{padding-left:20px;color:var(--muted);font-size:14px}
 footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 @media (max-width:600px){dl{grid-template-columns:1fr}dt{font-weight:600;color:var(--fg)}article{padding:16px}}
@@ -418,8 +418,8 @@ export function renderHtml(
 </table>${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${f.reproCurl === '' ? '' : `\n<p class="meta">Reproduce it (run it only against a copy you own):</p>\n<pre>${esc(f.reproCurl)}</pre>`}${
         f.description === null || f.description.trim() === ''
           ? ''
-          : `\n<h4>What it means <span>· Claude’s explanation, not verified</span></h4>\n<div class="claude">${markdownToHtml(f.description.trim())}</div>`
-      }${remediation === '' ? '' : `\n<h4>How to fix it <span>· Claude’s suggestion, not verified</span></h4>\n<div>${markdownToHtml(remediation)}</div>`}
+          : `\n<h4>What it means <span>· Blackwing AI’s explanation, not verified</span></h4>\n<div class="ai">${markdownToHtml(f.description.trim())}</div>`
+      }${remediation === '' ? '' : `\n<h4>How to fix it <span>· Blackwing AI’s suggestion, not verified</span></h4>\n<div>${markdownToHtml(remediation)}</div>`}
 </article>`;
     })
     .join('\n');
@@ -433,7 +433,7 @@ export function renderHtml(
         : '',
     gaps.note === null
       ? ''
-      : `<h4>Claude’s own note <span>· not verified</span></h4>\n<div class="claude">${markdownToHtml(gaps.note)}</div>`,
+      : `<h4>Blackwing AI’s own note <span>· not verified</span></h4>\n<div class="ai">${markdownToHtml(gaps.note)}</div>`,
   ]
     .filter((x) => x !== '')
     .join('\n');

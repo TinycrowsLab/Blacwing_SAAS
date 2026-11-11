@@ -23,7 +23,7 @@ export interface HostContext {
 
 export interface CaseTally {
   readonly executed: number;
-  /** Cases Claude skipped with a reason: the plan is done, but they did not run. */
+  /** Cases Blackwing skipped with a reason: the plan is done, but they did not run. */
   readonly skipped?: number;
   readonly total: number;
 }
@@ -58,17 +58,17 @@ export function finishedWhy(reason: unknown, cases: CaseTally | null | undefined
   const limit = LIMITS.has(reason) ? finishReason(reason) : null;
   const total = cases?.total ?? 0;
   const executed = Math.min(cases?.executed ?? 0, total);
-  if (total === 0) return { text: limit === null ? 'Claude ended the audit' : `Claude ${limit}`, complete: false };
+  if (total === 0) return { text: limit === null ? 'Blackwing ended the audit' : `Blackwing ${limit}`, complete: false };
   const all = `all ${total} planned test ${total === 1 ? 'case' : 'cases'}`;
   if (executed >= total)
     return limit === null
-      ? { text: `Claude finished its plan: it ran ${all}`, complete: true }
-      : { text: `Claude ${limit} after it ran ${all}`, complete: false };
+      ? { text: `Blackwing finished its plan: it ran ${all}`, complete: true }
+      : { text: `Blackwing ${limit} after it ran ${all}`, complete: false };
   const ran = `ran ${executed} of ${total} planned test cases`;
   const skipped = Math.min(cases?.skipped ?? 0, total - executed);
   if (limit === null && executed + skipped >= total)
-    return { text: `Claude finished its plan: it ${ran} and skipped ${skipped}`, complete: false };
-  return { text: limit === null ? `Claude ended the audit early: it ${ran}` : `Claude ${limit} after it ${ran}`, complete: false };
+    return { text: `Blackwing finished its plan: it ${ran} and skipped ${skipped}`, complete: false };
+  return { text: limit === null ? `Blackwing ended the audit early: it ${ran}` : `Blackwing ${limit} after it ${ran}`, complete: false };
 }
 
 function requestLabel(request: HostContext['request']): string {
@@ -91,7 +91,7 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
     case 'run.queued':
       return 'Audit queued. Scope, limits and authorisation are pinned.';
     case 'run.started':
-      return "Claude's team started work.";
+      return "Blackwing's team started work.";
     case 'plan.cases': {
       const n = Array.isArray(d.cases) ? d.cases.length : 0;
       const total = num(d.total) ?? n;

@@ -73,6 +73,10 @@ export class FakeStore implements HuntStore {
     this.findings.push(row);
     return Promise.resolve(row.id);
   }
+  findingByFingerprint(_run: HuntRun, fingerprint: string): Promise<{ id: string; title: string } | null> {
+    const found = this.findings.find((f) => f.fingerprint === fingerprint);
+    return Promise.resolve(found === undefined ? null : { id: found.id, title: found.title });
+  }
   supersedeCopies(_run: HuntRun, findingId: string, identityKey: string): Promise<string[]> {
     // The fake keeps no dismissed rows: a superseded copy leaves the list and goes on the ledger.
     const ids = this.findings.filter((f) => f.identityKey === identityKey && f.id !== findingId && f.status === 'confirmed').map((f) => f.id);

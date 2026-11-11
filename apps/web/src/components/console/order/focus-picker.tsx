@@ -1,6 +1,6 @@
 'use client';
 
-// "What should Claude look for?" (spec §3.3 question 3): chips with a one-line explanation, then optional free text.
+// "What should Blackwing look for?" (spec §3.3 question 3): chips with a one-line explanation, then optional free text.
 // The objective is composed from them by a template (shared.ts composeObjective).
 import { useId } from 'react';
 

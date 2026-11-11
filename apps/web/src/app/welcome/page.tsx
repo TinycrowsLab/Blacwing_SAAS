@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: 'Set up your workspace' };
 
 const NEXT_STEPS = [
   { title: 'Next: your first target', body: "Add a site you own. We'll help you prove it's yours." },
-  { title: 'Nothing runs on its own', body: 'You approve every audit before Claude sends a request.' },
+  { title: 'Nothing runs on its own', body: 'You approve every audit before Blackwing sends a request.' },
   { title: 'Every step is recorded', body: 'Decisions go on a tamper-evident ledger.' },
 ] as const;
 
