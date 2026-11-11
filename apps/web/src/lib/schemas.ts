@@ -79,7 +79,7 @@ export const requestSchema = z.object({
   viewerIsRequester: z.boolean().default(false),
   viewerIsAdmin: z.boolean().default(false),
   selfApproved: z.boolean().default(false),
-  testAccounts: z.array(z.object({ role: z.string(), headerName: z.string() })).default([]),
+  testAccounts: z.array(z.object({ role: z.string(), headerName: z.string(), loginUsername: z.string().optional(), loginUrl: z.string().optional() })).default([]),
   /** Gate 3 mode: `hold` waits for a human release, `auto` releases what the validator proves. */
   releaseProven: z.enum(['hold', 'auto']).default('auto'),
   audit: auditRefSchema,
@@ -112,7 +112,7 @@ const pinsSchema = z
         id: z.string(),
         objective: z.string().default(''),
         intrusiveness: z.string(),
-        testAccounts: z.array(z.object({ role: z.string(), headerName: z.string() })).optional(),
+        testAccounts: z.array(z.object({ role: z.string(), headerName: z.string(), loginUsername: z.string().optional(), loginUrl: z.string().optional() })).optional(),
       })
       .loose()
       .optional(),

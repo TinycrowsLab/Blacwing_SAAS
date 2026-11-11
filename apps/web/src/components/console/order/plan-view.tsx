@@ -138,7 +138,13 @@ export function PlanView({
   const [limitsOk, setLimitsOk] = useState(true);
   // Blackwing keeps the accounts' values; the browser never sees them, and an edit leaves them in place.
   const startRows = (): AccountRow[] =>
-    request.testAccounts.map((a) => ({ role: a.role, headerName: a.headerName, headerValue: '', saved: true }));
+    request.testAccounts.map((a) => ({
+      role: a.role,
+      headerName: a.headerName,
+      headerValue: '',
+      saved: true,
+      ...(a.loginUsername === undefined ? {} : { login: true, username: a.loginUsername, password: '', loginUrl: a.loginUrl ?? '' }),
+    }));
   const [rows, setRows] = useState<readonly AccountRow[]>(startRows);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -243,8 +249,8 @@ export function PlanView({
   };
 
   const rowsChanged =
-    JSON.stringify(rows.map((r) => [r.role, r.headerName, r.headerValue])) !==
-    JSON.stringify(startRows().map((r) => [r.role, r.headerName, r.headerValue]));
+    JSON.stringify(rows.map((r) => [r.role, r.headerName, r.headerValue, r.login, r.username, r.password, r.loginUrl])) !==
+    JSON.stringify(startRows().map((r) => [r.role, r.headerName, r.headerValue, r.login, r.username, r.password, r.loginUrl]));
   /** An editor with a change not yet applied: Approve waits for Update or Cancel. */
   const unsaved =
     field !== null &&

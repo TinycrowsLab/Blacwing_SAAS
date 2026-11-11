@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { FocusPicker } from './focus-picker';
+import { type AccountRow, AccountsEditor, checkAccounts } from './plan-editors';
 import {
   BROAD,
   CARE,
@@ -26,8 +27,14 @@ import {
 } from './shared';
 import { Ticket, TicketPill, type TicketDetail, type TicketLine } from './ticket';
 import { attest, type ProofMethod, VerifyOwnership } from './verify-ownership';
-import { createAuditAction, ensureTargetAction } from '../../../app/(console)/audits/actions';
-import { discardDraftAction, saveDraftAction } from '../../../app/(console)/audits/actions';
+import {
+  type AuditInput,
+  createAuditAction,
+  detectLoginAction,
+  discardDraftAction,
+  ensureTargetAction,
+  saveDraftAction,
+} from '../../../app/(console)/audits/actions';
 import { readDrafts, removeDraft, saveDraft } from '../../../lib/drafts';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
 import { limitsPhrase, usd } from '../../../lib/plan-text';
@@ -196,6 +203,18 @@ export function Order({
   const footer = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
   const live = useNormalized(text);
+
+  /** The address shows a login form: offer an optional test account (never saved in a draft; passwords stay in this tab). */
+  const [loginForm, setLoginForm] = useState(false);
+  const [accountRows, setAccountRows] = useState<readonly AccountRow[]>([]);
+  const probedLogin = useRef<string | null>(null);
+  useEffect(() => {
+    if (step < Q.focus || target === null || asset === null || !isVerified(asset) || probedLogin.current === target.origin) return;
+    probedLogin.current = target.origin;
+    void detectLoginAction(target.origin, target.host).then((r) => {
+      if (r.ok) setLoginForm(r.data.loginForm);
+    });
+  }, [step, target, asset]);
 
   const chosenCare: Care = care ?? (target === null ? 'passive' : recommendedCare(target.host));
 
@@ -383,6 +402,11 @@ export function Order({
       return false;
     }
     if (asset === null || target === null) return false;
+    const checked = checkAccounts(accountRows);
+    if ('error' in checked) {
+      setError(checked.error);
+      return false;
+    }
     const r = await createAuditAction({
       assetId: asset.id,
       objective: composeObjective(focus, focusText),
@@ -392,7 +416,11 @@ export function Order({
       costUsd: limits?.costUsd ?? null,
       excludedPaths: [],
       releaseProven: 'hold',
-      testAccounts: [],
+      testAccounts: checked.accounts.flatMap<AuditInput['testAccounts'][number]>((a) =>
+        'headerName' in a
+          ? a.headerValue === undefined ? [] : [{ role: a.role, headerName: a.headerName, headerValue: a.headerValue }]
+          : a.password === undefined ? [] : [{ role: a.role, username: a.username, password: a.password, ...(a.loginUrl === undefined ? {} : { loginUrl: a.loginUrl }) }],
+      ),
     });
     if (!r.ok) {
       setError(r.message);
@@ -676,6 +704,29 @@ export function Order({
                   />
                 ))}
               </fieldset>
+              {loginForm ? (
+                <div className="flex flex-col gap-2 rounded-[12px] border border-border p-3.5">
+                  <p className="m-0 text-[13px] leading-5 text-foreground">
+                    This site shows a login form. Most of what is worth testing is usually behind it. Add a test account so Blackwing can sign in
+                    and test it (optional: skip it to test only what a visitor sees).
+                  </p>
+                  {accountRows.length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountRows([{ role: 'admin', headerName: 'Authorization', headerValue: '', login: true, username: '', password: '', loginUrl: '' }]);
+                      }}
+                      className={buttonClass('ghost', 'h-9 self-start px-3')}
+                    >
+                      Add a test account
+                    </button>
+                  ) : (
+                    <>
+                      <AccountsEditor rows={accountRows} onRows={setAccountRows} />
+                    </>
+                  )}
+                </div>
+              ) : null}
               <p className="m-0 flex items-start gap-2 rounded-[12px] bg-surface-2 px-3.5 py-3 text-[13px] leading-5 text-muted-foreground">
                 <Icon name="shield" size={15} className="mt-0.5 shrink-0" />
                 Probing gently, anything that would change data waits for your yes. Only looking, it is refused. Either way,

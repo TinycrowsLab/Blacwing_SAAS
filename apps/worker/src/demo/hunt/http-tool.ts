@@ -37,6 +37,8 @@ const MAX_ROLE_LENGTH = 32;
 const ACCOUNTS_UNUSED_AFTER = 25;
 const REDACTED = '[redacted]';
 const MIN_SESSION_SECRET = 8;
+const HTTP_OK = 200;
+const HTTP_ERROR_MIN = 400;
 const LOGOUT_PATH = /log-?out|sign-?out/i;
 const USER_AGENT = 'blackwing-hunt/1';
 const DROPPED_REQUEST_HEADERS = new Set(['host', 'content-length', 'connection', 'transfer-encoding']);
@@ -340,7 +342,7 @@ const LOGIN_WALL_MIN_REDIRECTS = 3;
 
 /** Signed-out recon: when most distinct pages redirect to a login page and no test account exists, say so once. */
 async function noteSignedOut(ctx: HuntContext, url: URL, status: number, location: string | null): Promise<void> {
-  if (status >= 400) return;
+  if (status >= HTTP_ERROR_MIN) return;
   if (ctx.run.testAccounts.length > 0 || ctx.state.loginWall) return;
   const toLogin = redirectsToLogin({ status, location }, url.href, null);
   ctx.state.signedOutPaths.set(url.pathname, (ctx.state.signedOutPaths.get(url.pathname) ?? false) || toLogin);
@@ -532,7 +534,7 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
       ...(gate2Id === undefined ? {} : { gate2Id }),
     });
     await countSent(ctx, agent, account?.role, options.caseId);
-    if (agent !== 'validator' && response.status === 200 && (scope.url.search !== '' || /<form\b/i.test(body))) ctx.state.inputsSeen += 1;
+    if (agent !== 'validator' && response.status === HTTP_OK && (scope.url.search !== '' || /<form\b/i.test(body))) ctx.state.inputsSeen += 1;
     if (account === undefined && agent !== 'validator') await noteSignedOut(ctx, scope.url, response.status, response.headers.get('location'));
     const approvedAsk = gate2Id === undefined ? undefined : ctx.state.asks.get(gate2Id);
     if (approvedAsk !== undefined && agent !== 'validator') approvedAsk.sent = true;

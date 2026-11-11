@@ -39,6 +39,8 @@ export type Step = (request: StepRequest) => Promise<StepResponse | null>;
 
 export const MAX_LOGINS = 4;
 const MAX_HOPS = 5;
+const REDIRECT_MIN = 300;
+const ERROR_MIN = 400;
 const FALLBACK_PATHS = ['/login', '/login.php', '/signin', '/user/login', '/account/login'];
 const LOST_PATH = /(^|\/)(log-?in|sign-?in|auth)(\.\w+)?\/?$/i;
 
@@ -93,9 +95,9 @@ export function findLoginForm(html: string): LoginForm | null {
     const inputs = [...(match[2] ?? '').matchAll(/<input\b[^>]*>/gi)].map((m) => m[0]);
     const typed = inputs.map((tag) => ({ tag, type: (attr(tag, 'type') ?? 'text').toLowerCase(), name: attr(tag, 'name') }));
     const password = typed.find((i) => i.type === 'password' && i.name !== null);
-    if (password?.name == null) continue;
+    if (password?.name === undefined || password.name === null) continue;
     const user = typed.find((i) => i.name !== null && (i.type === 'text' || i.type === 'email') && /user|login|email|name/i.test(i.name)) ?? typed.find((i) => i.name !== null && (i.type === 'text' || i.type === 'email'));
-    if (user?.name == null) continue;
+    if (user?.name === undefined || user.name === null) continue;
     const fields = typed
       .filter((i) => i.name !== null && (i.type === 'hidden' || i.type === 'submit'))
       .map((i) => ({ name: i.name ?? '', value: attr(i.tag, 'value') ?? '' }));
@@ -114,7 +116,7 @@ const pathOf = (url: string): string | null => {
 
 /** True when the response sends the browser to the login page (the signal that a session was lost). */
 export function redirectsToLogin(res: { status: number; location: string | null }, base: string, loginPath: string | null): boolean {
-  if (res.status < 300 || res.status >= 400 || res.location === null) return false;
+  if (res.status < REDIRECT_MIN || res.status >= ERROR_MIN || res.location === null) return false;
   let path: string | null;
   try {
     path = new URL(res.location, base).pathname;
@@ -136,7 +138,7 @@ async function follow(step: Step, jar: Map<string, string>, first: StepRequest):
     const res = await step({ ...request, headers: { ...request.headers, ...(cookie === '' ? {} : { cookie }) } });
     if (res === null) return null;
     applySetCookies(jar, res.setCookies);
-    if (res.status >= 300 && res.status < 400 && res.location !== null) {
+    if (res.status >= REDIRECT_MIN && res.status < ERROR_MIN && res.location !== null) {
       request = { method: 'GET', url: new URL(res.location, request.url).href, headers: {} };
       continue;
     }
@@ -168,7 +170,7 @@ export async function performLogin(account: LoginAccount, origin: string, sessio
       ? await follow(step, session.jar, { method: 'POST', url: action, headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: params.toString() })
       : await follow(step, session.jar, { method: 'GET', url: `${action}${action.includes('?') ? '&' : '?'}${params.toString()}`, headers: {} });
     if (sent === null) return 'The login request was refused or failed.';
-    if (sent.res.status >= 400) return `The login form answered with status ${sent.res.status}.`;
+    if (sent.res.status >= ERROR_MIN) return `The login form answered with status ${sent.res.status}.`;
     if (findLoginForm(sent.res.body) !== null) return 'The site still shows the login form after submitting the credentials (wrong username or password?).';
     return null;
   }

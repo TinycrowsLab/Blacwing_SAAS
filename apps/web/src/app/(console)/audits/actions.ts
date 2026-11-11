@@ -219,11 +219,20 @@ export async function verifyTargetAction(assetId: string, verify: VerifyInput): 
   return plainOwnership(result);
 }
 
-const accountSchema = z.object({
-  role: z.string().regex(/^[a-z][a-z0-9_-]{0,31}$/),
+const accountRole = z.string().regex(/^[a-z][a-z0-9_-]{0,31}$/);
+const headerAccount = z.object({
+  role: accountRole,
   headerName: z.string().regex(/^[A-Za-z0-9-]{1,64}$/),
   headerValue: z.string().min(1).max(4096),
 });
+/** Login-form mode: Blackwing signs in with the username and password itself. */
+const loginAccount = z.object({
+  role: accountRole,
+  username: z.string().min(1).max(256),
+  password: z.string().min(1).max(256),
+  loginUrl: z.url({ protocol: /^https?$/ }).max(2048).optional(),
+});
+const accountSchema = z.union([headerAccount, loginAccount]);
 
 const auditSchema = z.object({
   assetId: z.uuid(),
@@ -292,7 +301,10 @@ const amendSchema = z.object({
     .optional(),
   excludedPaths: auditSchema.shape.excludedPaths.optional(),
   releaseProven: auditSchema.shape.releaseProven.optional(),
-  testAccounts: z.array(accountSchema.extend({ headerValue: accountSchema.shape.headerValue.optional() })).max(3).optional(),
+  testAccounts: z
+    .array(z.union([headerAccount.extend({ headerValue: headerAccount.shape.headerValue.optional() }), loginAccount.extend({ password: loginAccount.shape.password.optional() })]))
+    .max(3)
+    .optional(),
 });
 export type AmendInput = z.infer<typeof amendSchema>;
 
@@ -401,4 +413,35 @@ export async function denyPlanAction(requestId: string, reason: string): Promise
       }),
     ),
   );
+}
+
+const LOGIN_PROBE_TIMEOUT_MS = 6000;
+const LOGIN_PROBE_MAX_HOPS = 4;
+const LOGIN_PROBE_MAX_BYTES = 200_000;
+
+/**
+ * Does the address show a login form? Asked only for a site the person has verified, so it never reaches an address
+ * they do not own. Follows a few redirects (a signed-out site often sends the home page to its login page).
+ */
+export async function detectLoginAction(origin: string, host: string): Promise<ActionResult<{ loginForm: boolean }>> {
+  const target = await ensureTargetAction(origin, host);
+  if (!target.ok) return target;
+  if (target.data.ownership.status !== 'verified') return { ok: true, data: { loginForm: false } };
+  let url = origin;
+  try {
+    for (let hop = 0; hop <= LOGIN_PROBE_MAX_HOPS; hop += 1) {
+      const res = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(LOGIN_PROBE_TIMEOUT_MS), headers: { 'user-agent': 'blackwing-order/1' } });
+      const next = res.headers.get('location');
+      if (res.status >= 300 && res.status < 400 && next !== null) {
+        url = new URL(next, url).href;
+        if (new URL(url).origin !== new URL(origin).origin) break;
+        continue;
+      }
+      const html = (await res.text()).slice(0, LOGIN_PROBE_MAX_BYTES);
+      return { ok: true, data: { loginForm: /<input\b[^>]*type\s*=\s*["']?password/i.test(html) } };
+    }
+  } catch {
+    // Unreachable or slow: no prompt, the plan page still has the test-account editor.
+  }
+  return { ok: true, data: { loginForm: false } };
 }

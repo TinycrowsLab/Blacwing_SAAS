@@ -224,20 +224,23 @@ export interface AccountRow {
   readonly role: string;
   readonly headerName: string;
   readonly headerValue: string;
+  /** Sign-in by username and password: Blackwing logs in itself (the default for a new account). Otherwise a pasted header or cookie. */
+  readonly login?: boolean;
+  readonly username?: string;
+  readonly password?: string;
+  readonly loginUrl?: string;
   readonly note?: string | null;
   /** An account the plan already has: Blackwing keeps its value, so an empty value field means "keep it". */
   readonly saved?: boolean;
 }
 
 /** An account as an edit sends it: no value means keep the one Blackwing stored for that role and header. */
-export interface AccountValue {
-  readonly role: string;
-  readonly headerName: string;
-  readonly headerValue?: string;
-}
+export type AccountValue =
+  | { readonly role: string; readonly headerName: string; readonly headerValue?: string }
+  | { readonly role: string; readonly username: string; readonly password?: string; readonly loginUrl?: string };
 
 const MAX_ACCOUNTS = 3;
-const EMPTY_ROW: AccountRow = { role: '', headerName: 'Authorization', headerValue: '' };
+const EMPTY_ROW: AccountRow = { role: '', headerName: 'Authorization', headerValue: '', login: true, username: '', password: '', loginUrl: '' };
 
 /** The rows as the API takes them, or the one thing to fix. */
 export function checkAccounts(rows: readonly AccountRow[]): { accounts: AccountValue[] } | { error: string } {
@@ -246,6 +249,16 @@ export function checkAccounts(rows: readonly AccountRow[]): { accounts: AccountV
     const n = rows.length > 1 ? ` (account ${i + 1})` : '';
     const role = slugifyRole(r.role);
     if (role === null) return { error: `Give each account a role name, like customer or admin${n}.` };
+    if (r.login === true) {
+      const username = (r.username ?? '').trim();
+      const password = r.password ?? '';
+      const loginUrl = (r.loginUrl ?? '').trim();
+      if (username === '') return { error: `Type the username${n}.` };
+      if (password === '' && r.saved !== true) return { error: `Type the password${n}.` };
+      if (loginUrl !== '' && !/^https?:\/\/\S+$/i.test(loginUrl)) return { error: `The login page address must start with http:// or https://${n}.` };
+      accounts.push({ role, username, ...(password === '' ? {} : { password }), ...(loginUrl === '' ? {} : { loginUrl }) });
+      continue;
+    }
     const headerError = headerNameError(r.headerName.trim());
     if (headerError !== null) return { error: `${headerError}${n}` };
     const value = r.headerValue.trim();
@@ -314,7 +327,7 @@ export function AccountsEditor({
             const taken = slug !== null && rows.slice(0, i).some((x) => slugifyRole(x.role) === slug);
             return (
               <div key={i} className="flex flex-col gap-2 rounded-[12px] border border-border p-3">
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
+                <div className={r.login === true ? 'grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_auto]' : 'grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]'}>
                   <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-r${i}`}>
                     Role
                     <input
@@ -331,6 +344,39 @@ export function AccountsEditor({
                       className={`${INPUT_CLASS} h-10`}
                     />
                   </label>
+                  {r.login === true ? (
+                    <>
+                      <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-u${i}`}>
+                        Username
+                        <input
+                          id={`${id}-u${i}`}
+                          value={r.username ?? ''}
+                          autoComplete="off"
+                          spellCheck={false}
+                          onChange={(e) => {
+                            set(i, { ...r, username: e.target.value });
+                          }}
+                          className={`${INPUT_CLASS} h-10`}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-p${i}`}>
+                        Password
+                        <input
+                          id={`${id}-p${i}`}
+                          type="password"
+                          value={r.password ?? ''}
+                          autoComplete="new-password"
+                          spellCheck={false}
+                          placeholder={r.saved === true ? 'Password saved · type to replace' : ''}
+                          onChange={(e) => {
+                            set(i, { ...r, password: e.target.value });
+                          }}
+                          className={`${INPUT_CLASS} h-10`}
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <>
                   <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-h${i}`}>
                     Header
                     <input
@@ -359,6 +405,8 @@ export function AccountsEditor({
                       className={`${INPUT_CLASS} h-10 font-mono text-[13px]`}
                     />
                   </label>
+                    </>
+                  )}
                   <button
                     type="button"
                     aria-label={`Remove account ${i + 1}`}
@@ -370,6 +418,31 @@ export function AccountsEditor({
                     <Icon name="x" size={15} />
                   </button>
                 </div>
+                {r.login === true ? (
+                  <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-l${i}`}>
+                    Login page address (optional)
+                    <input
+                      id={`${id}-l${i}`}
+                      value={r.loginUrl ?? ''}
+                      placeholder="Blackwing finds the sign-in page itself"
+                      autoComplete="off"
+                      spellCheck={false}
+                      onChange={(e) => {
+                        set(i, { ...r, loginUrl: e.target.value });
+                      }}
+                      className={`${INPUT_CLASS} h-10`}
+                    />
+                  </label>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    set(i, r.login === true ? { ...r, login: false, saved: false } : { ...r, login: true, saved: false });
+                  }}
+                  className="self-start text-[12px] font-medium text-gold-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+                >
+                  {r.login === true ? 'Use a token or cookie instead' : 'Sign in with a username and password instead'}
+                </button>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
                   {taken ? (
                     <span className="text-bad">
@@ -399,7 +472,7 @@ export function AccountsEditor({
           ) : null}
           <p className="m-0 flex items-start gap-2 text-[12.5px] leading-5 text-muted-foreground">
             <Icon name="lock" size={14} className="mt-[3px] shrink-0" />
-            Use throwaway accounts. Blackwing never sees these values; Blackwing adds them to requests itself.
+            Use throwaway accounts. Blackwing signs in itself and adds the session to requests; the model never sees these values.
           </p>
         </div>
       ) : null}

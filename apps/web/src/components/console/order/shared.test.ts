@@ -70,3 +70,14 @@ describe('ownership and approvals', () => {
     expect(approvalEnded('approved')).toBe(false);
   });
 });
+
+describe('checkAccounts, login-form accounts', () => {
+  it('takes a username and password (and an optional login page), and asks for what is missing', () => {
+    const row = { role: 'admin', headerName: 'Authorization', headerValue: '', login: true };
+    expect(checkAccounts([{ ...row, username: ' admin ', password: 'pw', loginUrl: '' }])).toEqual({ accounts: [{ role: 'admin', username: 'admin', password: 'pw' }] });
+    expect(checkAccounts([{ ...row, username: 'a', password: 'pw', loginUrl: 'http://x.test/login' }])).toEqual({ accounts: [{ role: 'admin', username: 'a', password: 'pw', loginUrl: 'http://x.test/login' }] });
+    expect(checkAccounts([{ ...row, username: '', password: 'pw' }])).toEqual({ error: 'Type the username.' });
+    expect(checkAccounts([{ ...row, username: 'a', password: '' }])).toEqual({ error: 'Type the password.' });
+    expect(checkAccounts([{ ...row, username: 'a', password: '', saved: true }])).toEqual({ accounts: [{ role: 'admin', username: 'a' }] });
+  });
+});
