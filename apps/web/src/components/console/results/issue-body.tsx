@@ -6,6 +6,7 @@ import { agentName } from '../../../lib/agents';
 import { Chip, Icon, VoiceTag } from '../design';
 import { Markdown } from '../markdown';
 import { Path } from './decisions';
+import { ProofShots } from './proof-shots';
 
 import type { FindingDetail } from './model';
 import type { ReactNode } from 'react';
@@ -271,6 +272,7 @@ export function IssueBody({
             }
           />
         </div>
+        {proof.proven ? <ProofShots id={finding.id} shots={finding.evidence.screenshots} /> : null}
         {check === null ? null : (
           <p className="m-0 text-[12.5px] text-muted-foreground">
             Blackwing checked that {check}

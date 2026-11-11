@@ -33,16 +33,8 @@ export const assetSchema = z.object({
     verifiedBy: z.string().nullable().default(null),
     verifiedAt: nullableIso,
   }),
-  /** True when the operator listed every origin of this asset as a lab (owner attestation is allowed there). */
+  /** True when the operator listed every origin of this asset as a lab. */
   lab: z.boolean().default(false),
-  verification: z
-    .object({
-      token: z.string().nullable(),
-      wellKnownUrl: z.string(),
-      methods: z.array(z.enum(['http_token', 'owner_attestation'])).default(['http_token', 'owner_attestation']),
-    })
-    .nullable()
-    .default(null),
 });
 export type Asset = z.infer<typeof assetSchema>;
 
@@ -201,6 +193,32 @@ export const coverageSchema = z.object({
 });
 export type Coverage = z.infer<typeof coverageSchema>;
 
+/**
+ * The passive threat-intel phase of a run (its last intel.summary event): what the public web exposes about the target's
+ * organisation. `basis` says how far to trust an item: a confirmed finding, an observed fact, or intel that is not verified.
+ */
+export const intelSchema = z.object({
+  skipped: z.string().nullable().default(null),
+  domains: strings,
+  sources: z
+    .array(z.object({ name: z.string(), status: z.string(), note: z.string() }))
+    .default([]),
+  items: z
+    .array(
+      z.object({
+        source: z.string().default(''),
+        title: z.string(),
+        detail: z.string().default(''),
+        severity: z.string().default('info'),
+        basis: z.enum(['finding', 'observed', 'unverified']).catch('unverified'),
+      }),
+    )
+    .default([]),
+  discoveredHosts: strings,
+  archivedPaths: strings,
+});
+export type Intel = z.infer<typeof intelSchema>;
+
 /** Only while a run is queued: its place in the line and how many run at a time. */
 const queueSchema = z.object({ position: z.number(), ahead: z.number(), running: z.number(), concurrency: z.number() });
 
@@ -236,6 +254,9 @@ export const runSchema = z.object({
   startedBy: personSchema.nullable().default(null),
   queue: queueSchema.nullable().default(null),
   coverage: coverageSchema.nullable().default(null),
+  intel: intelSchema.nullable().catch(null).default(null),
+  /** The AI-written executive summary (Markdown); null when none was written. Not verified. */
+  executiveSummary: z.object({ markdown: z.string() }).loose().nullable().catch(null).default(null),
 });
 export type Run = z.infer<typeof runSchema>;
 
@@ -300,6 +321,15 @@ export const findingSchema = findingSummarySchema.extend({
         .array(z.object({ n: z.number(), status: z.number(), matched: z.boolean() }))
         .default([]),
       reason: z.string().optional(),
+      /** What the proof screenshot capture did (the PNGs are read through /api/findings/:id/screenshots/:kind). */
+      screenshots: z
+        .object({
+          status: z.string().optional(),
+          note: z.string().optional(),
+          probe: z.object({ width: z.number(), height: z.number(), mode: z.string().optional() }).optional(),
+          control: z.object({ width: z.number(), height: z.number(), mode: z.string().optional() }).optional(),
+        })
+        .optional(),
       /** Blackwing AI's fix suggestion (optional, not verified): the "How to fix it" block is hidden without it. */
       remediation: z.string().optional(),
       proof: z

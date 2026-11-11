@@ -36,8 +36,11 @@ export function stateChangeHint(method: string, url: URL): string | null {
   const segments = (decodeForms(url.pathname).at(-1) ?? url.pathname).split('/');
   const word = STATE_CHANGE_WORDS.exec([...segments, ...keys].join('/'))?.[1];
   if (word !== undefined) return word.toLowerCase();
+  const last = segments.findLast((s) => s !== '') ?? '';
+  // Static files (scripts, styles, images, fonts) are reads whatever their names say.
+  const isStatic = /\.(js|mjs|css|map|png|jpe?g|gif|svg|ico|webp|woff2?|ttf|txt)$/i.test(last);
   const action =
-    words(segments.findLast((s) => s !== '') ?? '').find((w) => PATH_ACTION_WORDS.has(w)) ??
+    (isStatic ? undefined : words(last).find((w) => PATH_ACTION_WORDS.has(w))) ??
     keys.flatMap((key) => words(key)).find((w) => KEY_ACTION_WORDS.has(w));
   return action ?? null;
 }

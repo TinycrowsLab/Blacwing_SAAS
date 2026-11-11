@@ -43,12 +43,14 @@ export function finishReason(reason: unknown): string {
       return 'reached the spend cap';
     case 'max_turns':
       return 'reached its turn limit';
+    case 'round_cap':
+      return 'stopped at its round limit';
     default:
       return 'finished its plan';
   }
 }
 
-const LIMITS: ReadonlySet<unknown> = new Set(['duration_budget', 'request_budget', 'cost_cap', 'max_turns']);
+const LIMITS: ReadonlySet<unknown> = new Set(['duration_budget', 'request_budget', 'cost_cap', 'max_turns', 'round_cap']);
 
 /**
  * The one finish sentence (run page and results): the runner's limit when it named one, then how far the test plan got.
@@ -146,6 +148,16 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
       if (parts.length > 0) return `Blackwing sent the team back for ${parts.join(' and ')}.`;
       return d.widen === true ? 'Blackwing asked the team to widen a narrow plan before finishing.' : null;
     }
+    case 'intel.started':
+      return 'Threat intel: looking at what the public web shows about your organisation, before any testing.';
+    case 'intel.source':
+    case 'intel.finding':
+    case 'intel.summary': {
+      const text = str(event.message) ?? 'done';
+      return text.startsWith('Threat intel') ? text : `Threat intel · ${text}`;
+    }
+    case 'completion.check':
+      return str(d.line) ?? str(event.message);
     case 'run.holding': {
       const n = Array.isArray(d.gate2Ids) ? d.gate2Ids.length : 0;
       return `The team is done for now. Blackwing keeps the audit open for your answer on ${n === 1 ? 'the request above' : `${n} requests`}; what you allow is sent before it ends.`;

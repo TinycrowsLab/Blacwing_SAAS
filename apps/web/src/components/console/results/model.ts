@@ -216,6 +216,7 @@ const NOT_RUN_BECAUSE: Readonly<Record<string, string>> = {
   request_budget: 'the request budget ran out first',
   cost_cap: 'the spend cap came first',
   max_turns: 'Blackwing reached its turn limit first',
+  round_cap: 'Blackwing reached its round limit first',
 };
 
 const NOTE_MAX = 1200;

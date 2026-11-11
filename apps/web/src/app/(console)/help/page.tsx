@@ -35,7 +35,7 @@ const GATES: readonly { name: string; term: string; body: string }[] = [
   {
     name: 'Proof of ownership',
     term: 'asset verification',
-    body: 'We only audit sites you show you control: a file on the site, or, for a test lab, your recorded confirmation.',
+    body: 'We only audit sites you are authorised to test. You confirm that you own the site or have written permission, and Blackwing records it with your name and the date.',
   },
   {
     name: 'Your approval',

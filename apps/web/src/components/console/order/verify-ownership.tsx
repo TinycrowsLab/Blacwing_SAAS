@@ -1,22 +1,20 @@
 'use client';
 
-// "Is {host} yours?" (experience spec §3.3 question 2): two whole-card choices. The file is checked by the API (the
-// only request that reaches the site before Gate 1, and only when asked); the attestation is one tick that composes
-// the statement for the person. Shared by the order and Targets.
-import { type ReactNode, useEffect, useState } from 'react';
+// "Is {host} yours?" (experience spec §3.3 question 2): one attestation. The person ticks that they are authorised to
+// test the site (they own it or hold written permission); the API records the statement, who and when. Shared by the
+// order and Targets.
+import { useState } from 'react';
 
-import { attestationAllowed, dayLabel, isVerified, originOf, RECOMMEND_PILL, recommendedProof } from './shared';
+import { dayLabel, isVerified, originOf } from './shared';
 import { verifyTargetAction } from '../../../app/(console)/audits/actions';
-import { Icon, InlineMessage, RADIO_CLASS } from '../design';
-import { CopyField, PendingButton } from '../design-client';
+import { Icon, InlineMessage } from '../design';
+import { PendingButton } from '../design-client';
 
 import type { Asset } from '../../../lib/schemas';
 
-export type ProofMethod = 'file' | 'attest';
-
-/** "Confirmed by Jatin Singh: authorised to test https://x.example." (sent as owner_attestation). */
+/** "Confirmed by Jatin Singh: owns https://x.example or has written permission to test it." (sent as the statement). */
 const attestationStatement = (name: string, origin: string): string =>
-  `Confirmed by ${name}: authorised to test ${origin}.`;
+  `Confirmed by ${name}: owns ${origin} or has written permission to test it.`;
 
 /** Sends the attestation; the order's Continue and Targets' Confirm both use it. */
 export async function attest(
@@ -30,89 +28,27 @@ export async function attest(
   return r.ok ? { asset: r.data } : { error: r.message };
 }
 
-function ChoiceCard({
-  name,
-  checked,
-  onPick,
-  title,
-  badge,
-  line,
-  index,
-}: {
-  readonly name: string;
-  readonly checked: boolean;
-  readonly onPick: () => void;
-  readonly title: ReactNode;
-  readonly badge?: ReactNode | undefined;
-  readonly line: ReactNode;
-  readonly index?: number | undefined;
-}) {
-  return (
-    <div
-      className={`rounded-[14px] border transition-colors ${checked ? 'border-gold-ink bg-gold-soft' : 'border-border bg-card hover:border-border-strong hover:bg-surface-2'}`}
-    >
-      <label className="flex h-full min-h-16 cursor-pointer gap-3 rounded-[14px] p-4 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
-        <input
-          type="radio"
-          name={name}
-          checked={checked}
-          onChange={onPick}
-          className={RADIO_CLASS}
-        />
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-[15px] font-semibold leading-5 text-foreground">{title}</span>
-            {badge}
-          </span>
-          <span className="text-[13px] leading-5 text-muted-foreground">{line}</span>
-        </span>
-        {index === undefined ? null : (
-          <kbd className="hidden h-[18px] min-w-[18px] items-center justify-center self-start rounded-[5px] border border-current px-1 font-mono text-[11px] text-muted-foreground opacity-60 sm:inline-flex">
-            {index}
-          </kbd>
-        )}
-      </label>
-    </div>
-  );
-}
-
 export function VerifyOwnership({
   asset,
   origin: knownOrigin = null,
   viewerName,
-  method,
-  onMethod,
   attested,
   onAttested,
   onVerified,
   confirmButton = false,
-  showIndex = false,
-  primaryCheck = false,
 }: {
-  /** Null while the site is being registered: the file rows show placeholders. */
+  /** Null while the site is being registered: the tick's wording never waits for the API. */
   readonly asset: Asset | null;
-  /** The site's origin, known before it is registered (the order): the tick's wording never waits for the API. */
+  /** The site's origin, known before it is registered (the order). */
   readonly origin?: string | null;
   readonly viewerName: string;
-  readonly method: ProofMethod;
-  readonly onMethod: (m: ProofMethod) => void;
   readonly attested: boolean;
   readonly onAttested: (on: boolean) => void;
   readonly onVerified: (asset: Asset) => void;
   /** Targets: a Confirm button under the tick (the order's Continue does it there). */
   readonly confirmButton?: boolean;
-  readonly showIndex?: boolean;
-  /** The order: Check now is the step's one primary action while the file way is picked. */
-  readonly primaryCheck?: boolean;
 }) {
-  const [checked, setChecked] = useState<{ ok: boolean; message: string } | null>(null);
   const [attestError, setAttestError] = useState<string | null>(null);
-  // The owner's word only where the API accepts it (an operator-listed lab); until the site is registered, unknown.
-  const canAttest = asset !== null && attestationAllowed(asset);
-  const fileOnly = asset !== null && !canAttest;
-  useEffect(() => {
-    if (fileOnly && method === 'attest') onMethod('file');
-  }, [fileOnly, method, onMethod]);
 
   if (asset !== null && isVerified(asset))
     return (
@@ -124,13 +60,9 @@ export function VerifyOwnership({
           <Icon name="check" size={12} />
         </span>
         <span className="text-[13.5px] leading-5 text-foreground">
-          <b className="font-semibold">
-            {checked?.ok === true
-              ? 'Found it. The site is verified as yours.'
-              : 'The site is verified as yours.'}
-          </b>{' '}
+          <b className="font-semibold">You are authorised to test this site.</b>{' '}
           <span className="text-muted-foreground">
-            {asset.ownership.method === 'http_token' ? 'Verified with a file' : 'Confirmed'}
+            Confirmed
             {asset.ownership.verifiedBy === null ? '' : ` by ${asset.ownership.verifiedBy}`}
             {asset.ownership.verifiedAt === null ? '' : `, ${dayLabel(asset.ownership.verifiedAt)}`}
             .
@@ -139,143 +71,51 @@ export function VerifyOwnership({
       </div>
     );
 
-  const url = asset?.verification?.wellKnownUrl ?? null;
-  const path = url === null ? null : new URL(url).pathname;
-  const token = asset?.verification?.token ?? null;
   const origin = asset === null ? (knownOrigin ?? '') : originOf(asset);
-  // No badge before the API has registered the site: a refused address is never "recommended".
-  const recommended = asset === null || origin === '' ? null : recommendedProof(new URL(origin).host, asset);
-  const recommendPill = (
-    <span className={RECOMMEND_PILL}>{recommended === 'attest' ? 'Recommended for this lab' : 'Recommended'}</span>
-  );
 
-  const check = async (): Promise<void> => {
-    if (asset === null) return;
-    setChecked(null);
-    const r = await verifyTargetAction(asset.id, { method: 'http_token' });
-    if (r.ok) {
-      setChecked({ ok: true, message: 'Found it. The site is verified as yours.' });
-      onVerified(r.data);
-    } else {
-      setChecked({
-        ok: false,
-        message:
-          r.code === 'verification_failed' && url !== null
-            ? `We checked ${url}: ${r.message.replace(/\.$/, '')}.`
-            : r.message,
-      });
-    }
-  };
-
-  // The two ways sit side by side and the chosen one's steps open below them, so picking a card never moves the other
-  // one out from under the pointer.
   return (
-    <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label="How to show the site is yours" className={`grid gap-3 ${fileOnly ? '' : 'sm:grid-cols-2'}`}>
-        <ChoiceCard
-          name="proof"
-          checked={method === 'file'}
-          onPick={() => {
-            onMethod('file');
+    <div className="flex flex-col gap-2.5 rounded-[14px] border border-border bg-card p-4">
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border border-border bg-surface-2 px-3.5 py-3 text-[13.5px] text-foreground has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
+        <input
+          type="checkbox"
+          checked={attested}
+          onChange={(e) => {
+            onAttested(e.target.checked);
+            setAttestError(null);
           }}
-          title="Put a file on the site"
-          badge={recommended === 'file' ? recommendPill : undefined}
-          line="Anyone can check it, and it proves you control the server."
-          index={showIndex ? 1 : undefined}
+          className="sr-only"
         />
-        {fileOnly ? null : (
-        <ChoiceCard
-          name="proof"
-          checked={method === 'attest'}
-          onPick={() => {
-            onMethod('attest');
-          }}
-          title="I'm responsible for this system"
-          badge={recommended === 'attest' ? recommendPill : undefined}
-          line={
-            recommended === 'attest'
-              ? "Local and lab apps often can't serve an extra file. One tick, recorded with your name."
-              : "For internal hosts and labs that can't serve a file. One tick, recorded with your name."
-          }
-          index={showIndex ? 2 : undefined}
-        />
-        )}
-      </div>
-      {fileOnly ? (
-        <p className="m-0 text-[12.5px] leading-5 text-muted-foreground">
-          The owner&apos;s word is accepted only for labs your Blackwing operator listed. Put the file on the site to show
-          it is yours.
-        </p>
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] ${attested ? 'border-gold-ink bg-gold-ink text-bg' : 'border-input-strong bg-card'}`}
+        >
+          {attested ? <Icon name="check" size={12} /> : null}
+        </span>
+        <span className="min-w-0 break-words">
+          Yes, I am authorised to run this assessment on <b className="font-semibold">{origin}</b>
+        </span>
+      </label>
+      <span className="text-[12px] leading-[18px] text-muted-foreground">
+        By ticking, you confirm you own this site or have permission to test it (for example under a published security or disclosure programme), and you accept responsibility for this assessment. Asked once per site. Recorded as &ldquo;{attestationStatement(viewerName, origin)}&rdquo;
+      </span>
+      {confirmButton && asset !== null ? (
+        <div>
+          <PendingButton
+            variant="secondary"
+            disabled={!attested}
+            {...(attested ? {} : { title: 'Tick the box first' })}
+            pendingLabel="Recording…"
+            onAction={async () => {
+              const r = await attest(asset, viewerName);
+              if ('error' in r) setAttestError(r.error);
+              else onVerified(r.asset);
+            }}
+          >
+            Confirm
+          </PendingButton>
+        </div>
       ) : null}
-      {method === 'file' ? (
-        <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-card p-4">
-          <div className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[124px_minmax(0,1fr)]">
-            <span className="text-[12.5px] text-muted-foreground">1. Create the file</span>
-            {path === null ? <div className="h-10 rounded-[10px] bg-surface-2" /> : <CopyField value={path} />}
-            <span className="mt-1.5 text-[12.5px] text-muted-foreground sm:mt-0">2. Paste this in it</span>
-            {token === null ? <div className="h-10 rounded-[10px] bg-surface-2" /> : <CopyField value={token} />}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <PendingButton
-                variant={primaryCheck ? 'primary' : 'secondary'}
-                onAction={check}
-                pendingLabel="Looking for the file…"
-                disabled={asset === null}
-                icon="search"
-              >
-                Check now
-              </PendingButton>
-              <span className="text-[12px] text-muted-foreground">Served as plain text at the site root.</span>
-            </div>
-            {checked === null || checked.ok ? null : <InlineMessage tone="bad">{checked.message}</InlineMessage>}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2.5 rounded-[14px] border border-border bg-card p-4">
-          <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border border-border bg-surface-2 px-3.5 py-3 text-[13.5px] text-foreground has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
-            <input
-              type="checkbox"
-              checked={attested}
-              onChange={(e) => {
-                onAttested(e.target.checked);
-                setAttestError(null);
-              }}
-              className="sr-only"
-            />
-            <span
-              aria-hidden="true"
-              className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] ${attested ? 'border-gold-ink bg-gold-ink text-bg' : 'border-input-strong bg-card'}`}
-            >
-              {attested ? <Icon name="check" size={12} /> : null}
-            </span>
-            <span className="min-w-0 break-words">
-              I&apos;m authorised to test <b className="font-semibold">{origin}</b>.
-            </span>
-          </label>
-          <span className="text-[12px] text-muted-foreground">
-            Recorded as &ldquo;{attestationStatement(viewerName, origin)}&rdquo;
-          </span>
-          {confirmButton && asset !== null ? (
-            <div>
-              <PendingButton
-                variant="secondary"
-                disabled={!attested}
-                {...(attested ? {} : { title: 'Tick the box first' })}
-                pendingLabel="Recording…"
-                onAction={async () => {
-                  const r = await attest(asset, viewerName);
-                  if ('error' in r) setAttestError(r.error);
-                  else onVerified(r.asset);
-                }}
-              >
-                Confirm
-              </PendingButton>
-            </div>
-          ) : null}
-          {attestError === null ? null : <InlineMessage tone="bad">{attestError}</InlineMessage>}
-        </div>
-      )}
+      {attestError === null ? null : <InlineMessage tone="bad">{attestError}</InlineMessage>}
     </div>
   );
 }

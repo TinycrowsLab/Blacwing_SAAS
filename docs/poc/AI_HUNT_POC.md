@@ -105,7 +105,7 @@ Replace the pinned runner. Files: `main.ts` (poll loop, up to `BW_HUNT_CONCURREN
 
 - Claude auth (CLAUDE.md: a Claude.ai subscription login must never power customer runs): if `ANTHROPIC_API_KEY` is set it is used. Otherwise
   the host's Claude login (`~/.claude`) is used **only** when `BW_ENV=dev` (local demo); in any other env a run without an API key fails
-  with `run.failed{reason:'model_credentials_missing'}`. Pass `env` with `HOME`, `PATH`, and `ANTHROPIC_*` only. Model: `BW_HUNT_MODEL` (default `claude-sonnet-5-5`), subagents `model:'inherit'`.
+  with `run.failed{reason:'model_credentials_missing'}`. Pass `env` with `HOME`, `PATH`, and `ANTHROPIC_*` only. Model: `BW_HUNT_MODEL` (default `claude-opus-5-5`), `BW_HUNT_FALLBACK_MODEL` (default `claude-opus-5`, SDK `fallbackModel`), `BW_HUNT_EFFORT` (default `medium`, SDK `effort`, also set on every subagent); subagents `model:'inherit'`. Report-writing model config: `BW_REPORT_MODEL` (default `claude-sonnet-5`).
   Mark with `OFFLINE-STUB(online-porting): direct SDK auth instead of the model gateway`.
 - `query({prompt, options:{ model, agents:{recon, 'web-api-specialist', 'authz-specialist'}, mcpServers:{blackwing: createSdkMcpServer(...)},
   allowedTools:['Agent','TodoWrite','mcp__blackwing__*'], disallowedTools:[Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, NotebookEdit, ...],

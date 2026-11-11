@@ -1,6 +1,8 @@
 import { describe as suite, expect, it } from 'vitest';
 
 import {
+  modelLabel,
+  modelName,
   accountUse,
   blockingAsks,
   caseList,
@@ -654,5 +656,21 @@ suite('candidates on a finished run', () => {
   it('marks the review stage complete', () => {
     const review = stages(events, { terminal: true, approvedBy: 'you', reviewed: true }).find((x) => x.key === 'review');
     expect(review).toMatchObject({ label: 'Review complete', detail: 'report ready', state: 'done' });
+  });
+});
+
+suite('modelLabel', () => {
+  const ev = (seq: number, kind: string, data: Record<string, unknown>): RunEvent => ({ seq, kind, stage: 'plan', message: '', data, at: '2026-01-01T00:00:00Z' });
+
+  it('names the model without a vendor word and shows the effort', () => {
+    expect(modelName('claude-opus-5-5')).toBe('Opus 5.5');
+    expect(modelName('claude-opus-5')).toBe('Opus 5');
+    expect(modelLabel([])).toBeNull();
+    expect(modelLabel([ev(1, 'run.started', { model: 'claude-opus-5-5', effort: 'medium' })])).toBe('Opus 5.5 (medium)');
+  });
+
+  it('shows the model that actually answered after a fallback', () => {
+    const events = [ev(1, 'run.started', { model: 'claude-opus-5-5', effort: 'medium' }), ev(2, 'run.model', { model: 'claude-opus-5', effort: 'medium' })];
+    expect(modelLabel(events)).toBe('Opus 5 (medium), fallback for Opus 5.5');
   });
 });

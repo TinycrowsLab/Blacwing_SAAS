@@ -6,6 +6,8 @@ import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
 import { NotTestedList, YourDecisions } from '../../../../../components/console/results/decisions';
+import { ExecutiveSummary } from '../../../../../components/console/results/executive-summary';
+import { ExternalExposure } from '../../../../../components/console/results/external-exposure';
 import {
   IssueList,
   KeptBack,
@@ -42,6 +44,7 @@ import type { Metadata } from 'next';
 export const dynamic = 'force-dynamic';
 
 const HTTP_NOT_FOUND = 404;
+const SUMMARY_WAIT_MS = 150_000;
 const releaseModeSchema = z.object({ releaseProven: z.enum(['hold', 'auto']) });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -117,6 +120,9 @@ export default async function ResultsPage({
   const live = LIVE_RUN_STATES.includes(run.state);
   const cases = testCases(run.events, run.coverage);
   const stop = stopLine(run, Date.now(), cases);
+  // The summary is written after the run is marked finished: keep refreshing for a couple of minutes to pick it up.
+  const summaryPending =
+    !live && run.state === 'completed' && run.executiveSummary === null && run.finishedAt !== null && Date.now() - Date.parse(run.finishedAt) < SUMMARY_WAIT_MS;
   // The report card counts every proven issue, as the headline does, and says how many were dismissed.
   const severities = proven.map((f) => f.severity);
   const dismissed = proven.filter((f) => f.status === 'dismissed').length;
@@ -240,6 +246,7 @@ export default async function ResultsPage({
           ) : null}
         </div>
 
+        <ExecutiveSummary markdown={run.executiveSummary?.markdown ?? null} />
         {proven.length === 0 ? (
           <EmptyState
             icon="shield"
@@ -263,6 +270,7 @@ export default async function ResultsPage({
           </>
         )}
         <KeptBack items={kept} viewerName={session.user.name} />
+        <ExternalExposure intel={run.intel} />
         {live || !gaps.recorded ? null : <NotTestedList data={gaps} />}
         <YourDecisions rows={rows} chain={ledger?.chain ?? null} />
       </section>
@@ -287,7 +295,7 @@ export default async function ResultsPage({
           untried={live ? 0 : untried}
         />
       </aside>
-      {live ? <LiveRefresh /> : null}
+      {live || summaryPending ? <LiveRefresh /> : null}
     </div>
   );
 }

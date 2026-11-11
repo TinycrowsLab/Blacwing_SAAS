@@ -59,6 +59,7 @@ import {
   liveness,
   manifest,
   mergeEvents,
+  modelLabel,
   pathOf,
   stages,
   teamNodes,
@@ -534,7 +535,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     window.dispatchEvent(new Event('bw:refresh'));
   }, [pendingIds]);
   const stopping = !terminal && events.some((e) => e.kind === 'kill.requested');
-  const model = events.find((e) => e.kind === 'run.started')?.data.model;
+  const model = modelLabel(events);
 
   // Every clock starts when the run started: a queued run has no elapsed time and is never "quiet".
   const router = useRouter();
@@ -1025,7 +1026,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
 
       <RunDetailsSheet
         run={run}
-        model={typeof model === 'string' ? model : null}
+        model={model}
         autoReleased={teamMap.autoReleased}
         open={details}
         onOpenChange={setDetails}

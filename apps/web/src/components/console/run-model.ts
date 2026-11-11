@@ -301,6 +301,28 @@ export function manifest(events: readonly RunEvent[]): string[] {
     : [];
 }
 
+/** "claude-opus-5-5" as "Opus 5.5": the product name without the vendor prefix and the dash in the version. */
+export function modelName(id: string): string {
+  const m = /^(?:claude-)?([a-z]+)-(\d+(?:-\d+)?)(?:-\d{8})?$/i.exec(id.trim());
+  if (m?.[1] === undefined || m[2] === undefined) return id;
+  return `${m[1].charAt(0).toUpperCase()}${m[1].slice(1)} ${m[2].replace('-', '.')}`;
+}
+
+/**
+ * The model the run actually used, as "Opus 5.5 (medium)": the latest run.model event (it changes when a fallback takes
+ * over), else the one run.started configured. Null before the run starts.
+ */
+export function modelLabel(events: readonly RunEvent[]): string | null {
+  const used = events.findLast((e) => e.kind === 'run.model');
+  const started = events.find((e) => e.kind === 'run.started');
+  const id = str(used?.data.model) || str(started?.data.model);
+  if (id === '') return null;
+  const effort = str(used?.data.effort) || str(started?.data.effort);
+  const label = `${modelName(id)}${effort === '' ? '' : ` (${effort})`}`;
+  const configured = str(started?.data.model);
+  return configured !== '' && configured !== id ? `${label}, fallback for ${modelName(configured)}` : label;
+}
+
 interface LaneAcc {
   turn?: RunEvent;
   message?: RunEvent;

@@ -87,6 +87,29 @@ describe('renderRunReport', () => {
     expect((JSON.parse(renderRunReport(input, 'json').body) as { coverage: unknown }).coverage).toBeNull();
   });
 
+  it('adds an External exposure section to every format, marking unverified intel', () => {
+    const intel = {
+      skipped: null,
+      domains: ['example.com'],
+      sources: [{ name: 'Certificate transparency (crt.sh)', status: 'done', note: '2 hostnames outside the approved scope' }],
+      items: [
+        { source: 'target', title: 'Exposed Git repository metadata (/.git/HEAD)', detail: 'd', severity: 'high', basis: 'finding' },
+        { source: 'cve', title: 'nginx 1.18.0 announced', detail: 'CVE-2021-0001', severity: 'high', basis: 'unverified' },
+      ],
+      discoveredHosts: ['staging.example.com'],
+      archivedPaths: [],
+    };
+    const json = JSON.parse(renderRunReport({ ...input, intel }, 'json').body) as { externalExposure: { items: unknown[] } | null };
+    expect(json.externalExposure?.items).toHaveLength(2);
+    expect((JSON.parse(renderRunReport(input, 'json').body) as { externalExposure: unknown }).externalExposure).toBeNull();
+    for (const format of ['md', 'html'] as const) {
+      const { body } = renderRunReport({ ...input, intel }, format);
+      expect(body).toContain('External exposure');
+      expect(body).toContain('intel, not verified');
+      expect(body).toContain('staging.example.com');
+    }
+  });
+
   it('never prints a secret from evidence, curl or description, in any format', () => {
     const leaky = {
       ...finding('high', 'CWE-200', 'Config exposed'),
@@ -129,5 +152,48 @@ describe('renderReport', () => {
       expect(body).not.toContain('Validated by deterministic replay');
       expect(body).not.toContain('oracle not matched');
     }
+  });
+});
+
+describe('renderReport proof screenshots', () => {
+  const one = { finding: finding('high', 'CWE-639', 'IDOR'), run: input.run, asset: input.asset, request: input.request };
+  it('embeds the probe and control PNGs as base64 in HTML and names them in Markdown', () => {
+    const shots = { probe: 'UFJPQkU=', control: 'Q09OVFJPTA==' };
+    const html = renderReport({ ...one, screenshots: shots }, 'html').body;
+    expect(html).toContain('data:image/png;base64,UFJPQkU=');
+    expect(html).toContain('data:image/png;base64,Q09OVFJPTA==');
+    const md = renderReport({ ...one, screenshots: shots }, 'md').body;
+    expect(md).toContain('Proof screenshots');
+    expect(md).toContain('/screenshots/probe');
+    expect(md).not.toContain('base64');
+  });
+  it('says why there is none when the capture was skipped', () => {
+    const f = { ...one.finding, evidence: { screenshots: { status: 'skipped', note: 'No browser is installed.' } } } as unknown as FindingRow;
+    expect(renderReport({ ...one, finding: f }, 'html').body).toContain('No browser is installed.');
+  });
+
+  it('puts the AI executive summary first in HTML, Markdown and JSON, and omits it when absent', () => {
+    const executiveSummary = { markdown: '## Executive summary\nRisk is <high>.\n\n## Key risks\n- IDOR\n\n## Recommended next steps\n1. Fix it', model: 'claude-sonnet-5' };
+    const html = renderRunReport({ ...input, executiveSummary }, 'html').body;
+    expect(html.indexOf('Executive summary')).toBeLessThan(html.indexOf('Released findings:'));
+    expect(html).toContain('Written by Blackwing AI, not verified');
+    expect(html).toContain('Risk is &lt;high&gt;.');
+    expect(html).toContain('<h3>Key risks</h3>');
+    const md = renderRunReport({ ...input, executiveSummary }, 'md').body;
+    expect(md.indexOf('## Executive summary')).toBeLessThan(md.indexOf('Released findings:'));
+    expect(md.match(/## Executive summary/g)).toHaveLength(1);
+    const json = JSON.parse(renderRunReport({ ...input, executiveSummary }, 'json').body) as { executiveSummary: { markdown: string } };
+    expect(json.executiveSummary.markdown).toContain('Key risks');
+    expect(JSON.stringify(json)).not.toMatch(/claude/i);
+    for (const format of ['html', 'md', 'json'] as const) expect(renderRunReport(input, format).body).not.toContain('Executive summary');
+  });
+
+  it('embeds the proof screenshots of each released finding in the run HTML report', () => {
+    const id = input.findings[0]?.id ?? '';
+    const screenshots = { [id]: { probe: 'UFJPQkU=', control: 'Q09OVFJPTA==' } };
+    const html = renderRunReport({ ...input, screenshots }, 'html').body;
+    expect(html).toContain('data:image/png;base64,UFJPQkU=');
+    expect(html).toContain('data:image/png;base64,Q09OVFJPTA==');
+    expect(renderRunReport({ ...input, screenshots }, 'md').body).toContain(`/api/findings/${id}/screenshots/probe`);
   });
 });

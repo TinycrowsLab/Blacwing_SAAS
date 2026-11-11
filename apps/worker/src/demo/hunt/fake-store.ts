@@ -1,5 +1,6 @@
 // In-memory HuntStore for unit tests and the live smoke script. Not used by the product.
-import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun } from './types.js';
+import type { ShotResult } from './screenshot.js';
+import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun, SummaryFinding } from './types.js';
 
 const FAKE_KILL_HALT_MS = 5;
 
@@ -10,6 +11,7 @@ export class FakeStore implements HuntStore {
   /** Ledger entries the worker wrote (gate2.expired). */
   readonly ledger: { action: string; targetId: string; payload: Record<string, unknown> }[] = [];
   readonly findings: FindingRow[] = [];
+  readonly screenshots: { findingId: string; result: ShotResult }[] = [];
   readonly deliveries: { findingId: string; status: string; detail: string }[] = [];
   control: RunControl = { paused: false, kill: null };
   finished: RunOutcome | null = null;
@@ -60,6 +62,15 @@ export class FakeStore implements HuntStore {
     const ids: string[] = [];
     for (const [id, entry] of this.gate2) if (entry.status === 'pending' && (await this.closeGate2(id, 'expired', reason)) === 'expired') ids.push(id);
     return ids;
+  }
+  listFindingsForSummary(): Promise<SummaryFinding[]> {
+    return Promise.resolve(
+      this.findings.map((f) => ({ title: f.title, severity: f.severity, cwe: f.cwe, owasp: f.owasp, status: f.status, location: `${typeof f.location.method === 'string' ? f.location.method : ''} ${typeof f.location.url === 'string' ? f.location.url : ''}`.trim(), remediation: null })),
+    );
+  }
+  saveScreenshots(_run: HuntRun, findingId: string, result: ShotResult): Promise<void> {
+    this.screenshots.push({ findingId, result });
+    return Promise.resolve();
   }
   insertFinding(_run: HuntRun, row: FindingRow): Promise<string | null> {
     const existing = this.findings.findIndex((f) => f.fingerprint === row.fingerprint);

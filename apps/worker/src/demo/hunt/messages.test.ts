@@ -94,4 +94,17 @@ describe('MessageRouter', () => {
     await router.handle({ type: 'result' } as unknown as SDKMessage);
     expect(store.events).toEqual([]);
   });
+
+  it('records the model that actually answered, and a switch to the fallback', async () => {
+    const store = new FakeStore();
+    const router = new MessageRouter(new EventLog(store, 'r', { warn: () => undefined, error: () => undefined }), 'medium');
+    const turn = (model: string): SDKMessage => ({ type: 'assistant', parent_tool_use_id: null, message: { model, content: [], usage: { input_tokens: 1, output_tokens: 0 } } }) as unknown as SDKMessage;
+    await router.handle(turn('claude-opus-5-5'));
+    await router.handle(turn('claude-opus-5-5'));
+    await router.handle(turn('claude-opus-5'));
+    expect(store.events.filter((e) => e.kind === 'run.model').map((e) => e.data)).toEqual([
+      { model: 'claude-opus-5-5', effort: 'medium' },
+      { model: 'claude-opus-5', effort: 'medium', from: 'claude-opus-5-5' },
+    ]);
+  });
 });

@@ -8,7 +8,6 @@ import {
   DemoRefusal,
   DemoService,
   actorHasRole,
-  assetDto,
   confirmMatches,
   exchangeDto,
   findingDto,
@@ -80,54 +79,44 @@ const asset = (token: string | null): AssetRow => ({
 
 const owner = { id: 'u1', email: 'o@acme.test', name: 'Owner', roles: ['asset-owner'] };
 
-function serviceWith(row: AssetRow, response: Response | Error) {
+function serviceWith(row: AssetRow) {
   const store = {
     getAsset: vi.fn().mockResolvedValue(row),
     markAssetVerified: vi.fn().mockResolvedValue(true),
     appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
   };
-  const fetchImpl = vi.fn(() => (response instanceof Error ? Promise.reject(response) : Promise.resolve(response)));
-  return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetchImpl, webhookOff, options) };
+  return { store, service: new DemoService(store as unknown as DemoStore, 't1', vi.fn(), webhookOff, options) };
 }
 
-describe('verifyAsset http_token', () => {
-  it('fetches the well-known file on the origin without following redirects and accepts the token', async () => {
-    const { store, service } = serviceWith(asset('abc123'), new Response('proof abc123\n'));
-    await service.verifyAsset(owner, 'a1', { method: 'http_token' });
-    expect(store.markAssetVerified).toHaveBeenCalledWith('t1', 'a1', 'http_token', 'u1');
-  });
+describe('verifyAsset (owner attestation)', () => {
+  const statement = 'Confirmed by Owner: authorised to test https://app.example.com.';
 
-  it.each([
-    ['wrong content', new Response('nope')],
-    ['404', new Response('abc123', { status: 404 })],
-    ['network error', new Error('down')],
-  ])('refuses on %s', async (_name, response) => {
-    const { store, service } = serviceWith(asset('abc123'), response);
-    await expect(service.verifyAsset(owner, 'a1', { method: 'http_token' })).rejects.toMatchObject({
-      response: { code: 'verification_failed' },
-    });
-    expect(store.markAssetVerified).not.toHaveBeenCalled();
-  });
-
-  it('needs the token on every allowed origin: proving one site never brings another into scope', async () => {
-    const row = { ...asset('abc123'), allowed_origins: ['https://app.example.com', 'https://victim.example.org'] };
-    const store = { getAsset: vi.fn().mockResolvedValue(row), markAssetVerified: vi.fn().mockResolvedValue(true), appendAudit: vi.fn() };
-    const fetchImpl = vi.fn((url: string) => Promise.resolve(url.startsWith('https://app.example.com/') ? new Response('abc123') : new Response('no', { status: 404 })));
-    const service = new DemoService(store as unknown as DemoStore, 't1', fetchImpl as unknown as typeof fetch, webhookOff, options);
-    await expect(service.verifyAsset(owner, 'a1', { method: 'http_token' })).rejects.toMatchObject({
-      response: { code: 'verification_failed', detail: expect.stringContaining('https://victim.example.org/.well-known/') as unknown },
-    });
-    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
-      'https://app.example.com/.well-known/blackwing-verification.txt',
-      'https://victim.example.org/.well-known/blackwing-verification.txt',
-    ]);
-    expect(store.markAssetVerified).not.toHaveBeenCalled();
+  it('accepts the attestation for any public site, without fetching anything, and ledgers it', async () => {
+    const { store, service } = serviceWith(asset('abc123'));
+    await service.verifyAsset(owner, 'a1', { statement });
+    expect(store.markAssetVerified).toHaveBeenCalledWith('t1', 'a1', 'owner_attestation', 'u1');
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        action: 'asset.verified',
+        payload: { method: 'owner_attestation', origin: 'https://app.example.com', statement, lab: false },
+      }),
+    );
   });
 
   it('only an asset owner may verify', async () => {
-    const { service } = serviceWith(asset('abc123'), new Response('abc123'));
+    const { store, service } = serviceWith(asset('abc123'));
     const engineer = { ...owner, roles: ['appsec-engineer'] };
-    await expect(service.verifyAsset(engineer, 'a1', { method: 'owner_attestation' })).rejects.toBeInstanceOf(DemoRefusal);
+    await expect(service.verifyAsset(engineer, 'a1', { statement })).rejects.toBeInstanceOf(DemoRefusal);
+    expect(store.markAssetVerified).not.toHaveBeenCalled();
+  });
+
+  it.each(['http://169.254.169.254', 'http://0.0.0.0', 'http://localhost:3000'])('still refuses %s', async (url) => {
+    const { store, service } = serviceWith({ ...asset('t'), base_url: url, allowed_origins: [url] });
+    await expect(service.verifyAsset(owner, 'a1', { statement })).rejects.toMatchObject({
+      response: { code: 'target_not_allowed' },
+    });
+    expect(store.markAssetVerified).not.toHaveBeenCalled();
   });
 });
 
@@ -713,41 +702,13 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
     ).rejects.toMatchObject({ response: { code: 'target_not_allowed' } });
   });
 
-  it('offers owner attestation only for a lab, and ledgers the proof', async () => {
-    expect(assetDtoOf(lab).verification).toMatchObject({ methods: ['http_token', 'owner_attestation'] });
-    expect(assetDtoOf(lab).lab).toBe(true);
-    expect(assetDtoOf(asset('t')).verification).toMatchObject({ methods: ['http_token'] });
-
-    const publicStore = storeWith(asset('t'));
-    await expect(
-      make(publicStore).verifyAsset(approver, 'a1', { method: 'owner_attestation', statement: 'I own this site.' }),
-    ).rejects.toMatchObject({ response: { code: 'attestation_not_allowed' } });
-
-    const labStore = storeWith({ ...lab, ownership_status: 'unverified' });
-    await make(labStore).verifyAsset(approver, 'a1', { method: 'owner_attestation', statement: 'Our local lab.' });
-    expect(labStore.appendAudit).toHaveBeenCalledWith(
-      't1',
-      expect.objectContaining({
-        action: 'asset.verified',
-        targetType: 'asset',
-        payload: { method: 'owner_attestation', origin: 'http://127.0.0.1:3001', tokenPath: null, statement: 'Our local lab.', lab: true },
-      }),
-    );
-  });
-
-  it('rechecks the well-known file at Gate 1: a vanished file un-verifies the asset and leaves the request pending', async () => {
-    const tokenAsset: AssetRow = { ...asset('tok'), ownership_status: 'verified', verification_method: 'http_token' };
-    const store = storeWith(tokenAsset);
+  it('lets an attestation stand without any file at Gate 1', async () => {
+    const attested: AssetRow = { ...asset('tok'), ownership_status: 'verified', verification_method: 'owner_attestation' };
+    const store = storeWith(attested);
     const fetchImpl = vi.fn(() => Promise.resolve(new Response('gone', { status: 404 })));
-    await expect(make(store, fetchImpl).decideGate1(approver, 'q1', 'approve', null)).rejects.toMatchObject({
-      response: { code: 'ownership_recheck_failed', detail: expect.stringContaining('the file is gone (the site answered 404)') as unknown },
-    });
-    expect(store.decideRequest).not.toHaveBeenCalled();
-    expect(store.markAssetUnverified).toHaveBeenCalledWith('t1', 'a1');
-    expect(store.appendAudit).toHaveBeenCalledWith(
-      't1',
-      expect.objectContaining({ action: 'asset.unverified', payload: expect.objectContaining({ at: 'gate1' }) as unknown }),
-    );
+    await make(store, fetchImpl).decideGate1(approver, 'q1', 'approve', null);
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(store.markAssetUnverified).not.toHaveBeenCalled();
   });
 
   it('rechecks at run start: an attested asset that is no longer a lab cannot start', async () => {
@@ -797,7 +758,6 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
   });
 });
 
-const assetDtoOf = (row: AssetRow): Record<string, unknown> => assetDto(row, policy);
 
 describe('PATCH /requests/:id (P0-8a)', () => {
   const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };

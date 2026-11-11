@@ -78,22 +78,9 @@ const FORBIDDEN_HOST = /^(169\.254(\.\d{1,3}){2}|metadata\.google\.internal|\[?f
 export const isForbiddenHost = (host: string): boolean => FORBIDDEN_HOST.test(host);
 export const FORBIDDEN_MESSAGE = 'Cloud metadata and link-local addresses can never be tested.';
 
-/** A private or local address the operator has not listed as a lab: no proof can ever succeed for it. */
-export const unverifiableHost = (host: string, asset: Pick<Asset, 'verification'>): boolean =>
-  isPrivateHost(host) && !attestationAllowed(asset);
-
 /** Q4's recommendation from the host: gentle probing suits staging, local and lab hosts; a live site gets look-only. */
 export const recommendedCare = (host: string): Care =>
   isPrivateHost(host) || STAGING.test(host.replace(/:\d+$/, '')) ? 'active_safe' : 'passive';
-
-/** The owner's word is accepted only where the API says so (an address the operator listed as a lab). */
-export const attestationAllowed = (a: Pick<Asset, 'verification'> | null): boolean =>
-  a?.verification?.methods.includes('owner_attestation') ?? true;
-
-/** Q2's recommendation: a file for a public site, the owner's word for a private one (a lab app may not serve files,
- * and the check comes from Blackwing's server, which may not reach it), but never a way the API does not accept. */
-export const recommendedProof = (host: string, asset: Pick<Asset, 'verification'> | null = null): 'file' | 'attest' =>
-  isPrivateHost(host) && attestationAllowed(asset) ? 'attest' : 'file';
 
 /** "Recommended" and the Q4 hints: a white pill with a gold ring, legible on a selected (gold-soft) card too. */
 export const RECOMMEND_PILL =

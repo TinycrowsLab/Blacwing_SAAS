@@ -250,24 +250,80 @@ export async function validateCandidate(candidate: Pick<Candidate, 'probe' | 'co
 
 const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** Lower-case path, numeric and uuid segments as `:id`, no trailing slash. */
+/** File-copy suffixes: `config.inc.php.bak` and `config.inc.php` are one file family. */
+const BACKUP_SUFFIX = /(?:\.(?:bak|backup|old|orig|save|saved|swp|swo|tmp|copy|dist|sample|original)|~)$/;
+const INDEX_PAGE = /\/index\.(?:php|html?|aspx?|jsp)$/;
+
+/**
+ * Lower-case path without query or fragment, duplicate slashes collapsed, numeric and uuid segments as `:id`, no
+ * trailing slash, a backup/copy suffix and a trailing index page dropped (a file and its backup family match).
+ */
 export function normalisedPath(url: string): string {
   let path: string;
   try {
     path = new URL(url).pathname.toLowerCase();
   } catch {
-    path = url.toLowerCase();
+    path = (url.split(/[?#]/)[0] ?? url).toLowerCase();
   }
-  const segments = path.split('/').map((s) => (/^\d+$/.test(s) || UUID_SEGMENT.test(s) ? ':id' : s));
-  const joined = segments.join('/').replace(/\/+$/, '');
+  const segments = path.replace(/\/{2,}/g, '/').split('/').map((s) => (/^\d+$/.test(s) || UUID_SEGMENT.test(s) ? ':id' : s));
+  const joined = segments.join('/').replace(/\/+$/, '').replace(BACKUP_SUFFIX, '').replace(INDEX_PAGE, '');
   return joined === '' ? '/' : joined;
 }
 
-/** The same issue across runs and agents: sha256(asset | METHOD | normalised path | CWE). */
-export function identityKey(assetId: string, candidate: Pick<Candidate, 'probe' | 'cwe'>): string {
-  const digits = /\d+/.exec(candidate.cwe)?.[0];
-  const cwe = digits === undefined ? candidate.cwe.trim().toUpperCase() : `CWE-${digits}`;
-  return sha256([assetId, candidate.probe.method.toUpperCase(), normalisedPath(candidate.probe.url), cwe].join('|'));
+/** CWEs that name one vulnerability class under different numbers, folded to one family. */
+const CWE_FAMILIES: readonly { readonly family: string; readonly cwes: readonly string[] }[] = [
+  { family: 'path-traversal', cwes: ['CWE-22', 'CWE-23', 'CWE-24', 'CWE-29', 'CWE-35', 'CWE-36', 'CWE-73', 'CWE-98', 'CWE-99', 'CWE-829'] },
+  { family: 'sensitive-exposure', cwes: ['CWE-200', 'CWE-201', 'CWE-209', 'CWE-219', 'CWE-497', 'CWE-530', 'CWE-531', 'CWE-532', 'CWE-538', 'CWE-540', 'CWE-541', 'CWE-548', 'CWE-552', 'CWE-615'] },
+  { family: 'xss', cwes: ['CWE-79', 'CWE-80', 'CWE-81', 'CWE-83', 'CWE-87'] },
+  { family: 'sqli', cwes: ['CWE-89', 'CWE-564', 'CWE-943'] },
+  { family: 'cmdi', cwes: ['CWE-77', 'CWE-78', 'CWE-88'] },
+  { family: 'file-upload', cwes: ['CWE-434', 'CWE-646', 'CWE-616'] },
+  { family: 'weak-session-id', cwes: ['CWE-330', 'CWE-331', 'CWE-334', 'CWE-335', 'CWE-340', 'CWE-341', 'CWE-384'] },
+  { family: 'open-redirect', cwes: ['CWE-601'] },
+];
+/** Response-header weaknesses that hold for the whole site, whichever page showed them. */
+const SITE_WIDE_CWES = new Set(['CWE-693', 'CWE-1021', 'CWE-1022', 'CWE-16', 'CWE-1173', 'CWE-523', 'CWE-942']);
+const SITE_WIDE_TEXT = /missing[^.]{0,40}header|security[- ]header|server (?:version|banner)|version disclosure|banner|x-powered-by|hsts|strict-transport|x-frame-options|x-content-type|clickjacking/i;
+
+type IdentityCandidate = Pick<Candidate, 'probe' | 'cwe'> & Partial<Pick<Candidate, 'title' | 'vulnClass' | 'oracle'>>;
+
+/** `CWE-79` for "cwe-079", "CWE 79" or "79"; null when the text holds no number. */
+function cweId(cwe: string): string | null {
+  const digits = /\d+/.exec(cwe)?.[0];
+  return digits === undefined ? null : `CWE-${String(Number(digits))}`;
+}
+
+function isSiteWideHeaderIssue(candidate: IdentityCandidate): boolean {
+  const id = cweId(candidate.cwe);
+  const text = `${candidate.title ?? ''} ${candidate.vulnClass ?? ''}`;
+  const headerOracle = candidate.oracle?.type === 'header_contains';
+  if (id !== null && SITE_WIDE_CWES.has(id)) return headerOracle || candidate.oracle === undefined || SITE_WIDE_TEXT.test(text);
+  return SITE_WIDE_TEXT.test(text) && (id === null || id === 'CWE-200' || headerOracle);
+}
+
+const SITE_WIDE_COOKIE_CWES = new Set(['CWE-1004', 'CWE-614', 'CWE-1275']);
+
+/** Cookie attribute weaknesses (HttpOnly, Secure, SameSite) are about the cookie, not the page that set it. */
+function isSiteWideCookieIssue(candidate: IdentityCandidate): boolean {
+  const id = cweId(candidate.cwe);
+  return id !== null && SITE_WIDE_COOKIE_CWES.has(id);
+}
+
+/** The class used for identity: the CWE family when it has one, else the CWE itself. */
+export function identityClass(candidate: IdentityCandidate): string {
+  const id = cweId(candidate.cwe);
+  if (id === null) return candidate.cwe.trim().toUpperCase();
+  return CWE_FAMILIES.find((f) => f.cwes.includes(id))?.family ?? id;
+}
+
+/**
+ * The same issue across runs, agents and titles: sha256(asset | class family | normalised path). A site-wide header or
+ * banner issue has no path (one per site); the method is not part of the identity.
+ */
+export function identityKey(assetId: string, candidate: IdentityCandidate): string {
+  if (isSiteWideHeaderIssue(candidate)) return sha256([assetId, 'security-headers', 'site'].join('|'));
+  if (isSiteWideCookieIssue(candidate)) return sha256([assetId, 'cookie-attributes', 'site'].join('|'));
+  return sha256([assetId, identityClass(candidate), normalisedPath(candidate.probe.url)].join('|'));
 }
 
 /** Unique per run (two agents' copies merge); a later run stores its own row with the same identity key. */

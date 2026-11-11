@@ -46,7 +46,21 @@ export class MessageRouter {
   private readonly lanes = new Map<string, { turns: number; tokens: number }>();
   private totalCostUsd = 0;
 
-  constructor(private readonly log: EventLog) {}
+  /** The model that last answered, so `run.model` is emitted at the start and again if a fallback takes over. */
+  private modelUsed: string | null = null;
+
+  constructor(
+    private readonly log: EventLog,
+    private readonly effort: string | null = null,
+  ) {}
+
+  /** Records the model that actually served the session (it differs from the configured one after a fallback). */
+  private async noteModel(model: string | undefined): Promise<void> {
+    if (model === undefined || model === '' || model === this.modelUsed) return;
+    const from = this.modelUsed;
+    this.modelUsed = model;
+    await this.log.emit('run.model', 'plan', from === null ? `Model in use: ${model}` : `Model switched from ${from} to ${model}`, { model, effort: this.effort, ...(from === null ? {} : { from }) });
+  }
 
   get totalCost(): number {
     return this.totalCostUsd;
@@ -101,6 +115,7 @@ export class MessageRouter {
   }
 
   async handle(message: SDKMessage): Promise<void> {
+    if (message.type === 'system' && message.subtype === 'init') await this.noteModel(message.model);
     if (message.type === 'user') {
       await this.handleReplies(message.message.content, message.tool_use_result);
       return;
@@ -116,6 +131,7 @@ export class MessageRouter {
     }
     if (message.type !== 'assistant') return;
     const agent = this.laneOf(message.parent_tool_use_id);
+    if (message.parent_tool_use_id === null) await this.noteModel(message.message.model);
     for (const block of message.message.content) {
       if (block.type === 'text' && block.text.trim() !== '') {
         this.lastTextByLane.set(agent, block.text);

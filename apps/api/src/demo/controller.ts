@@ -93,15 +93,10 @@ const createAssetSchema = z.strictObject({
   excludedPaths,
 });
 
-const verifyAssetSchema = z
-  .strictObject({
-    method: z.enum(['http_token', 'owner_attestation']),
-    statement: z.string().trim().min(LIMITS.statementMin).max(LIMITS.statement).optional(),
-  })
-  .refine((v) => v.method === 'http_token' || v.statement !== undefined, {
-    path: ['statement'],
-    message: 'owner_attestation needs a statement',
-  });
+const verifyAssetSchema = z.strictObject({
+  method: z.literal('owner_attestation'),
+  statement: z.string().trim().min(LIMITS.statementMin).max(LIMITS.statement),
+});
 
 const roleField = z.string().trim().regex(/^[a-z][a-z0-9_-]{0,31}$/i);
 const headerAccountShape = {
@@ -645,6 +640,18 @@ export class DemoController {
   @Get('findings/:id')
   async finding(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
     return this.service.findingDetail(await this.actor(headers), uuid(id, 'finding'));
+  }
+
+  /** A proof screenshot (base64 PNG in JSON; the web route turns it into an image). */
+  @Get('findings/:id/screenshots/:kind')
+  async screenshot(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @Param('kind') kind: string,
+  ): Promise<unknown> {
+    if (kind !== 'probe' && kind !== 'control')
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such screenshot.');
+    return this.service.findingScreenshot(await this.actor(headers), uuid(id, 'finding'), kind);
   }
 
   /** Batch Gate 3: one call for "Release all" / "Dismiss all". */

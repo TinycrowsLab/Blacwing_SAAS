@@ -20,13 +20,12 @@ import {
   isVerified,
   RECOMMEND_PILL,
   recommendedCare,
-  recommendedProof,
   refreshSidebar,
   toggleFocus,
   typing,
 } from './shared';
 import { Ticket, TicketPill, type TicketDetail, type TicketLine } from './ticket';
-import { attest, type ProofMethod, VerifyOwnership } from './verify-ownership';
+import { attest, VerifyOwnership } from './verify-ownership';
 import {
   type AuditInput,
   createAuditAction,
@@ -66,7 +65,6 @@ const carriedAnswers = (a: {
   readonly focus: readonly FocusKey[];
   readonly text: string;
   readonly care: Care | null;
-  readonly method: ProofMethod;
 }): Record<string, unknown> => ({ ...a, text: a.text.slice(0, CARRIED_TEXT_MAX) });
 /** The answers carried in this page's address, if any. */
 function answersFromUrl(): Record<string, unknown> | undefined {
@@ -84,7 +82,6 @@ const answersSchema = z
     focus: z.array(z.enum(FOCUS_KEYS as [FocusKey, ...FocusKey[]])),
     text: z.string(),
     care: z.enum(['passive', 'active_safe']).nullable(),
-    method: z.enum(['file', 'attest']),
   })
   .partial();
 
@@ -185,7 +182,6 @@ export function Order({
   const [showError, setShowError] = useState(false);
   const [target, setTarget] = useState<OkTarget | null>(first);
   const [asset, setAsset] = useState<Asset | null>(firstAsset);
-  const [method, setMethod] = useState<ProofMethod>(first === null ? 'file' : recommendedProof(first.host));
   const [attested, setAttested] = useState(false);
   const [focus, setFocus] = useState<FocusKey[]>([BROAD]);
   const [focusText, setFocusText] = useState('');
@@ -242,7 +238,6 @@ export function Order({
     if (a.data.focus !== undefined && a.data.focus.length > 0) setFocus(a.data.focus);
     if (a.data.text !== undefined) setFocusText(a.data.text);
     if (a.data.care !== undefined) setCare(a.data.care);
-    if (a.data.method !== undefined) setMethod(a.data.method);
     if (d.step <= startStep || d.step > QUESTIONS || first === null) return;
     // Questions 3 and 4 need the site verified: ask the API (it reuses the asset) rather than trust a cached page.
     if (d.step >= Q.focus && (firstAsset === null || !isVerified(firstAsset)))
@@ -272,7 +267,7 @@ export function Order({
     return () => {
       active = false;
     };
-  }, [target, asset, step, method, attempt]);
+  }, [target, asset, step, attempt]);
 
   // A link to a fresh /audits/new while this order is open (sidebar New audit, the N key) may come from the router
   // cache with the same key: start a new order with a new draft id instead of keeping these answers.
@@ -287,11 +282,11 @@ export function Order({
     if (target !== null) q.set('target', target.origin);
     q.set('step', String(step));
     q.set('draft', draftId);
-    if (target !== null) q.set('a', JSON.stringify(carriedAnswers({ focus, text: focusText, care, method })));
+    if (target !== null) q.set('a', JSON.stringify(carriedAnswers({ focus, text: focusText, care })));
     window.history.replaceState(window.history.state, '', `/audits/new?${q.toString()}`);
     if (mounted.current || step > 1) h1.current?.focus();
     mounted.current = true;
-  }, [step, target, draftId, focus, focusText, care, method]);
+  }, [step, target, draftId, focus, focusText, care]);
 
   // Draft kept on this device, 300 ms after the last change, once there is a site. A change still waiting when the
   // order unmounts (browser Back straight after Continue) is written then, so Forward comes back to the same question.
@@ -309,7 +304,7 @@ export function Order({
     const write = (): void => {
       unsavedDraft.current = null;
       if (submitted.current) return;
-      const answers = { focus, text: focusText, care, method };
+      const answers = { focus, text: focusText, care };
       saveDraft({ id: draftId, origin: target.origin, host: target.host, step, answers, savedAt: new Date().toISOString() });
       // The server keeps the answers too; "Draft saved" is said only once it has them.
       void saveDraftAction(draftId, step, { ...answers, text: focusText.slice(0, SERVER_NOTE_MAX), origin: target.origin, host: target.host }).then((r) => {
@@ -323,7 +318,7 @@ export function Order({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [draftId, target, step, focus, focusText, care, method, refusedTarget]);
+  }, [draftId, target, step, focus, focusText, care, refusedTarget]);
   useEffect(
     () => () => {
       unsavedDraft.current?.();
@@ -362,10 +357,7 @@ export function Order({
       }
       // Nothing is registered here: question 2 does that when it needs to (see above).
       const a = target?.origin === r.origin ? asset : (findKnown(assets, r.origin) ?? null);
-      if (target?.origin !== r.origin) {
-        setAttested(false);
-        setMethod(recommendedProof(r.host));
-      }
+      if (target?.origin !== r.origin) setAttested(false);
       setTarget(r);
       setAsset(a);
       go(a !== null && isVerified(a) ? Q.focus : Q.proof);
@@ -375,7 +367,7 @@ export function Order({
       if (target === null) return false;
       let a = asset;
       if (a === null) {
-        if (method !== 'attest' || !attested) return false;
+        if (!attested) return false;
         const created = await ensureTargetAction(target.origin, target.host);
         if (!created.ok) {
           setError(created.message);
@@ -385,7 +377,7 @@ export function Order({
         setAsset(a);
       }
       if (!isVerified(a)) {
-        if (method !== 'attest' || !attested) return false;
+        if (!attested) return false;
         const r = await attest(a, viewerName);
         if ('error' in r) {
           setError(r.error);
@@ -441,7 +433,7 @@ export function Order({
       ? // Muted while the field shows its error, as on Home: a gold Continue that does nothing reads as a missed click.
         text.trim() !== '' && !(shownError && !normalizeTarget(text).ok)
       : step === 2
-        ? refusedHere === null && (verified || (target !== null && method === 'attest' && attested))
+        ? refusedHere === null && (verified || (target !== null && attested))
         : step === Q.care
           ? asset !== null
           : true;
@@ -449,9 +441,7 @@ export function Order({
   /** Why Continue is not ready yet, said next to it (a disabled button alone does not explain itself). */
   const stepHint =
     step === 2 && !canContinue && refusedHere === null
-      ? method === 'file'
-        ? 'Put the file on the site and press Check now, or choose \u201cI\u2019m responsible for this system\u201d.'
-        : 'Tick the box to confirm, then continue.'
+      ? 'Tick the box to confirm, then continue.'
       : null;
 
   const pressContinue = (): void => {
@@ -479,8 +469,7 @@ export function Order({
       }
       const n = Number(e.key);
       if (!Number.isInteger(n) || n < 1) return;
-      if (step === 2 && !verified && n <= 2) setMethod(n === 1 ? 'file' : 'attest');
-      else if (step === Q.focus && n <= FOCUS_CHIPS.length) {
+      if (step === Q.focus && n <= FOCUS_CHIPS.length) {
         const key = FOCUS_CHIPS[n - 1]?.key;
         if (key !== undefined) setFocus((f) => toggleFocus(f, key, !f.includes(key)));
       } else if (step === Q.care && n <= 2) setCare(n === 1 ? 'passive' : 'active_safe');
@@ -489,7 +478,7 @@ export function Order({
     return () => {
       window.removeEventListener('keydown', onKey);
     };
-  }, [back, step, verified]);
+  }, [back, step]);
 
   const host = target?.host ?? '';
   const focusPhrase = composeObjective(focus, '').replace(/^Look for /, '').replace(/\.$/, '');
@@ -500,7 +489,7 @@ export function Order({
     { label: 'Site', value: target === null ? null : target.host, warn: refusedHere !== null },
     {
       label: "Proof it's yours",
-      value: verified ? (asset.ownership.method === 'http_token' ? 'File found on the site' : 'Verified earlier') : null,
+      value: verified ? 'You are authorised' : null,
     },
     { label: 'What to look for', value: step >= Q.focus ? lookFor : null },
     { label: 'How careful', value: step >= Q.care ? CARE[chosenCare].label : null },
@@ -530,14 +519,14 @@ export function Order({
     2: {
       h1: (
         <>
-          Is <Host text={host} /> yours?
+          Are you authorised to assess <Host text={host} />?
         </>
       ),
       lede: verified
-        ? 'Nothing to do here: the site is already verified as yours.'
+        ? 'Nothing to do here: you already confirmed you are authorised to assess this site.'
         : refusedHere !== null
           ? 'Blackwing cannot test this address, whoever owns it. Change the site to go on.'
-          : 'We only test sites you can show you control. Pick the way that suits you.',
+          : 'One tick, once per site. You take responsibility for having permission to test it.',
     },
     3: {
       h1: 'What should Blackwing look for?',
@@ -665,16 +654,12 @@ export function Order({
               asset={asset}
               origin={target?.origin ?? null}
               viewerName={viewerName}
-              method={method}
-              onMethod={setMethod}
               attested={attested}
               onAttested={setAttested}
               onVerified={(a) => {
                 setAsset(a);
                 refreshSidebar();
               }}
-              showIndex
-              primaryCheck
             />
           ) : null}
 
@@ -748,8 +733,8 @@ export function Order({
             <button
               type="button"
               onClick={() => {
-                // A failed registration has no Continue to press yet (the file way needs it first): run it again.
-                if (step === Q.proof && asset === null && method === 'file') {
+                // A failed registration has no Continue to press yet: run it again.
+                if (step === Q.proof && asset === null && !attested) {
                   setError(null);
                   setAttempt((n) => n + 1);
                 } else pressContinue();

@@ -6,6 +6,7 @@ import { newId } from '@blackwing/ids';
 import { caseOutcome, type HuntContext } from './context.js';
 import { awaitDecision, modelView, probeSchema, sendRequest, takeNotices } from './http-tool.js';
 import { SUBAGENT_NAMES } from './prompts.js';
+import { attachProofScreenshots } from './screenshot.js';
 import { buildFindingRow, candidateSchema, validateCandidate } from './validator.js';
 import { deliverRelease } from './webhook.js';
 
@@ -160,6 +161,7 @@ export function huntTools(ctx: HuntContext) {
       };
       if (proven) {
         const findingId = await recordProven(ctx, { ...row, id: newId() }, summary);
+        if (findingId !== null) await attachProofScreenshots(ctx, findingId, candidate, verdict);
         if (findingId === null) {
           // A copy of an issue already stored: still one outcome event for this candidate.
           const existing = await ctx.store.findingByFingerprint(ctx.run, row.fingerprint);

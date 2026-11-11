@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { scrubDeep } from '@blackwing/errors/scrub';
 
 import { agentName } from '../../../lib/agents';
-import { coverageSchema } from '../../../lib/schemas';
+import { coverageSchema, intelSchema, type Intel } from '../../../lib/schemas';
 import { escapeHtml as esc, markdownToHtml } from '../markdown';
 import { identityOf, oracleWords, plainReason, PROOF_BY, proofSentence, requestLine } from './issue-body';
 import { bySeverity, duration, findingDetailSchema, notTested, SEVERITIES, type FindingDetail } from './model';
@@ -61,6 +61,10 @@ export const reportSourceSchema = z
     keptBack: z.array(findingDetailSchema).default([]),
     /** What the runner recorded about coverage; null for runs from before it did. */
     coverage: coverageSchema.nullable().default(null),
+    /** The threat-intel phase (`externalExposure` in the API's JSON); null for runs from before it existed. */
+    externalExposure: intelSchema.nullable().catch(null).default(null),
+    /** The AI-written executive summary: not verified, absent when none was written. */
+    executiveSummary: z.object({ markdown: z.string() }).loose().nullable().catch(null).default(null),
   })
   .loose();
 export type ReportSource = z.infer<typeof reportSourceSchema>;
@@ -77,6 +81,32 @@ const LIMITS = [
   'Tokens, cookies and passwords in the evidence are redacted by Blackwing.',
   'Only issues a person released are listed in the findings. Issues still awaiting release or dismissed are left out. Kept-back issues appear only in the appendix, marked not proven.',
 ];
+
+/** Base64 PNGs of each finding's proof screenshots, by finding id (read through the API by the report route). */
+export type ShotImages = ReadonlyMap<string, { readonly probe?: string; readonly control?: string }>;
+const SHOT_KINDS = ['probe', 'control'] as const;
+
+/** Markdown cannot hold the images: it names them, where the HTML report and the console show them. */
+function shotsMarkdown(f: FindingDetail, images: ShotImages | undefined): string[] {
+  const have = SHOT_KINDS.filter((k) => images?.get(f.id)?.[k] !== undefined || f.evidence.screenshots?.[k] !== undefined);
+  if (have.length === 0)
+    return f.evidence.screenshots?.note === undefined ? [] : [`Proof screenshot: ${f.evidence.screenshots.note}`, ''];
+  return [
+    `Proof screenshot (${have.join(' / ')}): PNG, embedded in the HTML report and shown on the finding in the console (\`/api/findings/${f.id}/screenshots/<probe|control>\`).`,
+    '',
+  ];
+}
+
+/** The pair as base64 images (probe vs control), or the capture's note when none was taken. */
+function shotsHtml(f: FindingDetail, images: ShotImages | undefined): string {
+  const mine = images?.get(f.id);
+  const have = SHOT_KINDS.filter((k) => mine?.[k] !== undefined);
+  if (have.length === 0)
+    return f.evidence.screenshots?.note === undefined ? '' : `\n<p class="meta">Proof screenshot: ${esc(f.evidence.screenshots.note)}</p>`;
+  const figure = (k: (typeof SHOT_KINDS)[number]): string =>
+    `<figure style="margin:0;flex:1 1 360px;min-width:0"><figcaption class="meta"><b>${k === 'probe' ? 'Probe' : 'Control'}</b></figcaption><img alt="Proof screenshot: ${k}" style="max-width:100%;border:1px solid var(--line)" src="data:image/png;base64,${esc(mine?.[k] ?? '')}"></figure>`;
+  return `\n<h4>Proof screenshot <span>· probe vs control, taken by a headless browser</span></h4>\n<div style="display:flex;flex-wrap:wrap;gap:12px">${have.map((k) => figure(k)).join('')}</div>`;
+}
 
 const laterThanStart = (at: string | null | undefined, start: string | null): boolean =>
   at !== null && at !== undefined && start !== null && Date.parse(at) > Date.parse(start);
@@ -303,7 +333,28 @@ const NOT_RECORDED =
   'Blackwing did not record test-case coverage for this audit, so it cannot list the cases that did not run.';
 const NO_GAPS = 'Every planned test case ran, and the plan left nothing out.';
 
-export function renderMarkdown(src: ReportSource, findings: readonly FindingDetail[]): string {
+const INTEL_BASIS: Readonly<Record<Intel['items'][number]['basis'], string>> = {
+  finding: 'confirmed finding',
+  observed: 'observed',
+  unverified: 'intel, not verified',
+};
+const NO_INTEL = 'No threat-intel phase was recorded for this audit.';
+
+/** "External exposure": the public view of the organisation, from the passive threat-intel phase. */
+function exposureIntro(intel: Intel): string {
+  return `Passive, public-source threat intel gathered before testing${intel.domains.length === 0 ? '' : ` for ${intel.domains.join(', ')}`}. Organisation level only: secrets are redacted and nothing about individuals is collected.`;
+}
+
+export const SUMMARY_TAG = 'Written by Blackwing AI · not verified';
+
+/** The AI executive summary without its own top heading (the report adds that), or null when there is none. */
+function summaryBody(src: ReportSource): string | null {
+  const text = src.executiveSummary?.markdown.trim() ?? '';
+  const body = text.replace(/^#{1,2}\s*Executive summary\s*\n/i, '').trim();
+  return body === '' ? null : body;
+}
+
+export function renderMarkdown(src: ReportSource, findings: readonly FindingDetail[], images?: ShotImages): string {
   const out: string[] = [
     `# ${title(src)}`,
     '',
@@ -312,6 +363,8 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     reportLede(findings),
     '',
   ];
+  const summary = summaryBody(src);
+  if (summary !== null) out.push('## Executive summary', '', `_${SUMMARY_TAG}._`, '', ...summary.split('\n').map((l) => (/^#{1,2}\s/.test(l) ? `#${l}` : l)), '');
   out.push('## About this audit', '', ...facts(src).map(([k, v]) => `- **${k}:** ${v}`), '');
   findings.forEach((f, i) => {
     const proof = proofOf(f);
@@ -339,6 +392,7 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     const ctl = controlExcerpt(f);
     if (ctl !== '')
       out.push('What the site answered to the control (excerpt):', '', '```', ctl, '```', '');
+    out.push(...shotsMarkdown(f, images));
     out.push(replaySummary(f), '');
     if (replayRows(f).length > 0)
       out.push(
@@ -366,6 +420,22 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     if (remediation !== '')
       out.push('### How to fix it (Blackwing AI’s suggestion, not verified)', '', remediation, '');
   });
+  const intel = src.externalExposure;
+  out.push('## External exposure', '');
+  if (intel === null) out.push(NO_INTEL, '');
+  else {
+    out.push(exposureIntro(intel), '');
+    if (intel.skipped !== null) out.push(`${intel.skipped}.`, '');
+    out.push(...intel.sources.map((x) => `- ${x.name}: ${x.note}`), '');
+    out.push(
+      ...(intel.items.length === 0
+        ? ['No exposure items were found.']
+        : intel.items.map((i) => `- **${i.title}** (${i.severity}, ${INTEL_BASIS[i.basis]}): ${i.detail}`)),
+      '',
+    );
+    if (intel.discoveredHosts.length > 0)
+      out.push(`Hosts discovered in public sources outside the approved scope (reported, not tested): ${intel.discoveredHosts.join(', ')}`, '');
+  }
   const gaps = notTestedOf(src);
   const kept = [...src.keptBack].sort(bySeverity);
   out.push('## What was not tested and why', '');
@@ -445,10 +515,28 @@ footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);color:v
 @media print{main{padding:0}article{border-color:#ccc}}
 </style>`;
 
+function exposureHtml(intel: Intel | null): string {
+  if (intel === null) return `<h2>External exposure</h2>\n<p class="meta">${esc(NO_INTEL)}</p>`;
+  return `<h2>External exposure</h2>
+<p class="meta">${esc(exposureIntro(intel))}</p>${intel.skipped === null ? '' : `\n<p class="meta">${esc(intel.skipped)}.</p>`}
+<ul class="limits">${intel.sources.map((x) => `<li>${esc(x.name)}: ${esc(x.note)}</li>`).join('')}</ul>
+${
+  intel.items.length === 0
+    ? '<p class="meta">No exposure items were found.</p>'
+    : `<table>${intel.items
+        .map(
+          (i) =>
+            `<tr><td><span class="chip" style="${SEV_STYLE[i.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(i.severity))}</span> <b>${esc(i.title)}</b><br><span class="meta">${esc(INTEL_BASIS[i.basis])}</span></td><td>${esc(i.detail)}</td></tr>`,
+        )
+        .join('')}</table>`
+}${intel.discoveredHosts.length === 0 ? '' : `\n<p class="meta">Hosts discovered in public sources outside the approved scope (reported, not tested): ${esc(intel.discoveredHosts.join(', '))}</p>`}`;
+}
+
 export function renderHtml(
   src: ReportSource,
   findings: readonly FindingDetail[],
   generatedAt: string,
+  images?: ShotImages,
 ): string {
   const counts = SEVERITIES.map(
     (s) => [s, findings.filter((f) => f.severity === s).length] as const,
@@ -468,7 +556,7 @@ export function renderHtml(
 <table>
 <tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
 <tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">${esc(cap(controlNote(f)))}.</span></td></tr>
-</table>${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${controlExcerpt(f) === '' ? '' : `\n<p class="meta">What the site answered to the control (excerpt):</p>\n<pre>${esc(controlExcerpt(f))}</pre>`}
+</table>${shotsHtml(f, images)}${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${controlExcerpt(f) === '' ? '' : `\n<p class="meta">What the site answered to the control (excerpt):</p>\n<pre>${esc(controlExcerpt(f))}</pre>`}
 <p class="meta">${esc(replaySummary(f))}</p>${
         replayRows(f).length === 0
           ? ''
@@ -523,7 +611,7 @@ ${STYLE}</head>
 <h1>${esc(title(src))}</h1>
 <p class="sub">${esc(src.asset.baseUrl)}</p>
 <p class="lede">${esc(reportLede(findings))}</p>
-${counts.length === 0 ? '' : `<ul class="chips">${counts.map(([s, n]) => `<li class="chip" style="${SEV_STYLE[s] ?? ''}">${n} ${esc(cap(s))}</li>`).join('')}</ul>`}
+${summaryBody(src) === null ? '' : `<h2>Executive summary <span class="meta">· ${esc(SUMMARY_TAG)}</span></h2>\n<div class="ai">${markdownToHtml(summaryBody(src) ?? '')}</div>\n`}${counts.length === 0 ? '' : `<ul class="chips">${counts.map(([s, n]) => `<li class="chip" style="${SEV_STYLE[s] ?? ''}">${n} ${esc(cap(s))}</li>`).join('')}</ul>`}
 <h2>About this audit</h2>
 <dl>
 ${facts(src)
@@ -531,6 +619,7 @@ ${facts(src)
   .join('\n')}
 </dl>
 ${findings.length === 0 ? '' : `<h2>Issues, most severe first</h2>\n${issues}`}
+${exposureHtml(src.externalExposure)}
 <h2>What was not tested and why</h2>
 ${gapsHtml}
 <h2>Limits of this report</h2>
@@ -603,11 +692,12 @@ export function renderJson(
   const parsed = reportSourceSchema.safeParse(raw);
   const gaps = parsed.success ? notTestedOf(parsed.data) : null;
   const notTestedSection = gaps === null ? null : { recorded: gaps.recorded, items: gaps.rows, note: gaps.note };
+  // The vendor name of the model never appears in a customer file: it is Blackwing AI.
   return JSON.stringify(
     dropInternal(scrubDeep({ ...raw, asset, run, scope, findings: list, keptBack, notTested: notTestedSection })),
     null,
     2,
-  );
+  ).replace(/"proposedBy": "claude"/g, '"proposedBy": "blackwing-ai"');
 }
 
 /** Released findings, most severe first (the order of the results page). */

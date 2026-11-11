@@ -1,4 +1,5 @@
 import type { Scope } from './scope.js';
+import type { ShotResult } from './screenshot.js';
 
 export interface HuntRun {
   readonly id: string;
@@ -153,8 +154,12 @@ export interface HuntStore {
    * newer proof `findingId`, each on the ledger; returns their ids. Nothing is released: the newest copy still waits.
    */
   supersedeCopies(run: HuntRun, findingId: string, identityKey: string): Promise<string[]>;
+  /** Stores the proof screenshots of a proven finding (PNG bytes, tenant-scoped) and a summary under `evidence.screenshots`; a skipped capture stores the summary only. */
+  saveScreenshots(run: HuntRun, findingId: string, result: ShotResult): Promise<void>;
   /** Records the result of the webhook POST for a released finding. */
   recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void>;
+  /** The run's findings by status (released, confirmed = proven; suspected = kept back), already scrubbed: the only finding data the report summary model sees. */
+  listFindingsForSummary(run: HuntRun): Promise<SummaryFinding[]>;
   saveProgress(runId: string, requestsUsed: number, costUsd: number): Promise<void>;
   finishRun(run: HuntRun, outcome: RunOutcome): Promise<void>;
   /** Sets state=killed, killed_at=now and halt_ms from kill_requested_at; returns halt_ms. */
@@ -162,4 +167,16 @@ export interface HuntStore {
   /** Claims the oldest queued finding retest (SKIP LOCKED), or null. */
   claimQueuedRetest(): Promise<RetestJob | null>;
   finishRetest(id: string, result: RetestResult): Promise<void>;
+}
+
+/** One finding as the report summary sees it: no evidence bodies, headers, cookies or curl. */
+export interface SummaryFinding {
+  readonly title: string;
+  readonly severity: string;
+  readonly cwe: string;
+  readonly owasp: string;
+  readonly status: 'released' | 'confirmed' | 'suspected';
+  /** Method and URL without query string or fragment. */
+  readonly location: string;
+  readonly remediation: string | null;
 }

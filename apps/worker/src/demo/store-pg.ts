@@ -2,11 +2,13 @@
 import { z } from 'zod';
 
 import { DEMO_GENESIS, demoAuditHash, type DemoAuditPayload } from '@blackwing/audit';
+import { scrub } from '@blackwing/errors/scrub';
 import { newId } from '@blackwing/ids';
 
 import { REPLAYS } from './hunt/validator.js';
 
-import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun } from './hunt/types.js';
+import type { ShotResult } from './hunt/screenshot.js';
+import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun, SummaryFinding } from './hunt/types.js';
 import type pg from 'pg';
 
 const pinsSchema = z.object({
@@ -283,6 +285,56 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         ],
       );
       return r.rows[0]?.id ?? null;
+    },
+    async listFindingsForSummary(run: HuntRun): Promise<SummaryFinding[]> {
+      const r = await pool.query<{ title: string; severity: unknown; cwe_id: string; owasp_category: string; status: SummaryFinding['status']; location: Record<string, unknown> | null; remediation: string | null }>(
+        `SELECT title, severity, cwe_id, owasp_category, status, location, evidence->>'remediation' AS remediation
+         FROM demo.findings WHERE tenant_id = $1 AND run_id = $2 AND status IN ('released', 'confirmed', 'suspected') ORDER BY created_at`,
+        [run.tenantId, run.id],
+      );
+      return r.rows.map((row) => {
+        const level = typeof row.severity === 'string' ? row.severity : (row.severity as { level?: unknown } | null)?.level;
+        const method = typeof row.location?.method === 'string' ? row.location.method : '';
+        const url = typeof row.location?.url === 'string' ? (row.location.url.split(/[?#]/, 1)[0] ?? '') : '';
+        return {
+          title: scrub(row.title),
+          severity: typeof level === 'string' ? level : 'info',
+          cwe: row.cwe_id,
+          owasp: row.owasp_category,
+          status: row.status,
+          location: scrub(`${method} ${url}`.trim()),
+          remediation: row.remediation === null ? null : scrub(row.remediation),
+        };
+      });
+    },
+    async saveScreenshots(run: HuntRun, findingId: string, result: ShotResult): Promise<void> {
+      const meta: Record<string, unknown> = { status: result.status, note: result.note };
+      for (const shot of result.shots) {
+        meta[shot.kind] = { width: shot.width, height: shot.height, bytes: shot.png.byteLength, mode: shot.mode, method: shot.method, url: shot.url, status: shot.status };
+      }
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        for (const shot of result.shots) {
+          await client.query(
+            `INSERT INTO demo.finding_screenshots (finding_id, tenant_id, kind, png, width, height, mode, request_method, request_url, response_status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             ON CONFLICT (finding_id, kind) DO UPDATE SET png = EXCLUDED.png, width = EXCLUDED.width, height = EXCLUDED.height, mode = EXCLUDED.mode,
+               request_method = EXCLUDED.request_method, request_url = EXCLUDED.request_url, response_status = EXCLUDED.response_status, created_at = now()`,
+            [findingId, run.tenantId, shot.kind, shot.png, shot.width, shot.height, shot.mode, shot.method, shot.url, shot.status],
+          );
+        }
+        await client.query(
+          `UPDATE demo.findings SET evidence = evidence || jsonb_build_object('screenshots', $3::jsonb) WHERE tenant_id = $1 AND id = $2`,
+          [run.tenantId, findingId, JSON.stringify(meta)],
+        );
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
     },
     async findingByFingerprint(run: HuntRun, fingerprint: string): Promise<{ id: string; title: string } | null> {
       const r = await pool.query<{ id: string; title: string }>('SELECT id, title FROM demo.findings WHERE tenant_id = $1 AND fingerprint = $2', [run.tenantId, fingerprint]);

@@ -159,3 +159,70 @@ describe('kept-back appendix and evidence', () => {
     expect(JSON.parse(renderJson({ ...raw, keptBack: [kept] }, ordered(src)))).toMatchObject({ scope: { keptBackCount: 1 }, notTested: { recorded: false } });
   });
 });
+
+describe('proof screenshots in the report', () => {
+  const source = reportSourceSchema.parse(raw);
+  const list = ordered(source);
+  const first = list[0];
+  it('embeds the pair as base64 in HTML and only names it in Markdown', () => {
+    const images = new Map([[first?.id ?? '', { probe: 'UFJPQkU=', control: 'Q1RM' }]]);
+    const html = renderHtml(source, list, '2026-11-07T00:00:00.000Z', images);
+    expect(html).toContain('data:image/png;base64,UFJPQkU=');
+    expect(html).toContain('data:image/png;base64,Q1RM');
+    expect(renderMarkdown(source, list, images)).not.toContain('UFJPQkU=');
+    expect(renderHtml(source, list, '2026-11-07T00:00:00.000Z')).not.toContain('data:image/png');
+  });
+});
+
+describe('external exposure in the report', () => {
+  const externalExposure = {
+    skipped: null,
+    domains: ['example.com'],
+    sources: [{ name: 'Web archive (Wayback CDX)', status: 'done', note: '12 archived URLs read' }],
+    items: [
+      { source: 'target', title: 'Exposed Git repository metadata (/.git/HEAD)', detail: 'Confirmed by 3 replays.', severity: 'high', basis: 'finding' },
+      { source: 'cve', title: 'nginx 1.18.0 is announced in the response headers', detail: 'CVE-2021-0001', severity: 'medium', basis: 'unverified' },
+    ],
+    discoveredHosts: ['staging.example.com'],
+    archivedPaths: [],
+  };
+  const src = reportSourceSchema.parse({ ...raw, externalExposure });
+
+  it('adds the section to the Markdown, HTML and JSON reports, marking unverified intel', () => {
+    for (const out of [renderMarkdown(src, ordered(src)), renderHtml(src, ordered(src), '2026-11-06T10:00:00Z')]) {
+      expect(out).toContain('External exposure');
+      expect(out).toContain('Exposed Git repository metadata');
+      expect(out).toContain('intel, not verified');
+      expect(out).toContain('staging.example.com');
+    }
+    expect(JSON.parse(renderJson({ ...raw, externalExposure }, ordered(src)))).toMatchObject({ externalExposure: { items: [{ basis: 'finding' }, { basis: 'unverified' }] } });
+  });
+
+  it('says so when a run has no threat-intel record', () => {
+    expect(renderMarkdown(reportSourceSchema.parse(raw), [])).toContain('No threat-intel phase was recorded');
+  });
+});
+
+describe('executive summary', () => {
+  const withSummary = {
+    ...raw,
+    executiveSummary: { markdown: '## Executive summary\nRisk is **high**.\n\n## Key risks\n- IDOR\n\n## Recommended next steps\n1. Fix', writtenBy: 'Blackwing AI', verified: false },
+  };
+  it('leads the HTML and Markdown reports, tagged as not verified, and keeps the JSON field', () => {
+    const src = reportSourceSchema.parse(withSummary);
+    const html = renderHtml(src, ordered(src), '2026-11-06T10:00:00.000Z');
+    expect(html.indexOf('Executive summary')).toBeLessThan(html.indexOf('About this audit'));
+    expect(html).toContain('Written by Blackwing AI · not verified');
+    const md = renderMarkdown(src, ordered(src));
+    expect(md.indexOf('## Executive summary')).toBeLessThan(md.indexOf('## About this audit'));
+    expect(md.match(/## Executive summary/g)).toHaveLength(1);
+    expect(md).toContain('### Key risks');
+    expect((JSON.parse(renderJson(withSummary, ordered(src))) as { executiveSummary: { markdown: string } }).executiveSummary.markdown).toContain('Key risks');
+  });
+  it('is omitted when none was written', () => {
+    const src = reportSourceSchema.parse(raw);
+    expect(renderHtml(src, ordered(src), '2026-11-06T10:00:00.000Z')).not.toContain('Executive summary');
+    expect(renderMarkdown(src, ordered(src))).not.toContain('Executive summary');
+    expect(JSON.parse(renderJson(raw, ordered(src)))).not.toHaveProperty('executiveSummary');
+  });
+});

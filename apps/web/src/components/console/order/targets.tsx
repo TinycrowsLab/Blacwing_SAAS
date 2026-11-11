@@ -13,11 +13,9 @@ import {
   isForbiddenHost,
   isVerified,
   originOf,
-  recommendedProof,
   refreshSidebar,
-  unverifiableHost,
 } from './shared';
-import { type ProofMethod, VerifyOwnership } from './verify-ownership';
+import { VerifyOwnership } from './verify-ownership';
 import { ensureTargetAction, removeTargetAction } from '../../../app/(console)/audits/actions';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage, LinkButton } from '../design';
@@ -36,9 +34,6 @@ function VerifyPanel({
   readonly onVerified: (a: Asset) => void;
   readonly onClose: () => void;
 }) {
-  const [method, setMethod] = useState<ProofMethod>(() =>
-    recommendedProof(new URL(originOf(asset)).host, asset),
-  );
   const [attested, setAttested] = useState(false);
   if (isVerified(asset)) {
     const origin = originOf(asset);
@@ -53,8 +48,7 @@ function VerifyPanel({
           </span>
           <span className="text-[13.5px] leading-5 text-foreground">
             <b className="font-semibold">
-              {asset.ownership.method === 'http_token' ? 'Found it. ' : ''}The site is verified as
-              yours.
+              You are authorised to test this site.
             </b>{' '}
             <span className="text-muted-foreground">
               Blackwing may audit it once you approve a plan.
@@ -80,13 +74,11 @@ function VerifyPanel({
     );
   }
   const host = new URL(originOf(asset)).host;
-  if (isForbiddenHost(host) || unverifiableHost(host, asset)) {
+  if (isForbiddenHost(host)) {
     return (
       <div className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5">
         <InlineMessage tone="bad">
-          {isForbiddenHost(host)
-            ? FORBIDDEN_MESSAGE
-            : `${host} is a private or local address your Blackwing operator has not listed as a lab, so it cannot be verified or tested. Labs are matched on the exact spelling of the address, so ask your operator which one they listed.`}
+          {FORBIDDEN_MESSAGE}
         </InlineMessage>
       </div>
     );
@@ -94,13 +86,11 @@ function VerifyPanel({
   return (
     <div className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5">
       <p className="m-0 text-[13.5px] text-muted-foreground">
-        We only test sites you can show you control. Pick the way that suits you.
+        Blackwing tests only sites you own or have written permission to test.
       </p>
       <VerifyOwnership
         asset={asset}
         viewerName={viewerName}
-        method={method}
-        onMethod={setMethod}
         attested={attested}
         onAttested={setAttested}
         onVerified={onVerified}
@@ -284,7 +274,7 @@ function AddTarget({
           />
           <p className="m-0 text-[12.5px] text-muted-foreground">
             Blackwing may send requests to these too, for example the app&apos;s API on its own
-            address. Each one must serve the same verification file before testing starts.
+            address. Only add addresses you are authorised to test.
           </p>
         </div>
       )}
@@ -537,9 +527,7 @@ export function Targets({
                       // Who on one line, the day on its own: a date never breaks across lines.
                       <span className="flex flex-col text-[11.5px] text-muted-foreground sm:items-end">
                         <span>
-                          {a.ownership.method === 'http_token'
-                            ? 'Verified with a file'
-                            : 'Confirmed'}
+                          Confirmed
                           {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`}
                         </span>
                         <span className="whitespace-nowrap">

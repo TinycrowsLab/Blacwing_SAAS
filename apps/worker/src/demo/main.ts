@@ -25,7 +25,20 @@ const env = defineConfig(
     BW_DEMO_MODE: z.literal('1'),
     DATABASE_URL: z.string().min(1),
     BW_ENV: z.string().default('production'),
-    BW_HUNT_MODEL: z.string().default('claude-sonnet-5-5'),
+    BW_HUNT_MODEL: z.string().min(1).default('claude-opus-5-5'),
+    /** Used when the primary model is overloaded or unavailable (Agent SDK `fallbackModel`). Empty disables it. */
+    BW_HUNT_FALLBACK_MODEL: z.string().default('claude-opus-5'),
+    /** Agent SDK `effort` for the orchestrator and every subagent. */
+    BW_HUNT_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('medium'),
+    /** Report-writing model call only (the executive summary; the rest of the report is built deterministically from data). */
+    BW_REPORT_MODEL: z.string().min(1).default('claude-sonnet-5'),
+    BW_REPORT_FALLBACK_MODEL: z.string().default('claude-opus-5'),
+    /** `off` skips the AI-written executive summary; reports then omit that section. */
+    BW_REPORT_SUMMARY: z.enum(['on', 'off']).default('on'),
+    /** Threat intel keys (all optional; a source without its key is skipped and the run says so). */
+    BW_GITHUB_TOKEN: z.string().min(1).optional(),
+    BW_HIBP_API_KEY: z.string().min(1).optional(),
+    BW_INTEL_ENABLED: z.enum(['0', '1']).default('1'),
     BW_HUNT_CONCURRENCY: z.coerce.number().int().min(1).default(DEFAULT_CONCURRENCY),
     BW_DEMO_WEBHOOK_URL: z.url({ protocol: /^https?$/ }).optional(),
     BW_CONSOLE_ORIGIN: z.string().min(1).default('http://localhost:3000'),
@@ -45,6 +58,15 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 // may stand in for an API key; any other environment without ANTHROPIC_API_KEY fails the run.
 const config = {
   model: env.BW_HUNT_MODEL,
+  fallbackModel: env.BW_HUNT_FALLBACK_MODEL.trim() === '' ? null : env.BW_HUNT_FALLBACK_MODEL.trim(),
+  effort: env.BW_HUNT_EFFORT,
+  report: {
+    model: env.BW_REPORT_MODEL,
+    fallbackModel: env.BW_REPORT_FALLBACK_MODEL.trim() === '' ? null : env.BW_REPORT_FALLBACK_MODEL.trim(),
+    effort: 'medium' as const,
+    summary: env.BW_REPORT_SUMMARY === 'on',
+  },
+  intel: env.BW_INTEL_ENABLED === '1' ? { githubToken: env.BW_GITHUB_TOKEN ?? null, hibpApiKey: env.BW_HIBP_API_KEY ?? null } : null,
   modelEnv: {
     HOME: env.HOME,
     PATH: env.PATH,

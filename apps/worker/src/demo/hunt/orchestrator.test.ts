@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EventLog, newHuntState, type HuntContext } from './context.js';
 import { FakeStore } from './fake-store.js';
-import { caseOutcome, coverageOf, holdForAsks, nextRound, settle, toolGate } from './orchestrator.js';
+import { caseOutcome, coverageOf, holdForAsks, limitHit, nextRound, settle, toolGate } from './orchestrator.js';
 
 import type { HuntRun } from './types.js';
 
@@ -144,11 +144,32 @@ describe('runner-owned rounds', () => {
   it('never starts a round without budget or past the round cap', () => {
     const ctx = withRun(big);
     ctx.state.cases.set('sqli', { ...base });
-    expect(nextRound(ctx, { ...at, round: 4 })).toBeNull();
+    expect(nextRound(ctx, { ...at, round: 12 })).toBeNull();
     expect(nextRound(ctx, { ...at, spentUsd: 7.5 })).toBeNull();
     expect(nextRound(ctx, { ...at, elapsedS: 870 })).toBeNull();
     ctx.state.requestsUsed = 950;
     expect(nextRound(ctx, at)).toBeNull();
+  });
+
+  it('starts a focused round from a not-complete checkpoint even when every case ran, and not at a limit', () => {
+    const ctx = withRun(big);
+    ctx.state.requestsUsed = 400;
+    ctx.state.cases.set('sqli', { ...base, requests: 2, title: 'SQL injection in search' });
+    const cp = { complete: false, reasons: ['pages untested'], untested: ['/vulnerabilities/csp/'], next_focus: ['CSP bypass page'] };
+    const next = nextRound(ctx, { ...at, round: 5 }, cp);
+    expect(next?.prompt).toContain('NOT complete');
+    expect(next?.prompt).toContain('CSP bypass page');
+    expect(nextRound(ctx, { ...at, round: 5 }, { ...cp, complete: true })).toBeNull();
+    expect(nextRound(ctx, { ...at, round: 5, elapsedS: 870 }, cp)).toBeNull();
+  });
+
+  it('names the limit that is hit', () => {
+    const ctx = withRun(big);
+    expect(limitHit(ctx, at)).toBeNull();
+    expect(limitHit(ctx, { ...at, spentUsd: 7.5 })).toBe('cost_cap');
+    expect(limitHit(ctx, { ...at, elapsedS: 870 })).toBe('duration_budget');
+    ctx.state.requestsUsed = 950;
+    expect(limitHit(ctx, at)).toBe('request_budget');
   });
 
   it('holds the run open until a pending ask is decided, and stops holding when halted', async () => {

@@ -202,8 +202,35 @@ describe('identity', () => {
     const a = identityKey('asset-1', { probe: { method: 'get', url: 'https://t.example/ftp/' }, cwe: 'cwe-548' });
     expect(identityKey('asset-1', { probe: { method: 'GET', url: 'https://t.example/FTP' }, cwe: 'CWE-548' })).toBe(a);
     expect(identityKey('asset-2', { probe: { method: 'GET', url: 'https://t.example/ftp' }, cwe: 'CWE-548' })).not.toBe(a);
-    expect(identityKey('asset-1', { probe: { method: 'POST', url: 'https://t.example/ftp' }, cwe: 'CWE-548' })).not.toBe(a);
-    expect(identityKey('asset-1', { probe: { method: 'GET', url: 'https://t.example/ftp' }, cwe: 'CWE-200' })).not.toBe(a);
+    expect(identityKey('asset-1', { probe: { method: 'GET', url: 'https://t.example/ftp2' }, cwe: 'CWE-548' })).not.toBe(a);
+    expect(identityKey('asset-1', { probe: { method: 'GET', url: 'https://t.example/ftp' }, cwe: 'CWE-89' })).not.toBe(a);
+  });
+
+  it('strips query values, collapses slashes and folds a backup file into its family', () => {
+    expect(normalisedPath('https://t.example//config///config.inc.php.bak?x=1')).toBe('/config/config.inc.php');
+    expect(normalisedPath('https://t.example/config/config.inc.php~')).toBe('/config/config.inc.php');
+    expect(normalisedPath('https://t.example/app/index.php?page=1')).toBe('/app');
+  });
+
+  it('merges the same issue filed under related CWEs and different titles', () => {
+    const lfi = (cwe: string, url: string) => identityKey('a', { probe: { method: 'GET', url }, cwe, title: 'x' });
+    expect(lfi('CWE-22', 'https://t.example/fi/?page=/etc/passwd')).toBe(lfi('CWE-98', 'https://t.example/fi/?page=../../x'));
+    const bak = (cwe: string, url: string) => identityKey('a', { probe: { method: 'GET', url }, cwe });
+    expect(bak('CWE-530', 'https://t.example/config/c.inc.php.bak')).toBe(bak('CWE-538', 'https://t.example/config/c.inc.php.bak'));
+    expect(bak('CWE-530', 'https://t.example/config/c.inc.php.bak')).toBe(bak('CWE-538', 'https://t.example/config/c.inc.php'));
+  });
+
+  it('collapses cookie attribute issues to one per site', () => {
+    const c = (url: string) => identityKey('a', { probe: { method: 'GET', url }, cwe: 'CWE-1004', title: 'cookie without HttpOnly' });
+    expect(c('https://t.example/about.php')).toBe(c('https://t.example/login.php'));
+  });
+
+  it('collapses site-wide header and banner issues to one per site', () => {
+    const h = (cwe: string, title: string, url: string) => identityKey('a', { probe: { method: 'GET', url }, cwe, title });
+    expect(h('CWE-200', 'Server version disclosure and missing security headers', 'https://t.example/login.php')).toBe(
+      h('CWE-693', 'Missing security headers and server version disclosure', 'https://t.example/'),
+    );
+    expect(h('CWE-200', 'Exposed backup file', 'https://t.example/a.bak')).not.toBe(h('CWE-693', 'Missing security headers', 'https://t.example/'));
   });
 });
 

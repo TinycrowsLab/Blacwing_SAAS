@@ -489,7 +489,7 @@ export class DemoStore {
   async markAssetVerified(
     tenantId: string,
     id: string,
-    method: 'http_token' | 'owner_attestation',
+    method: 'owner_attestation',
     verifiedBy: string,
   ): Promise<boolean> {
     const r = await this.pool.query(
@@ -819,6 +819,15 @@ export class DemoStore {
       [tenantId, id, status, decidedBy, reason],
     );
     return (r.rowCount ?? 0) === 1;
+  }
+
+  /** One proof screenshot (PNG) of a finding of this tenant, or null. */
+  async getScreenshot(tenantId: string, findingId: string, kind: 'probe' | 'control'): Promise<{ png: Buffer; width: number; height: number; mode: string } | null> {
+    const r = await this.pool.query<{ png: Buffer; width: number; height: number; mode: string }>(
+      'SELECT png, width, height, mode FROM demo.finding_screenshots WHERE tenant_id = $1 AND finding_id = $2 AND kind = $3',
+      [tenantId, findingId, kind],
+    );
+    return r.rows[0] ?? null;
   }
 
   async getFinding(tenantId: string, id: string): Promise<FindingRow | null> {

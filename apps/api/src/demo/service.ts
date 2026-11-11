@@ -61,8 +61,6 @@ export const RELEASE_MODES = ['hold', 'auto'] as const;
 type ReleaseMode = (typeof RELEASE_MODES)[number];
 const DEFAULT_GATE2_TIMEOUT_S = 300;
 
-const WELL_KNOWN_PATH = '/.well-known/blackwing-verification.txt';
-const VERIFY_TIMEOUT_MS = 5000;
 const RECENT_ITEMS = 10;
 const FINDING_LIST_LIMIT = 200;
 const AUDIT_LIST_LIMIT = 200;
@@ -138,12 +136,11 @@ const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
 /** Requests created before release modes existed behaved as `auto`; their DTO, pins and clones say so. */
 const releaseModeOf = (row: RequestRow): ReleaseMode => row.scope.releaseProven ?? 'auto';
 
-/** True when every origin of the asset is an operator-listed lab (owner attestation is allowed only then). */
+/** True when every origin of the asset is an operator-listed lab. */
 export const assetIsLab = (row: AssetRow, policy: OriginPolicy): boolean =>
   row.allowed_origins.length > 0 && row.allowed_origins.every((o) => isLabOrigin(o, policy));
 
 export function assetDto(row: AssetRow, policy: OriginPolicy = NO_LAB_POLICY): Record<string, unknown> {
-  const lab = assetIsLab(row, policy);
   return {
     id: row.id,
     slug: row.slug,
@@ -157,12 +154,7 @@ export function assetDto(row: AssetRow, policy: OriginPolicy = NO_LAB_POLICY): R
       verifiedBy: row.verified_by_name,
       verifiedAt: iso(row.verified_at),
     },
-    verification: {
-      token: row.verification_token,
-      wellKnownUrl: `${new URL(row.base_url).origin}${WELL_KNOWN_PATH}`,
-      methods: lab ? ['http_token', 'owner_attestation'] : ['http_token'],
-    },
-    lab,
+    lab: assetIsLab(row, policy),
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -290,6 +282,18 @@ export function findingSummaryDto(row: FindingRow): Record<string, unknown> {
   };
 }
 
+/** Where the proof screenshots of a finding can be fetched (the console's path), with the worker's capture summary. */
+function screenshotsDto(id: string, evidence: unknown): Record<string, unknown> | null {
+  const shots = (evidence as { screenshots?: Record<string, unknown> | null } | null)?.screenshots;
+  if (shots === undefined || shots === null) return null;
+  const out: Record<string, unknown> = { status: shots.status ?? null, note: shots.note ?? null };
+  for (const kind of ['probe', 'control']) {
+    const meta = shots[kind];
+    if (meta !== undefined && meta !== null && typeof meta === 'object') out[kind] = { ...meta, path: `/api/findings/${id}/screenshots/${kind}` };
+  }
+  return out;
+}
+
 export function findingDto(
   row: FindingRow,
   audit: AuditRef | null = null,
@@ -302,6 +306,7 @@ export function findingDto(
     description: clean.description,
     oracle: clean.oracle,
     evidence: clean.evidence,
+    screenshots: screenshotsDto(row.id, clean.evidence),
     replay: clean.replay,
     reproCurl: clean.repro_curl,
     testCaseId: row.test_case_id,
@@ -394,6 +399,19 @@ export function endReasonOf(events: readonly RunEventRow[]): string | null {
   return last.kind === 'run.failed' ? 'failed' : null;
 }
 
+const intelOf = (events: readonly RunEventRow[]): Record<string, unknown> | null => {
+  const event = events.find((e) => e.kind === INTEL_KIND);
+  return event === undefined ? null : scrubDeep(event.data);
+};
+
+/** The AI-written executive summary (the worker's `report.summary` event), or null when none was written. */
+export const executiveSummaryOf = (events: readonly RunEventRow[]): { markdown: string; model: string } | null => {
+  const data = events.find((e) => e.kind === SUMMARY_KIND)?.data;
+  return typeof data?.markdown === 'string' && data.markdown.trim() !== ''
+    ? { markdown: scrub(data.markdown), model: typeof data.model === 'string' ? data.model : '' }
+    : null;
+};
+
 const coverageOf = (events: readonly RunEventRow[]): Record<string, unknown> | null => {
   const event = events.find((e) => e.kind === COVERAGE_KIND);
   return event === undefined ? null : scrubDeep(event.data);
@@ -407,8 +425,8 @@ export interface CreateAssetInput {
 }
 
 export interface VerifyInput {
-  readonly method: 'http_token' | 'owner_attestation';
-  readonly statement?: string | undefined;
+  /** The owner's attestation, in the words shown to the person. */
+  readonly statement: string;
 }
 
 /** A plan edit (PATCH /requests/:id): every field optional; an account without a value keeps the stored one. */
@@ -489,12 +507,13 @@ export interface WorkspaceOptions {
   readonly lookup?: Lookup;
 }
 
-/** Ownership proof: the well-known file the site serves. */
 const ATTESTATION_STATEMENT_MAX = 1000;
 const NO_LAB_POLICY: OriginPolicy = { labOrigins: [], platformOrigins: [], platformPorts: [] };
 /** Kinds whose last event describes how a run ended and what it covered. */
 const END_EVENT_KINDS = ['run.completed', 'run.failed', 'run.killed'] as const;
 const COVERAGE_KIND = 'coverage.summary';
+const SUMMARY_KIND = 'report.summary';
+const INTEL_KIND = 'intel.summary';
 const RETESTS_SHOWN = 5;
 /** A probe the runner may replay on its own (no Gate 2): methods that do not change state. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -651,11 +670,10 @@ export class DemoService {
 
   /**
    * Ownership must still hold when Gate 1 approves and when the run starts: the deny rules again, then the proof
-   * itself (the well-known file is fetched again; an attestation needs the site to still be a listed lab). On
-   * failure the asset goes back to unverified, the ledger records why, and the caller is refused.
+   * attestation stands without a file. On failure the asset goes back to unverified, the ledger records why, and the caller is refused.
    */
   private async recheckOwnership(actor: DemoActor, asset: AssetRow, at: 'gate1' | 'run_start' | 'retest'): Promise<void> {
-    const reason = (await this.targetRefusal(asset.allowed_origins)) ?? (await this.proofProblem(asset));
+    const reason = await this.targetRefusal(asset.allowed_origins);
     if (reason === null) return;
     const origin = new URL(asset.base_url).origin;
     const cause = reason.replace(/\.$/, '');
@@ -751,7 +769,7 @@ export class DemoService {
     return { audit: await this.audit(actor, 'draft.discarded', 'draft', id, {}) };
   }
 
-  /** The asset owner proves control by serving the token, or attests authority (lab or owned system). */
+  /** The asset owner attests that they own the site or have written permission to test it. Any public site. */
   async verifyAsset(
     actor: DemoActor,
     id: string,
@@ -768,16 +786,7 @@ export class DemoService {
     }
     const refusal = await this.targetRefusal(asset.allowed_origins);
     if (refusal !== null) throw new DemoRefusal(HttpStatus.UNPROCESSABLE_ENTITY, 'target_not_allowed', refusal);
-    const lab = assetIsLab(asset, this.origins);
-    if (input.method === 'owner_attestation' && !lab) {
-      throw new DemoRefusal(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-        'attestation_not_allowed',
-        'This site is not a listed lab, so ownership must be proved with the verification file.',
-      );
-    }
-    if (input.method === 'http_token') await this.checkWellKnownToken(asset);
-    if (!(await this.store.markAssetVerified(this.tenantId, id, input.method, actor.id))) {
+    if (!(await this.store.markAssetVerified(this.tenantId, id, 'owner_attestation', actor.id))) {
       throw new DemoRefusal(
         HttpStatus.CONFLICT,
         'already_verified',
@@ -785,60 +794,12 @@ export class DemoService {
       );
     }
     await this.audit(actor, 'asset.verified', 'asset', id, {
-      method: input.method,
+      method: 'owner_attestation',
       origin: new URL(asset.base_url).origin,
-      tokenPath: input.method === 'http_token' ? WELL_KNOWN_PATH : null,
-      statement:
-        input.method === 'owner_attestation' ? (input.statement ?? '').slice(0, ATTESTATION_STATEMENT_MAX) : null,
-      lab,
+      statement: input.statement.slice(0, ATTESTATION_STATEMENT_MAX),
+      lab: assetIsLab(asset, this.origins),
     });
     return this.asset(id);
-  }
-
-  /** Why the recorded ownership proof no longer holds, in plain words, or null when it does. */
-  private async proofProblem(asset: AssetRow): Promise<string | null> {
-    if (asset.verification_method === 'http_token') return this.wellKnownProblem(asset);
-    return assetIsLab(asset, this.origins)
-      ? null
-      : 'an owner attestation covers listed labs only, and this site is not one';
-  }
-
-  /**
-   * What is wrong with the well-known proof of `asset`, in plain words, or null when it holds. Every allowed origin
-   * must serve the token: proving one site never brings another address into scope.
-   */
-  private async wellKnownProblem(asset: AssetRow): Promise<string | null> {
-    const base = new URL(asset.base_url).origin;
-    for (const origin of [base, ...asset.allowed_origins.filter((o) => o !== base)]) {
-      const problem = await this.tokenProblem(asset, origin);
-      if (problem !== null) return origin === base ? problem : `${origin}${WELL_KNOWN_PATH}: ${problem}`;
-    }
-    return null;
-  }
-
-  private async tokenProblem(asset: AssetRow, origin: string): Promise<string | null> {
-    let response: Response;
-    try {
-      response = await this.fetchImpl(`${origin}${WELL_KNOWN_PATH}`, { redirect: 'manual', signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) });
-    } catch {
-      return 'the site did not answer';
-    }
-    if (!response.ok) return `the file is gone (the site answered ${response.status})`;
-    const body = await response.text().catch(() => '');
-    return asset.verification_token !== null && body.includes(asset.verification_token)
-      ? null
-      : 'the file does not hold the verification token';
-  }
-
-  private async checkWellKnownToken(asset: AssetRow): Promise<void> {
-    const problem = await this.wellKnownProblem(asset);
-    if (problem !== null) {
-      throw new DemoRefusal(
-        HttpStatus.UNPROCESSABLE_ENTITY,
-        'verification_failed',
-        `${new URL(asset.base_url).origin}${WELL_KNOWN_PATH} did not answer 200 with the verification token: ${problem}.`,
-      );
-    }
   }
 
   dashboard(actor: DemoActor): Promise<Record<string, unknown>> {
@@ -1234,7 +1195,7 @@ export class DemoService {
       this.store.listFindingsForRun(this.tenantId, runId, analyst),
       this.store.listGate2ForRun(this.tenantId, runId),
       this.store.runStats(runId),
-      this.store.lastEvents(runId, [COVERAGE_KIND]),
+      this.store.lastEvents(runId, [COVERAGE_KIND, INTEL_KIND, SUMMARY_KIND]),
     ]);
     const now = new Date();
     return {
@@ -1246,6 +1207,8 @@ export class DemoService {
       gate2: gate2.map((g) => gate2Dto(g, now)),
       stats,
       coverage: coverageOf(coverage),
+      intel: intelOf(coverage),
+      executiveSummary: executiveSummaryOf(coverage),
     };
   }
 
@@ -1607,6 +1570,18 @@ export class DemoService {
     return row;
   }
 
+  /** A proof screenshot as base64 PNG; visible exactly like the finding itself (a suspected one only to analysts). */
+  async findingScreenshot(
+    actor: DemoActor,
+    id: string,
+    kind: 'probe' | 'control',
+  ): Promise<{ contentType: 'image/png'; base64: string; width: number; height: number; mode: string }> {
+    await this.finding(actor, id);
+    const shot = await this.store.getScreenshot(this.tenantId, id, kind);
+    if (shot === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such screenshot.');
+    return { contentType: 'image/png', base64: shot.png.toString('base64'), width: shot.width, height: shot.height, mode: shot.mode };
+  }
+
   async findingDetail(
     actor: DemoActor,
     id: string,
@@ -1665,6 +1640,7 @@ export class DemoService {
     run: RunRow;
     asset: AssetRow;
     request: RequestRow;
+    screenshots: { probe?: string; control?: string };
   }> {
     const finding = await this.finding(actor, findingId);
     if (finding.status !== 'released') {
@@ -1675,7 +1651,26 @@ export class DemoService {
       );
     }
     const run = await this.runRow(finding.run_id);
-    return { finding, run, ...(await this.runContext(run)) };
+    const screenshots: { probe?: string; control?: string } = {};
+    for (const kind of ['probe', 'control'] as const) {
+      const shot = await this.store.getScreenshot(this.tenantId, findingId, kind);
+      if (shot !== null) screenshots[kind] = shot.png.toString('base64');
+    }
+    return { finding, run, screenshots, ...(await this.runContext(run)) };
+  }
+
+  /** Base64 PNGs (probe, control) of each given finding that has them, for the run report. */
+  private async screenshotsOf(ids: readonly string[]): Promise<Record<string, { probe?: string; control?: string }>> {
+    const out: Record<string, { probe?: string; control?: string }> = {};
+    for (const id of ids) {
+      const entry: { probe?: string; control?: string } = {};
+      for (const kind of ['probe', 'control'] as const) {
+        const shot = await this.store.getScreenshot(this.tenantId, id, kind);
+        if (shot !== null) entry[kind] = shot.png.toString('base64');
+      }
+      if (entry.probe !== undefined || entry.control !== undefined) out[id] = entry;
+    }
+    return out;
   }
 
   private async runContext(run: RunRow): Promise<{ asset: AssetRow; request: RequestRow }> {
@@ -1695,15 +1690,18 @@ export class DemoService {
     request: RequestRow;
     findings: FindingRow[];
     coverage: Record<string, unknown> | null;
+    intel: Record<string, unknown> | null;
     endReason: string | null;
     consoleOrigin: string;
     withheld: number;
     keptBack: FindingRow[];
+    executiveSummary: { markdown: string; model: string } | null;
+    screenshots: Record<string, { probe?: string; control?: string }>;
   }> {
     const run = await this.runRow(runId);
     const [rows, ends] = await Promise.all([
       this.store.listFindingsForRun(this.tenantId, runId, true),
-      this.store.lastEvents(runId, [...END_EVENT_KINDS, COVERAGE_KIND]),
+      this.store.lastEvents(runId, [...END_EVENT_KINDS, COVERAGE_KIND, INTEL_KIND, SUMMARY_KIND]),
     ]);
     const findings = rows.filter((f) => f.status === 'released');
     return {
@@ -1713,6 +1711,9 @@ export class DemoService {
       withheld: rows.filter((f) => f.status === 'confirmed').length,
       keptBack: rows.filter((f) => f.status === 'suspected'),
       coverage: coverageOf(ends),
+      intel: intelOf(ends),
+      executiveSummary: executiveSummaryOf(ends),
+      screenshots: await this.screenshotsOf(findings.map((f) => f.id)),
       endReason: endReasonOf(ends),
       consoleOrigin: this.webhook.consoleOrigin,
     };

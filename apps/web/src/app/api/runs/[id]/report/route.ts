@@ -13,6 +13,7 @@ import {
   REPORT_FORMATS,
   reportFilename,
   reportSourceSchema,
+  type ShotImages,
 } from '../../../../../components/console/results/report-file';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
@@ -37,6 +38,29 @@ const TYPES = {
   sarif: 'application/sarif+json',
 } as const;
 
+const shotSchema = z.object({ base64: z.string().min(1) });
+
+/** The proof screenshots of the findings that have them, as base64 PNGs for the HTML report; a missing one is skipped. */
+async function shotImages(
+  session: NonNullable<Awaited<ReturnType<typeof getViewer>>>,
+  findings: ReturnType<typeof ordered>,
+): Promise<ShotImages> {
+  const map = new Map<string, { probe?: string; control?: string }>();
+  for (const f of findings) {
+    const entry: { probe?: string; control?: string } = {};
+    for (const kind of ['probe', 'control'] as const) {
+      if (f.evidence.screenshots?.[kind] === undefined) continue;
+      try {
+        entry[kind] = shotSchema.parse(await callApi(session, `/findings/${encodeURIComponent(f.id)}/screenshots/${kind}`)).base64;
+      } catch {
+        // The report is still worth sending without that picture.
+      }
+    }
+    if (entry.probe !== undefined || entry.control !== undefined) map.set(f.id, entry);
+  }
+  return map;
+}
+
 export async function GET(
   request: Request,
   { params }: { readonly params: Promise<{ readonly id: string }> },
@@ -60,9 +84,10 @@ export async function GET(
     const raw = z.record(z.string(), z.unknown()).parse(JSON.parse(json.body));
     const source = reportSourceSchema.parse(raw);
     const findings = ordered(source);
+    const images = format === 'html' ? await shotImages(session, findings) : undefined;
     const body =
       format === 'html'
-        ? renderHtml(source, findings, new Date().toISOString())
+        ? renderHtml(source, findings, new Date().toISOString(), images)
         : format === 'md'
           ? renderMarkdown(source, findings)
           : format === 'json'

@@ -99,12 +99,19 @@ export interface HuntState {
   loginWall: boolean;
   /** Pages that showed inputs (a form or a query string): without any, depth rounds have nothing to test. */
   inputsSeen: number;
+  /** In-scope paths the team has requested (path only, lower-case), signed in or not. */
+  readonly visited: Set<string>;
+  /** In-scope page links found in served HTML (href, form action), by path: what recon discovered. */
+  readonly linked: Set<string>;
+  /** Pages with a form or a query string, and script files that hold client-side sinks or redirects (for the critic). */
+  readonly formPages: Set<string>;
+  readonly scriptHints: Set<string>;
   /** Vulnerability classes the runner already asked the planner to cover, so none is asked twice. */
   readonly classesAsked: Set<string>;
 }
 
 export function newHuntState(): HuntState {
-  return { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, cases: new Map(), asks: new Map(), notices: new Map(), roleCounts: new Map(), accountsWarned: false, sessions: new Map(), signedOutPaths: new Map(), loginWall: false, inputsSeen: 0, classesAsked: new Set() };
+  return { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, cases: new Map(), asks: new Map(), notices: new Map(), roleCounts: new Map(), accountsWarned: false, sessions: new Map(), signedOutPaths: new Map(), loginWall: false, inputsSeen: 0, visited: new Set(), linked: new Set(), formPages: new Set(), scriptHints: new Set(), classesAsked: new Set() };
 }
 
 /** Everything the tools of one run share. `state` is the only mutable part. */

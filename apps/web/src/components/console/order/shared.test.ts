@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { checkAccounts } from './plan-editors';
-import { approvalEnded, composeObjective, readObjective, recommendedCare, recommendedProof, toggleFocus, wasApproved } from './shared';
+import { approvalEnded, composeObjective, readObjective, recommendedCare, toggleFocus, wasApproved } from './shared';
 
 describe('objective chips', () => {
   it('composes the objective from the template and reads it back', () => {
@@ -57,12 +57,6 @@ describe('checkAccounts', () => {
 });
 
 describe('ownership and approvals', () => {
-  const asset = (methods: ('http_token' | 'owner_attestation')[]) => ({ verification: { token: 't', wellKnownUrl: 'u', methods } });
-  it("recommends the owner's word only where the API accepts it", () => {
-    expect(recommendedProof('127.0.0.1:3082', asset(['http_token', 'owner_attestation']))).toBe('attest');
-    expect(recommendedProof('127.0.0.1:13400', asset(['http_token']))).toBe('file');
-    expect(recommendedProof('shop.example.com', asset(['http_token', 'owner_attestation']))).toBe('file');
-  });
   it('an approval whose run was stopped or failed is used up', () => {
     expect(wasApproved('killed')).toBe(true);
     expect(approvalEnded('killed')).toBe(true);

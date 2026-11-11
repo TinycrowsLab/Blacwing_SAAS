@@ -538,6 +538,7 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
       ...(gate2Id === undefined ? {} : { gate2Id }),
     });
     await countSent(ctx, agent, account?.role, options.caseId);
+    if (agent !== 'validator') noteSurface(ctx, scope.url, response.status, body, response.headers.get('content-type'));
     if (agent !== 'validator' && response.status === HTTP_OK && (scope.url.search !== '' || /<form\b/i.test(body))) ctx.state.inputsSeen += 1;
     if (account === undefined && agent !== 'validator') await noteSignedOut(ctx, scope.url, response.status, response.headers.get('location'));
     const approvedAsk = gate2Id === undefined ? undefined : ctx.state.asks.get(gate2Id);
@@ -548,6 +549,46 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
     await recordExchange(ctx, agent, request, 'error', { reason, ms: ctx.deps.now() - started });
     return { ok: false, refusal: `The request failed (${reason}).` };
   }
+}
+
+const ASSET_PATH = /\.(?:css|js|mjs|map|png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot|mp4|mp3|pdf|zip|gz)$/i;
+const LINK_ATTR = /\b(?:href|action|src)\s*=\s*["']([^"'#\s]+)["']/gi;
+const MAX_TRACKED = 400;
+const SINK_HINT = /document\.(?:write|location)|location\.(?:href|hash|search|assign|replace)|\.innerHTML|\beval\(|window\.open|postMessage/;
+
+/** Lower-case in-scope path of a link, or null for another origin, a non-page link or a path the run must not touch. */
+function pagePath(ctx: HuntContext, base: URL, link: string, assets: boolean): string | null {
+  let url: URL;
+  try {
+    url = new URL(link, base);
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(url.protocol) || url.origin !== base.origin) return null;
+  const path = url.pathname.replace(/\/{2,}/g, '/').toLowerCase();
+  if (!assets && ASSET_PATH.test(path)) return null;
+  if (ctx.run.scope.excludedPaths.some((p) => path.startsWith(p.toLowerCase()))) return null;
+  return path;
+}
+
+/** What the run has seen of the site, for the completion check: pages requested, pages linked, forms, script sinks. */
+function noteSurface(ctx: HuntContext, url: URL, status: number, body: string, contentType: string | null): void {
+  const { visited, linked, formPages, scriptHints } = ctx.state;
+  const here = pagePath(ctx, url, url.href, true);
+  if (here === null) return;
+  if (visited.size < MAX_TRACKED) visited.add(here);
+  if (status !== HTTP_OK) return;
+  if (url.search !== '' || /<form\b/i.test(body)) formPages.add(here);
+  if (/javascript|ecmascript/i.test(contentType ?? '') || /\.m?js$/.test(here)) {
+    if (SINK_HINT.test(body) && scriptHints.size < MAX_TRACKED) scriptHints.add(here);
+    return;
+  }
+  if (!/html/i.test(contentType ?? '') && !/<a\s|<form\b/i.test(body)) return;
+  for (const match of body.matchAll(LINK_ATTR)) {
+    const path = pagePath(ctx, url, match[1] ?? '', false);
+    if (path !== null && linked.size < MAX_TRACKED) linked.add(path);
+  }
+  if (SINK_HINT.test(body) && /<script\b/i.test(body) && scriptHints.size < MAX_TRACKED) scriptHints.add(here);
 }
 
 /** What the model sees of a response: headers as sent, body cut at 8 KB and marked when truncated. */
