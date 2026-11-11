@@ -640,3 +640,19 @@ suite('liveness', () => {
     expect(liveness(T0 + 12_000, T0, T0 + 3000, T0)).toEqual({ tone: 'reconnecting', text: 'Reconnecting… last update 12 s ago', short: 'Reconnecting…' });
   });
 });
+
+suite('candidates on a finished run', () => {
+  const ev = (seq: number, kind: string, data: Record<string, unknown>) => ({ seq, kind, at: '2026-11-06T10:00:00Z', stage: 's', data }) as never;
+  const events = [ev(1, 'candidate.submitted', { candidateId: 'c1', title: 'Directory listing on /vulnerabilities/', severity: 'low' })];
+  it('never shows Proving once the run ended', () => {
+    expect(candidates(events)[0]?.status).toBe('validating');
+    expect(candidates(events, { terminal: true })[0]?.status).toBe('unfinished');
+    const merged = candidates(events, { terminal: true, findings: [{ title: 'Directory listing enabled on /vulnerabilities/ (signed out)' }] })[0];
+    expect(merged?.status).toBe('merged');
+    expect(merged?.mergedInto).toContain('signed out');
+  });
+  it('marks the review stage complete', () => {
+    const review = stages(events, { terminal: true, approvedBy: 'you', reviewed: true }).find((x) => x.key === 'review');
+    expect(review).toMatchObject({ label: 'Review complete', detail: 'report ready', state: 'done' });
+  });
+});

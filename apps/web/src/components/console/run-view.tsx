@@ -493,9 +493,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const gate2Key = JSON.stringify(run.gate2);
   const gate2 = useMemo(() => run.gate2, [gate2Key]);
   const stopped = run.state === 'killed' || run.state === 'failed';
-  const items = useMemo(() => conversationItems(events, gate2, viewerName), [events, gate2, viewerName]);
+  const items = useMemo(() => conversationItems(events, gate2, viewerName, run.findings), [events, gate2, viewerName, run.findings]);
   const shownItems = useMemo(() => (filter === null ? items : filterConversation(items, filter)), [items, filter]);
-  const spine = useMemo(() => stages(events, { terminal, approvedBy, stopped }), [events, terminal, approvedBy, stopped]);
+  // Review is complete once every proven finding is released or dismissed. Kept-back (unproven) findings never block it:
+  // they stay out of the report by default.
+  const reviewed =
+    run.state === 'completed' &&
+    run.findings.some((f) => f.status === 'released' || f.status === 'dismissed') &&
+    !run.findings.some((f) => f.status === 'confirmed');
+  const spine = useMemo(() => stages(events, { terminal, approvedBy, stopped, reviewed }), [events, terminal, approvedBy, stopped, reviewed]);
   const teamMap = useMemo(
     () => teamNodes(events, gate2, nowMs, terminal, stopped, run.paused),
     [events, gate2, nowMs, terminal, stopped, run.paused],
@@ -583,8 +589,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const gate1 = `${approvedBy === 'you' ? 'You' : (approver ?? 'Approved')}${approvedAt === null || !mounted ? '' : `, ${shortTime(approvedAt)}`}`;
   // Automatic when the request chose it, or when the events show a release nobody made by hand. A run that found
   // nothing leaves nothing to review: never a gold "your turn" for an empty result.
-  const toReview = cands.some((c) => c.status === 'confirmed' || c.status === 'suspected' || c.status === 'not_confirmed');
-  const gate3 = release === 'auto' || teamMap.autoReleased ? 'Automatic' : terminal ? (toReview ? 'Your turn' : 'Nothing to review') : 'After the run';
+  // Only a proven issue still awaiting release is "your turn"; kept-back ones are kept out of the report by default.
+  const toReviewNow = run.findings.some((f) => f.status === 'confirmed') || (run.findings.length === 0 && cands.some((c) => c.status === 'confirmed'));
+  const gate3 = release === 'auto' || teamMap.autoReleased ? 'Automatic' : terminal ? (reviewed ? 'Review complete' : toReviewNow ? 'Your turn' : 'Nothing to review') : 'After the run';
   const onFilter = (a: string | null): void => {
     // The filter applies to whichever tab is open (the map sits above all of them).
     setFilter(a);

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { scrub, scrubHeaders } from '@blackwing/errors/scrub';
 import { newId } from '@blackwing/ids';
 
+import { applySetCookies, cookieHeader, MAX_LOGINS, newSession, performLogin, redirectsToLogin, type Session, type Step } from './login.js';
 import { checkScope, classifyMethod, gateKey, stateChangeHint } from './scope.js';
 import { isDisallowedAddress } from '../../run/preflight/address-guard.js';
 
@@ -35,6 +36,8 @@ const MAX_ROLE_LENGTH = 32;
 /** `accounts.unused` fires at the latest after this many sent requests without any test-account use. */
 const ACCOUNTS_UNUSED_AFTER = 25;
 const REDACTED = '[redacted]';
+const MIN_SESSION_SECRET = 8;
+const LOGOUT_PATH = /log-?out|sign-?out/i;
 const USER_AGENT = 'blackwing-hunt/1';
 const DROPPED_REQUEST_HEADERS = new Set(['host', 'content-length', 'connection', 'transfer-encoding']);
 
@@ -82,15 +85,21 @@ function cutBytes(text: string, limit: number): string {
 }
 
 /** Every test-account credential as it may come back: the full header value, the bare token after the scheme, and their JSON-escaped forms. */
-function secretsOf(accounts: HuntContext['run']['testAccounts']): string[] {
-  const values = accounts.flatMap((a) => [a.headerValue, a.headerValue.slice(a.headerValue.indexOf(' ') + 1)]);
+function secretsOf(accounts: HuntContext['run']['testAccounts'], sessions: ReadonlyMap<string, Session>): string[] {
+  const values = accounts.flatMap((a) => [
+    a.headerValue,
+    a.headerValue.slice(a.headerValue.indexOf(' ') + 1),
+    ...(a.login === undefined ? [] : [a.login.password, new URLSearchParams({ p: a.login.password }).toString().slice(2), encodeURIComponent(a.login.password)]),
+  ]);
+  // Session cookies of a login-form account stay inside the runner (short values such as `security=low` are not secrets).
+  for (const session of sessions.values()) for (const value of session.jar.values()) if (value.length >= MIN_SESSION_SECRET) values.push(value);
   return [...new Set(values.flatMap((v) => [v, v.replaceAll('/', '\\/')]))]
     .filter((v) => v !== '')
     .sort((a, b) => b.length - a.length);
 }
 
 function redactor(ctx: HuntContext): (text: string) => string {
-  const secrets = secretsOf(ctx.run.testAccounts);
+  const secrets = secretsOf(ctx.run.testAccounts, ctx.state.sessions);
   return (text) => secrets.reduce((acc, secret) => acc.replaceAll(secret, REDACTED), text);
 }
 
@@ -326,6 +335,90 @@ async function countSent(ctx: HuntContext, agent: string, role: string | undefin
   await ctx.log.emit('accounts.unused', 'policy', `No request has used your test accounts yet (${roles.join(', ')}).`, { roles, sentSoFar: ctx.state.requestsUsed });
 }
 
+export const LOGIN_WALL_MESSAGE = 'Most of this site is behind a login; add a test account to test it.';
+const LOGIN_WALL_MIN_REDIRECTS = 3;
+
+/** Signed-out recon: when most distinct pages redirect to a login page and no test account exists, say so once. */
+async function noteSignedOut(ctx: HuntContext, url: URL, status: number, location: string | null): Promise<void> {
+  if (status >= 400) return;
+  if (ctx.run.testAccounts.length > 0 || ctx.state.loginWall) return;
+  const toLogin = redirectsToLogin({ status, location }, url.href, null);
+  ctx.state.signedOutPaths.set(url.pathname, (ctx.state.signedOutPaths.get(url.pathname) ?? false) || toLogin);
+  const redirected = [...ctx.state.signedOutPaths.values()].filter(Boolean).length;
+  if (redirected < LOGIN_WALL_MIN_REDIRECTS || redirected * 2 < ctx.state.signedOutPaths.size) return;
+  ctx.state.loginWall = true;
+  await ctx.log.emit('login.wall', 'recon', LOGIN_WALL_MESSAGE, { redirectedPages: redirected, pagesSeen: ctx.state.signedOutPaths.size });
+}
+
+/** One runner request for a sign-in: scope, private-range guard, budget and kill apply as for any request; no Gate 2. */
+function runnerStep(ctx: HuntContext, role: string): Step {
+  return async (req) => {
+    const scope = checkScope(req.url, ctx.run.scope);
+    if (!scope.ok || ctx.signal.aborted || ctx.state.requestsUsed >= ctx.run.budgetRequests) return null;
+    if ((await addressRule(ctx, scope.url)) !== null) return null;
+    ctx.state.requestsUsed += 1;
+    const redact = redactor(ctx);
+    const request: SentRequest = {
+      method: req.method,
+      url: scrub(req.url),
+      headers: scrubHeaders(Object.fromEntries(Object.entries(req.headers).map(([n, v]) => [n, n.toLowerCase() === 'cookie' ? `[redacted: role ${role}]` : v]))),
+      body: req.body === undefined ? null : scrub(redact(req.body)),
+      asRole: role,
+    };
+    const started = ctx.deps.now();
+    try {
+      const response = await ctx.deps.fetch(scope.url, {
+        method: req.method,
+        headers: { 'user-agent': USER_AGENT, ...req.headers },
+        ...(req.body === undefined ? {} : { body: req.body }),
+        redirect: 'manual',
+        signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), ctx.signal]),
+      });
+      const body = cutBytes(redact(Buffer.from(await response.arrayBuffer()).toString('utf8')), STORED_BODY_BYTES);
+      const ms = ctx.deps.now() - started;
+      const exchangeId = await recordExchange(ctx, 'runner', request, 'sent', { status: response.status, headers: Object.fromEntries([...response.headers.entries()].map(([n, v]) => [n, redact(v)])), body: scrub(body), ms });
+      await ctx.log.emit('http.sent', 'runner', `runner: ${req.method} ${request.url} -> ${response.status} (sign-in)`, { agent: 'runner', exchangeId, method: req.method, url: request.url, status: response.status, bytes: body.length, ms, asRole: role });
+      return { status: response.status, location: response.headers.get('location'), setCookies: response.headers.getSetCookie(), body };
+    } catch (error) {
+      await recordExchange(ctx, 'runner', request, 'error', { reason: error instanceof Error ? error.name : 'unknown', ms: ctx.deps.now() - started });
+      return null;
+    }
+  };
+}
+
+/**
+ * Makes sure a login-form account has a live session, signing in through the runner (the model never sees the
+ * credentials or the cookies). `force` signs in again after a lost session, at most MAX_LOGINS times per run.
+ * A failed first sign-in is final for the run. Parallel callers share one sign-in.
+ */
+export async function ensureSession(ctx: HuntContext, account: HuntContext['run']['testAccounts'][number], force: boolean): Promise<boolean> {
+  const login = account.login;
+  if (login === undefined) return true;
+  const key = account.role.toLowerCase();
+  let session = ctx.state.sessions.get(key);
+  if (session === undefined) {
+    session = newSession();
+    ctx.state.sessions.set(key, session);
+  }
+  const current = session;
+  if (current.pending !== null) return current.pending;
+  if (current.failure !== null) return false;
+  if (current.logins > 0 && !force) return true;
+  if (current.logins >= MAX_LOGINS) return false;
+  current.pending = (async () => {
+    current.logins += 1;
+    const origin = ctx.run.scope.allowedOrigins[0] ?? '';
+    const failure = await performLogin({ role: account.role, ...login }, origin, current, runnerStep(ctx, account.role));
+    current.failure = failure;
+    if (failure === null) await ctx.log.emit('login.performed', 'policy', `Signed in as test account "${account.role}" through the login form (sign-in ${current.logins})`, { role: account.role, logins: current.logins });
+    else await ctx.log.emit('login.failed', 'policy', `Sign-in as test account "${account.role}" failed: ${failure} Requests as this role are not sent.`, { role: account.role, reason: failure });
+    return failure === null;
+  })().finally(() => {
+    current.pending = null;
+  });
+  return current.pending;
+}
+
 export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequest, options: SendOptions): Promise<HttpResult> {
   const method = req.method.toUpperCase();
   const scope = checkScope(req.url, ctx.run.scope);
@@ -362,14 +455,27 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
     return { ok: false, refusal: 'The request failed (the host name did not resolve). It was not sent.' };
   }
 
+  if (account?.login !== undefined && !(await ensureSession(ctx, account, false))) {
+    const why = ctx.state.sessions.get(account.role.toLowerCase())?.failure ?? 'the sign-in could not run';
+    return { ok: false, refusal: `Signing in as test account "${account.role}" failed (${why}). The request was not sent; do not retry as this role.` };
+  }
+  if (ctx.state.requestsUsed >= ctx.run.budgetRequests) return block(ctx, agent, req, 'request_budget');
   ctx.state.requestsUsed += 1;
   const headers: Record<string, string> = { 'user-agent': USER_AGENT };
   for (const [name, value] of Object.entries(req.headers ?? {})) {
     if (!DROPPED_REQUEST_HEADERS.has(name.toLowerCase())) headers[name.toLowerCase()] = value;
   }
-  if (account !== undefined) headers[account.headerName.toLowerCase()] = account.headerValue;
-  const redact = redactor(ctx);
-  const sentHeaders = { ...headers, ...(account === undefined ? {} : { [account.headerName.toLowerCase()]: `[redacted: role ${account.role}]` }) };
+  const session = account?.login === undefined ? undefined : ctx.state.sessions.get(account.role.toLowerCase());
+  if (account !== undefined && session === undefined) headers[account.headerName.toLowerCase()] = account.headerValue;
+  const withJar = (): void => {
+    if (session === undefined) return;
+    const cookie = cookieHeader(session.jar, req.headers === undefined ? undefined : Object.entries(req.headers).find(([n]) => n.toLowerCase() === 'cookie')?.[1]);
+    if (cookie !== '') headers.cookie = cookie;
+  };
+  withJar();
+  let redact = redactor(ctx);
+  const credentialName = session === undefined ? account?.headerName : 'Cookie';
+  const sentHeaders = { ...headers, ...(account === undefined || credentialName === undefined ? {} : { [credentialName.toLowerCase()]: `[redacted: role ${account.role}]` }) };
   const request: SentRequest = {
     method,
     url: scrub(req.url),
@@ -379,13 +485,26 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
   };
   const started = ctx.deps.now();
   try {
-    const response = await ctx.deps.fetch(scope.url, {
-      method,
-      headers,
-      ...(req.body === undefined ? {} : { body: req.body }),
-      redirect: 'manual',
-      signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), ctx.signal]),
-    });
+    const doFetch = (): Promise<Response> =>
+      ctx.deps.fetch(scope.url, {
+        method,
+        headers,
+        ...(req.body === undefined ? {} : { body: req.body }),
+        redirect: 'manual',
+        signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), ctx.signal]),
+      });
+    let response = await doFetch();
+    if (session !== undefined) {
+      // Session lost (redirect to the login page): sign in again once and resend; the resend counts against the budget.
+      const lost = redirectsToLogin({ status: response.status, location: response.headers.get('location') }, scope.url.href, session.loginPath);
+      if (lost && !LOGOUT_PATH.test(scope.url.pathname) && account !== undefined && (await ensureSession(ctx, account, true)) && ctx.state.requestsUsed < ctx.run.budgetRequests) {
+        withJar();
+        ctx.state.requestsUsed += 1;
+        response = await doFetch();
+      }
+      applySetCookies(session.jar, response.headers.getSetCookie());
+      redact = redactor(ctx);
+    }
     const buffer = Buffer.from(await response.arrayBuffer());
     const bytes = Math.min(buffer.byteLength, STORED_BODY_BYTES);
     // Configured credentials are redacted before cutting, so none is split at the cut. The model sees the rest raw
@@ -413,6 +532,8 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
       ...(gate2Id === undefined ? {} : { gate2Id }),
     });
     await countSent(ctx, agent, account?.role, options.caseId);
+    if (agent !== 'validator' && response.status === 200 && (scope.url.search !== '' || /<form\b/i.test(body))) ctx.state.inputsSeen += 1;
+    if (account === undefined && agent !== 'validator') await noteSignedOut(ctx, scope.url, response.status, response.headers.get('location'));
     const approvedAsk = gate2Id === undefined ? undefined : ctx.state.asks.get(gate2Id);
     if (approvedAsk !== undefined && agent !== 'validator') approvedAsk.sent = true;
     return { ok: true, exchangeId, status: response.status, headers: responseHeaders, body, bodyBytes: bytes, request };

@@ -28,7 +28,7 @@ const pinsSchema = z.object({
   }),
 });
 
-const testAccountsSchema = z.array(z.object({ role: z.string(), header_name: z.string(), header_value: z.string() })).default([]);
+const testAccountsSchema = z.array(z.object({ role: z.string(), header_name: z.string(), header_value: z.string(), username: z.string().optional(), password: z.string().optional(), login_url: z.string().optional() })).default([]);
 
 interface ClaimedRow {
   id: string;
@@ -81,7 +81,12 @@ function toHuntRun(row: ClaimedRow): HuntRun {
     budgetSeconds: pins.request.budget.seconds,
     costCapUsd: pins.request.budget.costUsd,
     intrusiveness: pins.request.intrusiveness,
-    testAccounts: testAccountsSchema.parse(row.test_accounts).map((a) => ({ role: a.role, headerName: a.header_name, headerValue: a.header_value })),
+    testAccounts: testAccountsSchema.parse(row.test_accounts).map((a) => ({
+      role: a.role,
+      headerName: a.header_name,
+      headerValue: a.header_value,
+      ...(a.username === undefined ? {} : { login: { username: a.username, password: a.password ?? '', loginUrl: a.login_url ?? null } }),
+    })),
     releaseProven: pins.request.releaseProven,
     labOrigins: pins.asset.labOrigins,
   };

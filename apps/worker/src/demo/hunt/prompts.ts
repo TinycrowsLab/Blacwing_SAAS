@@ -47,9 +47,9 @@ ${ceiling(run)}`;
 
 /** Every agent gets the roles: the planner plans with them, recon maps as them, the specialists test as them. */
 function testAccounts(run: HuntRun): string {
-  if (run.testAccounts.length === 0) return 'No test accounts are provided. Only use accounts or objects you can create yourself within the rules; do not guess credentials.';
+  if (run.testAccounts.length === 0) return 'No test accounts are provided. Only use accounts or objects you can create yourself within the rules; do not guess credentials. If most of the site redirects to a login page, say so plainly in your summary: that part was not tested.';
   const roles = run.testAccounts.map((a) => a.role).join(', ');
-  return `Test accounts are provided for these roles: ${roles}. Send a request as a role with as_role on http_request (and on the probe and control of submit_candidate); the runner adds the credential, you never see it. Use as_role exactly with these names: no other role exists. When test accounts exist, never plan or ask to register accounts; use as_role. Test as each role at least once. Compare what each role can reach. Do not guess other credentials.`;
+  return `Test accounts are provided for these roles: ${roles}. Send a request as a role with as_role on http_request (and on the probe and control of submit_candidate); the runner adds the credential (or, for an account that signs in through a login form, signs in itself and keeps the session cookies, signing in again when the session is lost), you never see it; never submit a login form yourself, and never try to guess a password. Use as_role exactly with these names: no other role exists. When test accounts exist, never plan or ask to register accounts; use as_role. Test as each role at least once. Compare what each role can reach. Do not guess other credentials.`;
 }
 
 function signedIn(run: HuntRun, sentence: string): string {

@@ -1692,10 +1692,11 @@ export class DemoService {
     endReason: string | null;
     consoleOrigin: string;
     withheld: number;
+    keptBack: FindingRow[];
   }> {
     const run = await this.runRow(runId);
     const [rows, ends] = await Promise.all([
-      this.store.listFindingsForRun(this.tenantId, runId, false),
+      this.store.listFindingsForRun(this.tenantId, runId, true),
       this.store.lastEvents(runId, [...END_EVENT_KINDS, COVERAGE_KIND]),
     ]);
     const findings = rows.filter((f) => f.status === 'released');
@@ -1704,6 +1705,7 @@ export class DemoService {
       ...(await this.runContext(run)),
       findings,
       withheld: rows.filter((f) => f.status === 'confirmed').length,
+      keptBack: rows.filter((f) => f.status === 'suspected'),
       coverage: coverageOf(ends),
       endReason: endReasonOf(ends),
       consoleOrigin: this.webhook.consoleOrigin,

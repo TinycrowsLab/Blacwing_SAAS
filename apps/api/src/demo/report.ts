@@ -23,6 +23,8 @@ export interface RunReportInput {
   readonly findings: readonly FindingRow[];
   /** Proven findings of this run that no one has released yet (the list above is released only). */
   readonly withheld?: number;
+  /** Suspected findings of this run: never released, listed only in an appendix marked "not proven". */
+  readonly keptBack?: readonly FindingRow[];
   /** The run's last `coverage.summary` data (null for old or unfinished runs). */
   readonly coverage?: Record<string, unknown> | null;
   /** How the run ended (`run.completed|failed|killed` event data), null while it runs. */
@@ -174,6 +176,14 @@ function findingMarkdown(finding: FindingRow, ev: Evidence, h: string): string[]
       ? 'Negative control: none recorded'
       : `Negative control: \`${requestLine(ev.control)}\` returned ${statusOf(ev.control)} (oracle not matched)`,
     '',
+    ...(controlOf(ev)?.response?.bodyExcerpt ? ['```', controlOf(ev)?.response?.bodyExcerpt ?? '', '```', ''] : []),
+    ...(remediationOf(finding) === null
+      ? []
+      : [`${h} Remediation (agent-written, not verified)`, '', remediationOf(finding) ?? '', '']),
+    `${h} Classification`,
+    '',
+    `Severity: ${severityOf(finding.severity)} · ${finding.cwe_id} · OWASP ${owaspLabel(finding.owasp_category)}`,
+    '',
   ];
 }
 
@@ -199,9 +209,17 @@ ${
   controlOf(ev) === undefined
     ? '<p>Negative control: none recorded</p>'
     : `<p>Negative control <code>${esc(requestLine(ev.control))}</code> returned ${esc(statusOf(ev.control))} (oracle not matched)</p>`
-}
+}${controlOf(ev)?.response?.bodyExcerpt ? `<pre>${esc(controlOf(ev)?.response?.bodyExcerpt ?? '')}</pre>` : ''}
+${remediationOf(finding) === null ? '' : `<${h}>Remediation (agent-written, not verified)</${h}>\n<p>${esc(remediationOf(finding) ?? '')}</p>\n`}<${h}>Classification</${h}>
+<p>Severity: ${esc(severityOf(finding.severity))} · ${esc(finding.cwe_id)} · OWASP ${esc(owaspLabel(finding.owasp_category))}</p>
 `;
 }
+
+const remediationOf = (finding: FindingRow): string | null => {
+  const r = (finding.evidence as { remediation?: unknown } | null)?.remediation;
+  return typeof r === 'string' && r.trim() !== '' ? r.trim() : null;
+};
+const keptWhy = (finding: FindingRow): string => evidenceOf(finding).reason ?? 'the validator did not prove it';
 
 const evidenceOf = (finding: FindingRow): Evidence => evidenceSchema.catch({ replays: [] }).parse(finding.evidence);
 
@@ -288,6 +306,7 @@ ${limitationsHtml}`,
 export function renderRunReport(input: RunReportInput, format: RunReportFormat): RenderedReport {
   const { run, asset, request } = input;
   const findings = input.findings.map((f) => scrubFinding(f));
+  const kept = (input.keptBack ?? []).map((f) => scrubFinding(f));
   const base = `run-${run.id.slice(0, ID_PREFIX_LENGTH)}`;
   const counts = Object.fromEntries(
     SEVERITIES.map((s) => [s, findings.filter((f) => severityOf(f.severity) === s).length]),
@@ -313,6 +332,7 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
         unreleasedProven: input.withheld ?? 0,
         coverage: input.coverage ?? null,
         findings: findings.map((f) => findingDto(f)),
+        keptBack: kept.map((f) => ({ ...findingDto(f), notProven: true, notProvenReason: keptWhy(f) })),
       },
       null,
       2,
@@ -327,7 +347,17 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
       level: SARIF_LEVEL[severityOf(f.severity)] ?? 'note',
       message: { text: f.title },
       partialFingerprints: { 'blackwingIdentity/v1': f.identity_key ?? f.fingerprint },
-      properties: { findingId: f.id },
+      properties: {
+        findingId: f.id,
+        severity: severityOf(f.severity),
+        cwe: f.cwe_id,
+        owasp: owaspLabel(f.owasp_category),
+        remediation: remediationOf(f),
+        oracle: oracleLine(evidenceOf(f)),
+        replays: evidenceOf(f).replays,
+        probe: { request: requestLine(evidenceOf(f).probe), status: statusOf(evidenceOf(f).probe), excerpt: evidenceOf(f).probe?.response?.bodyExcerpt ?? '' },
+        control: { request: requestLine(controlOf(evidenceOf(f))), status: statusOf(controlOf(evidenceOf(f))), excerpt: controlOf(evidenceOf(f))?.response?.bodyExcerpt ?? '' },
+      },
       locations: f.location.url === undefined ? [] : [{ physicalLocation: sarifLocation(f.location.url, target) }],
     }));
     const runner = (run.pins as { runner?: { version?: unknown } }).runner;
@@ -341,7 +371,18 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
       {
         version: '2.1.0',
         $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
-        runs: [{ tool: { driver }, originalUriBaseIds: { TARGET: { uri: `${target}/` } }, results }],
+        runs: [
+          {
+            tool: { driver },
+            originalUriBaseIds: { TARGET: { uri: `${target}/` } },
+            results,
+            // Suspected, NOT proven: never results, so a scanner import cannot treat them as findings.
+            properties: {
+              keptBackNotProven: kept.map((f) => ({ id: f.id, title: f.title, severity: severityOf(f.severity), cwe: f.cwe_id, reason: keptWhy(f) })),
+              notTested: input.coverage ?? null,
+            },
+          },
+        ],
       },
       null,
       2,
@@ -387,6 +428,12 @@ export function renderRunReport(input: RunReportInput, format: RunReportFormat):
       '',
       ...LIMITATIONS.map((l) => `- ${l}`),
       '',
+      '## Appendix: kept-back findings (NOT PROVEN)',
+      '',
+      kept.length === 0 ? 'No suspected issues were kept back.' : 'Suspected but not proven by the validator; not released.',
+      '',
+      ...kept.flatMap((f) => [`- **${f.title}** (${severityOf(f.severity)}, ${f.cwe_id}), not proven: ${keptWhy(f)}`]),
+      '',
     ].join('\n');
     return { contentType: 'text/markdown; charset=utf-8', filename: `${base}.md`, body };
   }
@@ -407,7 +454,8 @@ ${findings
 <p class="meta">${esc(meta(f))}</p>
 ${findingHtml(f, evidenceOf(f), 'h3')}`,
   )
-  .join('')}${limitationsHtml}`,
+  .join('')}${limitationsHtml}<h2>Appendix: kept-back findings (not proven)</h2>
+${kept.length === 0 ? '<p>No suspected issues were kept back.</p>' : `<p>Suspected but not proven by the validator; not released.</p><ul>${kept.map((f) => `<li><b>${esc(f.title)}</b> (${esc(severityOf(f.severity))}, ${esc(f.cwe_id)}), not proven: ${esc(keptWhy(f))}</li>`).join('')}</ul>`}`,
   );
   return { contentType: 'text/html; charset=utf-8', filename: `${base}.html`, body };
 }

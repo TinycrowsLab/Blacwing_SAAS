@@ -656,7 +656,7 @@ export interface ValidatorItem {
   replays: number;
   matched: number;
   control: { readonly status: number; readonly matched: boolean } | null;
-  verdict: 'proving' | 'proven' | 'not_proven';
+  verdict: 'proving' | 'proven' | 'not_proven' | 'merged' | 'unfinished';
   reason: string | null;
   autoReleased: boolean;
   findingId: string | null;
@@ -780,6 +780,7 @@ export function conversationItems(
   events: readonly RunEvent[],
   gate2: readonly Gate2[],
   viewerName: string | null = null,
+  findings: readonly { readonly title: string }[] = [],
 ): ConversationItem[] {
   const items: ConversationItem[] = [];
   const threads: ThreadItem[] = [];
@@ -930,6 +931,14 @@ export function conversationItems(
         push(lane, v);
         break;
       }
+      case 'candidate.merged': {
+        const v = validators.get(str(d.candidateId));
+        if (v !== undefined) {
+          v.verdict = 'merged';
+          v.reason = str(d.findingTitle) || str(d.into) || null;
+        }
+        break;
+      }
       case 'validator.replay': {
         const v = validators.get(str(d.candidateId));
         if (v !== undefined) {
@@ -1006,6 +1015,15 @@ export function conversationItems(
   }
   const ended = events.some((e) => e.kind === 'run.completed' || e.kind === 'run.killed' || e.kind === 'run.failed');
   for (const g of gate2Items.values()) g.runEnded = ended;
+  // An ended run proves nothing more: a candidate with no outcome is merged into the finding for its path, else unfinished.
+  if (ended)
+    for (const v of validators.values()) {
+      if (v.verdict !== 'proving') continue;
+      const path = /\/[^\s)]*/.exec(v.title)?.[0];
+      const into = path === undefined ? undefined : findings.find((f) => f.title.includes(path) && f.title !== v.title);
+      v.verdict = into === undefined ? 'unfinished' : 'merged';
+      v.reason = into?.title ?? null;
+    }
   return items;
 }
 
@@ -1072,7 +1090,7 @@ const CORE_LANES = new Set(['orchestrator', 'recon', 'validator']);
  */
 export function stages(
   events: readonly RunEvent[],
-  opts: { readonly terminal: boolean; readonly approvedBy: string | null; readonly stopped?: boolean },
+  opts: { readonly terminal: boolean; readonly approvedBy: string | null; readonly stopped?: boolean; /** Every proven finding is released or dismissed: the review is complete. */ readonly reviewed?: boolean },
 ): Stage[] {
   const recon = events.filter((e) => e.kind === 'http.sent' && str(e.data.agent) === 'recon').length;
   const reconTasks = delegations(events).filter((x) => x.to === 'recon').length;
@@ -1140,6 +1158,8 @@ export function stages(
             ? `${opts.stopped === true ? 'stopped at ' : ''}${plan.counts.executed.toLocaleString('en-US')} of ${plan.total.toLocaleString('en-US')}${opts.stopped === true ? '' : ' done'}`
             : `${opts.stopped === true ? 'stopped' : 'ended early'}${r.detail === '' ? '' : ` · ${r.detail}`}`
           : r.detail;
+    if (r.key === 'review' && opts.terminal && opts.reviewed === true)
+      return { key: r.key, label: 'Review complete', detail: 'report ready', state: 'done' };
     // Nothing was found: the run's end is not a gold "your turn". A finished run is done, a stopped one stopped.
     if (r.key === 'review' && opts.terminal && cands.length === 0)
       return { key: r.key, label: r.now, detail: 'nothing to review', state: opts.stopped === true ? 'stopped' : 'done' };

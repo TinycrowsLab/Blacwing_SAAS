@@ -136,7 +136,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
   const releaseCount = Math.max(counts?.gate3 ?? 0, releases.length);
   const keptBack = counts?.keptBack ?? all.filter((f) => f.status === 'suspected').length;
   const nothing =
-    gate2.length === 0 && planCount === 0 && releaseCount === 0 && keptBack === 0;
+    gate2.length === 0 && planCount === 0 && releaseCount === 0;
   // The same slice the sidebar polls, so the inbox refreshes only when what waits changes.
   const slice = toSidebar(dashboard);
   const waiting = {
@@ -241,7 +241,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 href="/findings?status=suspected"
                 lead={<Icon name="eye" size={16} className="shrink-0 text-muted-foreground" />}
                 title={`${keptBack} kept back, not proven`}
-                sub="Optional · Blackwing AI raised them but the validator could not prove them"
+                sub="Kept out of the report by default · optional to look at, nothing waits on you"
               />
             )}
           </ul>

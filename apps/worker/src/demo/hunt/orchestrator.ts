@@ -8,7 +8,7 @@ import { query, type HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod';
 
 import { caseOutcome, EventLog, newHuntState, type CaseState, type Gate2Ask, type HuntContext, type HuntDeps, type Logger } from './context.js';
-import { closePendingAsks, GATE2_POLL_MS, sleepUnlessStopped, watchGate2 } from './http-tool.js';
+import { closePendingAsks, GATE2_POLL_MS, LOGIN_WALL_MESSAGE, sleepUnlessStopped, watchGate2 } from './http-tool.js';
 import { MessageRouter } from './messages.js';
 import { subagents, SUBAGENT_NAMES, systemPrompt } from './prompts.js';
 import { createHuntServer } from './tools.js';
@@ -23,12 +23,22 @@ const HOOK_TIMEOUT_SLACK_S = 60;
 const PROGRESS_POLL_MS = 5000;
 const MAX_TURNS = 200;
 /** Runner-owned coverage: after the team says it is done, up to this many follow-up rounds run untried cases. */
-const MAX_ROUNDS = 3;
+const MAX_ROUNDS = 4;
 /** A follow-up round needs this much of each budget left (requests, time, cost) to be worth starting. */
 const MIN_LEFT_FRACTION = 0.1;
 const MIN_LEFT_S = 60;
 /** The first follow-up widens the plan when the team used less than this share of the request budget. */
 const WIDEN_BELOW_FRACTION = 0.25;
+/** Classes the runner expects a plan to cover once the site shows inputs; matched against case ids and titles. */
+const DEPTH_CLASSES: readonly { readonly name: string; readonly match: RegExp }[] = [
+  { name: 'SQL injection', match: /\bsql|nosql/i },
+  { name: 'reflected XSS', match: /xss|cross-site scripting|reflected/i },
+  { name: 'stored XSS', match: /stored|persistent/i },
+  { name: 'OS command injection', match: /command|\bcmd\b|\brce\b|os injection/i },
+  { name: 'file inclusion and path traversal', match: /inclusion|traversal|\blfi\b|\brfi\b/i },
+  { name: 'file upload', match: /upload/i },
+  { name: 'CSRF on state-changing forms', match: /csrf|cross-site request/i },
+];
 const BUILT_IN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'NotebookEdit', 'BashOutput', 'KillShell'];
 const AGENT_LANES = ['orchestrator', ...SUBAGENT_NAMES, 'validator'];
 const hookInput = z.object({ tool_name: z.string(), tool_input: z.record(z.string(), z.unknown()), agent_type: z.string().optional() });
@@ -251,6 +261,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
     return;
   }
   await emitCoverage(ctx, settled.reason ?? (ctx.state.requestsUsed >= run.budgetRequests ? 'request_budget' : null));
+  if (ctx.state.loginWall) summaries.push(LOGIN_WALL_MESSAGE);
   await log.emit('run.completed', 'done', 'Run completed', { ...used, findings: ctx.state.findings, ...(settled.reason === null ? {} : { reason: settled.reason }) });
   await store.finishRun(run, { state: 'completed', ...used, summary: summaries.length === 0 ? null : summaries.join('\n\n') });
 }
@@ -286,8 +297,10 @@ export function nextRound(
   if (run.budgetSeconds - at.elapsedS < Math.max(MIN_LEFT_S, run.budgetSeconds * MIN_LEFT_FRACTION)) return null;
   const untried = [...state.cases].filter(([id, c]) => caseResult(ctx, id, c).status === 'not_run');
   const approved = [...state.asks.values()].filter((a) => a.status === 'approved' && a.sent !== true);
-  const widen = at.round === 1 && state.requestsUsed < run.budgetRequests * WIDEN_BELOW_FRACTION;
+  const missing = state.inputsSeen === 0 || state.loginWall ? [] : missingClasses(ctx);
+  const widen = (at.round === 1 && state.requestsUsed < run.budgetRequests * WIDEN_BELOW_FRACTION) || missing.length > 0;
   if (untried.length === 0 && approved.length === 0 && !widen) return null;
+  for (const name of missing) state.classesAsked.add(name);
   const lines = untried.map(([id, c]) => `- ${id} (${c.agent}): ${c.title}${c.target === undefined || c.target === '' ? '' : ` at ${c.target}`}`);
   const asks = approved.map((a) => `- ${a.label}${a.caseId === null ? '' : ` (case ${a.caseId})`}: approved by a person; ${a.agent} should send it now`);
   const prompt = [
@@ -295,13 +308,19 @@ export function nextRound(
     untried.length === 0 ? '' : `These recorded test cases have not been run yet. Delegate each to its specialist now:\n${lines.join('\n')}`,
     asks.length === 0 ? '' : `These Gate 2 asks were approved after their agent finished. Have that specialist send each request again now:\n${asks.join('\n')}`,
     widen
-      ? `The team used ${state.requestsUsed} of ${run.budgetRequests} requests. Review the plan against the classes the objective asks for and the endpoints recon found (every input, form, write endpoint and object id). Record test cases for what is still missing with record_test_cases, then delegate them. If nothing applicable is missing, say so in one line and finish.`
+      ? `The team used ${state.requestsUsed} of ${run.budgetRequests} requests. Review the plan against the classes the objective asks for and the endpoints recon found (every input, form, write endpoint and object id, including pages found while signed in as a test account). ${missing.length === 0 ? '' : `No test case covers: ${missing.join(', ')}. Record a case for each of these on every endpoint where it applies, then delegate them.`} Record test cases for what is still missing with record_test_cases, then delegate them. If nothing applicable is missing, say so in one line and finish.`
       : '',
     'When the specialists are done, write a short summary of this round (what was tested, what was not covered).',
   ].filter((part) => part !== '').join('\n\n');
   const n = untried.length + approved.length;
   const message = n === 0 ? 'Blackwing asked the team to widen the plan before finishing' : `Blackwing handed ${n} untried item${n === 1 ? '' : 's'} back to the team`;
   return { prompt, message, cases: untried.map(([id]) => id), widen, approved: approved.length };
+}
+
+/** Depth classes that no recorded case names yet and the planner was not already asked about. */
+function missingClasses(ctx: HuntContext): string[] {
+  const named = [...ctx.state.cases].map(([id, c]) => `${id} ${c.title}`);
+  return DEPTH_CLASSES.filter((k) => !ctx.state.classesAsked.has(k.name) && !named.some((n) => k.match.test(n))).map((k) => k.name);
 }
 
 /** Decides how a run that was not killed ended. */
@@ -346,8 +365,19 @@ function caseResult(ctx: HuntContext, id: string, testCase: CaseState): { status
 
 /** The `coverage.summary` event data: what was and was not tested, and which test accounts were actually used. */
 export function coverageOf(ctx: HuntContext, endReason: string | null): Record<string, unknown> {
+  // Runner-stated gaps that no test case records: a login wall with no test account, a sign-in that failed.
+  const gaps = [
+    ...(ctx.state.loginWall ? [{ id: 'login-wall', title: 'Pages behind a login', note: LOGIN_WALL_MESSAGE }] : []),
+    ...[...ctx.state.sessions]
+      .filter(([, s]) => s.failure !== null)
+      .map(([role, s]) => ({ id: `login-failed-${role}`, title: `Pages behind the "${role}" sign-in`, note: `Sign-in as test account "${role}" failed: ${s.failure ?? ''}` })),
+  ].map((g) => ({ ...g, agent: 'runner', status: 'skipped' as const, requests: 0, candidates: 0 }));
   return {
-    cases: [...ctx.state.cases].map(([id, c]) => ({ id, title: c.title, agent: c.agent, ...caseResult(ctx, id, c), requests: c.requests, candidates: c.candidates })),
+    cases: [
+      ...[...ctx.state.cases].map(([id, c]) => ({ id, title: c.title, agent: c.agent, ...caseResult(ctx, id, c), requests: c.requests, candidates: c.candidates })),
+      ...gaps,
+    ],
+    loginWall: ctx.state.loginWall,
     rolesConfigured: ctx.run.testAccounts.map((a) => a.role),
     rolesUsed: Object.fromEntries(ctx.state.roleCounts),
     requestsSent: ctx.state.requestsUsed,

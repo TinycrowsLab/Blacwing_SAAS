@@ -1,3 +1,4 @@
+import type { Session } from './login.js';
 import type { Gate2Status, HuntRun, HuntStore, RunEvent } from './types.js';
 
 export interface Logger {
@@ -90,10 +91,20 @@ export interface HuntState {
   readonly roleCounts: Map<string, number>;
   /** The `accounts.unused` warning was emitted (once per run). */
   accountsWarned: boolean;
+  /** Login-form accounts' sessions by lower-case role; the cookie jars never leave the runner. */
+  readonly sessions: Map<string, Session>;
+  /** Signed-out pages seen (path -> sent to the login page), for login-wall detection. */
+  readonly signedOutPaths: Map<string, boolean>;
+  /** Most of the site is behind a login and no test account is configured (set once, with its event). */
+  loginWall: boolean;
+  /** Pages that showed inputs (a form or a query string): without any, depth rounds have nothing to test. */
+  inputsSeen: number;
+  /** Vulnerability classes the runner already asked the planner to cover, so none is asked twice. */
+  readonly classesAsked: Set<string>;
 }
 
 export function newHuntState(): HuntState {
-  return { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, cases: new Map(), asks: new Map(), notices: new Map(), roleCounts: new Map(), accountsWarned: false };
+  return { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, cases: new Map(), asks: new Map(), notices: new Map(), roleCounts: new Map(), accountsWarned: false, sessions: new Map(), signedOutPaths: new Map(), loginWall: false, inputsSeen: 0, classesAsked: new Set() };
 }
 
 /** Everything the tools of one run share. `state` is the only mutable part. */

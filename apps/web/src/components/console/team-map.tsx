@@ -250,7 +250,7 @@ export function TeamMap({
         </div>
       )}
       <Arrow wide label={proven} />
-      <Diamond label="Your review" term="Gate 3: triage and release" who={gate3} done={team.autoReleased && team.proven > 0} />
+      <Diamond label="Your review" term="Gate 3: triage and release" who={gate3} done={(team.autoReleased && team.proven > 0) || gate3 === 'Review complete'} />
       <Arrow className="max-[1359px]:hidden" />
       <div className="max-w-[74px] shrink-0 max-[1359px]:hidden rounded-[10px] border border-border bg-surface px-2.5 py-1.5 text-[12px] leading-4">
         <b className="font-semibold">Report</b>

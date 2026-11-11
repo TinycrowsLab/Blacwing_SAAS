@@ -14,7 +14,13 @@ export interface HuntRun {
   /** The request's ceiling: passive allows only GET, HEAD and OPTIONS. */
   readonly intrusiveness: 'passive' | 'active_safe';
   /** Grey-box credentials. The header value stays inside the runner: the model only names the role. */
-  readonly testAccounts: readonly { readonly role: string; readonly headerName: string; readonly headerValue: string }[];
+  readonly testAccounts: readonly {
+    readonly role: string;
+    readonly headerName: string;
+    readonly headerValue: string;
+    /** Login-form mode: the runner signs in with these and keeps the session; headerName/headerValue are unused. */
+    readonly login?: { readonly username: string; readonly password: string; readonly loginUrl: string | null };
+  }[];
   /** Gate 3 mode chosen on the plan: `hold` keeps proven findings for a human release, `auto` releases them at once. */
   readonly releaseProven: 'hold' | 'auto';
   /** Allowed origins the operator listed as labs (pins.asset.labOrigins): private addresses are allowed only there. */

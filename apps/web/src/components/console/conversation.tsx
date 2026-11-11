@@ -293,6 +293,19 @@ function ValidatorTurn({ v, onOpenCall }: { readonly v: ValidatorItem; readonly 
               {v.autoReleased ? 'Released automatically.' : 'Waits for your release.'}
             </span>
           </p>
+        ) : v.verdict === 'merged' || v.verdict === 'unfinished' ? (
+          <p className="m-0 flex items-start gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface-2 px-3 py-[7px] text-[13px] text-muted-foreground">
+            <span aria-hidden="true" className="mt-[5px] h-[2px] w-2.5 shrink-0 rounded-full bg-current" />
+            <span>
+              {v.verdict === 'merged' ? (
+                <>
+                  <b className="font-semibold text-foreground">Merged</b> into {v.reason ?? 'a finding of the same issue'}.
+                </>
+              ) : (
+                <b className="font-semibold text-foreground">Not finished</b>
+              )}
+            </span>
+          </p>
         ) : (
           <p className="m-0 flex items-start gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface-2 px-3 py-[7px] text-[13px] text-muted-foreground">
             <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-dashed border-current" />

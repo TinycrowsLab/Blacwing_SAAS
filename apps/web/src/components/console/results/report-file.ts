@@ -11,7 +11,7 @@ import { scrubDeep } from '@blackwing/errors/scrub';
 import { agentName } from '../../../lib/agents';
 import { coverageSchema } from '../../../lib/schemas';
 import { escapeHtml as esc, markdownToHtml } from '../markdown';
-import { identityOf, oracleWords, PROOF_BY, proofSentence, requestLine } from './issue-body';
+import { identityOf, oracleWords, plainReason, PROOF_BY, proofSentence, requestLine } from './issue-body';
 import { bySeverity, duration, findingDetailSchema, notTested, SEVERITIES, type FindingDetail } from './model';
 
 /** The API's `GET /runs/:id/report?format=json`: only what the report says is read; the rest passes through. */
@@ -57,6 +57,8 @@ export const reportSourceSchema = z
       })
       .loose(),
     findings: z.array(findingDetailSchema),
+    /** Suspected findings the validator could not prove: never released, listed in an appendix marked "not proven". */
+    keptBack: z.array(findingDetailSchema).default([]),
     /** What the runner recorded about coverage; null for runs from before it did. */
     coverage: coverageSchema.nullable().default(null),
   })
@@ -73,7 +75,7 @@ const LIMITS = [
   'Detection only: each probe is the least needed to show the issue.',
   'No browser is used, so DOM-based XSS is not tested.',
   'Tokens, cookies and passwords in the evidence are redacted by Blackwing.',
-  'Only issues a person released are listed. Issues still awaiting release, kept back or dismissed are left out.',
+  'Only issues a person released are listed in the findings. Issues still awaiting release or dismissed are left out. Kept-back issues appear only in the appendix, marked not proven.',
 ];
 
 const laterThanStart = (at: string | null | undefined, start: string | null): boolean =>
@@ -272,6 +274,23 @@ function meta(f: FindingDetail): string {
     .join(' · ');
 }
 
+/** The replays, one row each: number, HTTP status, whether the expected result showed. */
+const replayRows = (f: FindingDetail): { n: number; status: number; matched: boolean }[] => [...f.evidence.replays];
+const controlExcerpt = (f: FindingDetail): string => f.evidence.control.response?.bodyExcerpt ?? '';
+const replaySummary = (f: FindingDetail): string => {
+  const rows = replayRows(f);
+  if (rows.length === 0) return 'No replays recorded.';
+  const matched = rows.filter((r) => r.matched).length;
+  const control = f.replay?.control;
+  return `Replay result: ${matched} of ${rows.length} replays showed the issue${
+    control === null || control === undefined
+      ? ''
+      : `; negative control returned HTTP ${control.status} and ${control.matched ? 'matched too' : 'behaved as expected'}`
+  }.`;
+};
+const keptReason = (f: FindingDetail): string =>
+  f.evidence.reason === undefined ? 'the validator did not prove it' : plainReason(f.evidence.reason);
+
 const title = (src: ReportSource): string => `Security audit of ${src.asset.name}`;
 
 /** "What was not tested and why": the runner's case record, the plan's exclusions, and the fixed limits. */
@@ -317,6 +336,17 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
     const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
     if (excerpt !== '')
       out.push('What the site answered to the probe (excerpt):', '', '```', excerpt, '```', '');
+    const ctl = controlExcerpt(f);
+    if (ctl !== '')
+      out.push('What the site answered to the control (excerpt):', '', '```', ctl, '```', '');
+    out.push(replaySummary(f), '');
+    if (replayRows(f).length > 0)
+      out.push(
+        '| Replay | HTTP status | Expected result shown |',
+        '|---|---|---|',
+        ...replayRows(f).map((r) => `| ${r.n} | ${r.status} | ${r.matched ? 'yes' : 'no'} |`),
+        '',
+      );
     if (f.reproCurl !== '')
       out.push(
         'Reproduce it (run it only against a copy you own):',
@@ -337,12 +367,35 @@ export function renderMarkdown(src: ReportSource, findings: readonly FindingDeta
       out.push('### How to fix it (Blackwing AI’s suggestion, not verified)', '', remediation, '');
   });
   const gaps = notTestedOf(src);
+  const kept = [...src.keptBack].sort(bySeverity);
   out.push('## What was not tested and why', '');
   if (!gaps.recorded) out.push(NOT_RECORDED, '');
   if (gaps.rows.length > 0) out.push(...gaps.rows.map((r) => `- **${r.what}:** ${r.why}`), '');
   else if (gaps.recorded) out.push(NO_GAPS, '');
   if (gaps.note !== null) out.push('Blackwing AI’s own note (not verified):', '', ...gaps.note.split('\n').map((l) => `> ${l}`), '');
   out.push('## Limits of this report', '', ...LIMITS.map((l) => `- ${l}`), '');
+  out.push(
+    '## Appendix: kept-back findings (NOT PROVEN)',
+    '',
+    kept.length === 0
+      ? 'No suspected issues were kept back in this audit.'
+      : 'These issues were suspected but the validator could not prove them. They are NOT proven, were not released and are not findings of this report. They are listed so you can judge them yourself.',
+    '',
+  );
+  kept.forEach((f, i) => {
+    out.push(
+      `### K${i + 1}. ${f.title} (not proven)`,
+      '',
+      `${cap(f.severity)} (proposed) · ${meta(f)}  `,
+      `Why it is not proven: ${keptReason(f)}.`,
+      '',
+      `- **Probe:** \`${sideWords(f.evidence.probe)}\``,
+      `- **Control:** \`${sideWords(f.evidence.control)}\``,
+      '',
+    );
+    if (f.description !== null && f.description.trim() !== '')
+      out.push('Blackwing AI’s explanation (not verified):', '', f.description.trim(), '');
+  });
   return out.join('\n');
 }
 
@@ -415,7 +468,14 @@ export function renderHtml(
 <table>
 <tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
 <tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">${esc(cap(controlNote(f)))}.</span></td></tr>
-</table>${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${f.reproCurl === '' ? '' : `\n<p class="meta">Reproduce it (run it only against a copy you own):</p>\n<pre>${esc(f.reproCurl)}</pre>`}${
+</table>${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${controlExcerpt(f) === '' ? '' : `\n<p class="meta">What the site answered to the control (excerpt):</p>\n<pre>${esc(controlExcerpt(f))}</pre>`}
+<p class="meta">${esc(replaySummary(f))}</p>${
+        replayRows(f).length === 0
+          ? ''
+          : `\n<table><tr><th>Replay</th><th>HTTP status</th><th>Expected result shown</th></tr>${replayRows(f)
+              .map((r) => `<tr><td>${r.n}</td><td>${r.status}</td><td>${r.matched ? 'yes' : 'no'}</td></tr>`)
+              .join('')}</table>`
+      }${f.reproCurl === '' ? '' : `\n<p class="meta">Reproduce it (run it only against a copy you own):</p>\n<pre>${esc(f.reproCurl)}</pre>`}${
         f.description === null || f.description.trim() === ''
           ? ''
           : `\n<h4>What it means <span>· Blackwing AI’s explanation, not verified</span></h4>\n<div class="ai">${markdownToHtml(f.description.trim())}</div>`
@@ -437,6 +497,23 @@ export function renderHtml(
   ]
     .filter((x) => x !== '')
     .join('\n');
+  const kept = [...src.keptBack].sort(bySeverity);
+  const keptHtml =
+    kept.length === 0
+      ? '<p class="meta">No suspected issues were kept back in this audit.</p>'
+      : `<p class="meta"><b>Not proven.</b> These issues were suspected but the validator could not prove them. They were not released and are not findings of this report.</p>\n${kept
+          .map(
+            (f, i) => `<article>
+<h3><span class="chip" style="background:#f0f1f3;color:#4b5160">Not proven</span>K${i + 1}. ${esc(f.title)}</h3>
+<p class="meta">${esc(`${cap(f.severity)} (proposed) · ${meta(f)}`)}</p>
+<p class="meta">Why it is not proven: ${esc(keptReason(f))}.</p>
+<table>
+<tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code></td></tr>
+<tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code></td></tr>
+</table>${f.description === null || f.description.trim() === '' ? '' : `\n<div class="ai">${markdownToHtml(f.description.trim())}</div>`}
+</article>`,
+          )
+          .join('\n')}`;
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title(src))} · Blackwing report</title>
@@ -458,6 +535,8 @@ ${findings.length === 0 ? '' : `<h2>Issues, most severe first</h2>\n${issues}`}
 ${gapsHtml}
 <h2>Limits of this report</h2>
 <ul class="limits">${LIMITS.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
+<h2>Appendix: kept-back findings (not proven)</h2>
+${keptHtml}
 <footer>Generated by Blackwing on ${esc(when(generatedAt) ?? generatedAt)}. Every decision behind it is sealed in the workspace ledger.</footer>
 </main></body></html>
 `;
@@ -513,8 +592,22 @@ export function renderJson(
   if (Array.isArray(pinned) && pinned.length > 0 && !(Array.isArray(asset.excludedPaths) && asset.excludedPaths.length > 0))
     asset.excludedPaths = pinned;
   // An empty list here means nothing was released, not that nothing was found.
-  const scope = { releasedFindingsOnly: true, releasedCount: list.length };
-  return JSON.stringify(dropInternal(scrubDeep({ ...raw, asset, run, scope, findings: list })), null, 2);
+  const keptBack = Array.isArray(raw.keptBack) ? (raw.keptBack as unknown[]) : [];
+  const scope = {
+    releasedFindingsOnly: true,
+    releasedCount: list.length,
+    keptBackCount: keptBack.length,
+    keptBackNote: 'keptBack lists suspected issues the validator could not prove. They are NOT proven and not released.',
+  };
+  // "What was not tested and why", as in the HTML and Markdown reports.
+  const parsed = reportSourceSchema.safeParse(raw);
+  const gaps = parsed.success ? notTestedOf(parsed.data) : null;
+  const notTestedSection = gaps === null ? null : { recorded: gaps.recorded, items: gaps.rows, note: gaps.note };
+  return JSON.stringify(
+    dropInternal(scrubDeep({ ...raw, asset, run, scope, findings: list, keptBack, notTested: notTestedSection })),
+    null,
+    2,
+  );
 }
 
 /** Released findings, most severe first (the order of the results page). */

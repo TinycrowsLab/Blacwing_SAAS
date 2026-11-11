@@ -145,3 +145,17 @@ describe('run report file', () => {
     expect(md).toContain('[redacted:');
   });
 });
+
+describe('kept-back appendix and evidence', () => {
+  const kept = { ...finding('k', 'low', 'Maybe XSS'), status: 'suspected', triage: null, evidence: { probe: {}, control: {}, replays: [], reason: 'no_control: only data open to everyone may be proven without a control' } };
+  const src = reportSourceSchema.parse({ ...raw, keptBack: [kept] });
+  it('lists kept-back issues as not proven and keeps replays and control evidence', () => {
+    for (const out of [renderMarkdown(src, ordered(src)), renderHtml(src, ordered(src), '2026-11-06T10:00:00Z')]) {
+      expect(out).toContain('Maybe XSS');
+      expect(out.toLowerCase()).toContain('not proven');
+      expect(out).toContain('What was not tested and why');
+      expect(out).toContain('Replay');
+    }
+    expect(JSON.parse(renderJson({ ...raw, keptBack: [kept] }, ordered(src)))).toMatchObject({ scope: { keptBackCount: 1 }, notTested: { recorded: false } });
+  });
+});

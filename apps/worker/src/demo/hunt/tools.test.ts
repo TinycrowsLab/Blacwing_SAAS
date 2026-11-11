@@ -24,7 +24,7 @@ const run: HuntRun = {
   labOrigins: [],
 };
 
-function setup(releaseProven: HuntRun['releaseProven'], respond = 'ok') {
+function setup(releaseProven: HuntRun['releaseProven'], respond: string | ((url: string) => string) = 'ok') {
   const store = new FakeStore();
   const posted: string[] = [];
   const ctx: HuntContext = {
@@ -34,8 +34,9 @@ function setup(releaseProven: HuntRun['releaseProven'], respond = 'ok') {
     signal: new AbortController().signal,
     deps: {
       fetch: (input) => {
-        posted.push(input instanceof Request ? input.url : input instanceof URL ? input.href : input);
-        return Promise.resolve(new Response(respond));
+        const url = input instanceof Request ? input.url : input instanceof URL ? input.href : input;
+        posted.push(url);
+        return Promise.resolve(new Response(typeof respond === 'string' ? respond : respond(url)));
       },
       sleep: () => Promise.resolve(),
       now: () => 0,
@@ -141,7 +142,7 @@ describe('test cases and coverage counting', () => {
   });
 
   it('a candidate merged into an already stored finding still ends with one candidate.merged event', async () => {
-    const { ctx, store } = setup('hold', 'bw7x');
+    const { ctx, store } = setup('hold', (url) => (url.includes('bw7x') ? 'bw7x' : 'ok'));
     await call(ctx, 'submit_candidate', { ...candidate, agent: 'web-api-specialist' });
     await call(ctx, 'submit_candidate', { ...candidate, title: 'Same issue again', agent: 'web-api-specialist' });
     const ends = store.events.filter((e) => ['finding.confirmed', 'finding.suspected', 'candidate.merged', 'candidate.rejected'].includes(e.kind));

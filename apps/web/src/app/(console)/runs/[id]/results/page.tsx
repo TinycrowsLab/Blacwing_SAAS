@@ -232,7 +232,10 @@ export default async function ResultsPage({
           {allDecided ? (
             <p className="m-0 flex items-center gap-1.5 text-[14px] font-medium text-ok">
               <Icon name="check" size={15} />
-              All decided. Your report is ready to download.
+              Review complete · report ready.
+              {kept.length > 0
+                ? ` ${plural(kept.length, 'kept-back issue is', 'kept-back issues are')} not proven and stay out of the report.`
+                : ''}
             </p>
           ) : null}
         </div>
