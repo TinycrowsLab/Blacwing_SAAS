@@ -963,7 +963,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             role="tabpanel"
             id={`panel-${tab}`}
             aria-labelledby={`tab-${tab}`}
-            className={`flex min-h-0 flex-1 flex-col ${tab === 'conversation' ? '' : 'overflow-y-auto pb-6 pt-3 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]'}`}
+            className={`relative flex min-h-0 flex-1 flex-col ${tab === 'conversation' ? '' : 'overflow-y-auto pb-6 pt-3 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]'}`}
           >
             {tab !== 'conversation' && !mounted ? null : tab === 'conversation' ? (
               <Conversation
@@ -1019,7 +1019,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             )}
           </div>
         </div>
-        <aside aria-label="Limits and findings" className="hidden min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-[18px] py-3.5 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin] lg:flex">
+        <aside aria-label="Limits and findings" className="relative hidden min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-[18px] py-3.5 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin] lg:flex">
           {sidePanel}
         </aside>
       </div>

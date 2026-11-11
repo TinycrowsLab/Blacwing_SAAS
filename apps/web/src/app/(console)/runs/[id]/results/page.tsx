@@ -5,6 +5,7 @@ import { cache, Fragment, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
+import { ContinueCard, stoppedAtLimit } from '../../../../../components/console/results/continue-card';
 import { NotTestedList, YourDecisions } from '../../../../../components/console/results/decisions';
 import { ExecutiveSummary } from '../../../../../components/console/results/executive-summary';
 import { ExternalExposure } from '../../../../../components/console/results/external-exposure';
@@ -42,6 +43,7 @@ import {
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+const SECONDS_PER_MINUTE = 60;
 
 const HTTP_NOT_FOUND = 404;
 const SUMMARY_WAIT_MS = 150_000;
@@ -159,6 +161,15 @@ export default async function ResultsPage({
   return (
     <div className="mx-auto grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
       <section className="flex min-w-0 flex-col gap-5" aria-labelledby="results-h">
+        {live || !stoppedAtLimit(run.coverage?.endReason) || untried === 0 ? null : (
+          <ContinueCard
+            requestId={run.requestId}
+            runId={run.id}
+            endReason={run.coverage?.endReason ?? ''}
+            untried={untried}
+            current={{ minutes: Math.round(run.budget.seconds / SECONDS_PER_MINUTE), requests: run.budget.requests, costUsd: run.budget.costUsd }}
+          />
+        )}
         <div className="flex flex-col gap-2">
           <nav aria-label="Breadcrumb">
             <ol className="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[12.5px] text-muted-foreground">

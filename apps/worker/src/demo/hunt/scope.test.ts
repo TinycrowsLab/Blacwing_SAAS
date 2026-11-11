@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkScope, classifyMethod, gateKey, stateChangeHint } from './scope.js';
+import { checkScope, classifyMethod, gateKey, setsNewPassword, stateChangeHint } from './scope.js';
 
 const scope = { allowedOrigins: ['https://shop.example.com', 'http://api.example.com:8080/ignored/path'], excludedPaths: ['/admin', '/Billing/'] };
 
@@ -111,5 +111,24 @@ describe('checkScope', () => {
     if (!verdict.ok) throw new Error('expected ok');
     expect(gateKey('post', verdict.url)).toBe('POST https://shop.example.com/api/x as no test account');
     expect(gateKey('post', verdict.url, 'Admin')).toBe('POST https://shop.example.com/api/x as admin');
+  });
+});
+
+describe('setsNewPassword', () => {
+  const u = (s: string): URL => new URL(s);
+  it('flags a new password with a matching confirmation (query)', () => {
+    expect(setsNewPassword(u('http://lab/vulnerabilities/csrf/?password_new=x1&password_conf=x1&Change=Change'), undefined)).toBe(true);
+  });
+  it('flags a form body with a matching confirmation', () => {
+    expect(setsNewPassword(u('http://lab/vulnerabilities/captcha/'), 'step=2&password_new=x1&password_conf=x1')).toBe(true);
+  });
+  it('flags a new password with no confirmation (JSON)', () => {
+    expect(setsNewPassword(u('http://lab/api/me'), '{"newPassword":"x1"}')).toBe(true);
+  });
+  it('allows a mismatched confirmation (the site refuses the change)', () => {
+    expect(setsNewPassword(u('http://lab/vulnerabilities/csrf/?password_new=a1&password_conf=b2'), undefined)).toBe(false);
+  });
+  it('ignores ordinary password fields (sign-in forms)', () => {
+    expect(setsNewPassword(u('http://lab/login.php'), 'username=admin&password=x&Login=Login')).toBe(false);
   });
 });

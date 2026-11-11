@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { FocusPicker } from './focus-picker';
-import { type AccountRow, AccountsEditor, checkAccounts } from './plan-editors';
+import { type AccountRow, AccountsEditor, checkAccounts, LimitsEditor } from './plan-editors';
 import {
   BROAD,
   CARE,
@@ -36,11 +36,11 @@ import {
 } from '../../../app/(console)/audits/actions';
 import { readDrafts, removeDraft, saveDraft } from '../../../lib/drafts';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
-import { limitsPhrase, usd } from '../../../lib/plan-text';
+import { usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, OptionCard } from '../design';
 import { PendingButton } from '../design-client';
 
-import type { Asset } from '../../../lib/schemas';
+import type { Asset, Workspace } from '../../../lib/schemas';
 
 /** The four questions, by name (spec §3.3). */
 const Q = { site: 1, proof: 2, focus: 3, care: 4 } as const;
@@ -154,6 +154,7 @@ export function Order({
   assets,
   viewerName,
   limits,
+  settings,
 }: {
   readonly initialTarget: string | null;
   readonly initialStep: number;
@@ -166,6 +167,8 @@ export function Order({
   readonly viewerName: string;
   /** The suggested limits preset from the workspace; null when the workspace settings did not load. */
   readonly limits: Limits | null;
+  /** The workspace's presets and ranges for the limits question; null when the workspace settings did not load. */
+  readonly settings: Workspace['settings'] | null;
 }) {
   const router = useRouter();
   const first = okTarget(initialTarget);
@@ -186,6 +189,8 @@ export function Order({
   const [focus, setFocus] = useState<FocusKey[]>([BROAD]);
   const [focusText, setFocusText] = useState('');
   const [care, setCare] = useState<Care | null>(null);
+  /** The limits chosen in question 4 (null while a custom value cannot be read). */
+  const [chosen, setChosen] = useState<Limits | null>(limits);
   const [error, setError] = useState<string | null>(null);
   /** The API refused the address outright (its own console, metadata, an unlisted private host): no proof can help. */
   const [refused, setRefused] = useState<{ readonly origin: string; readonly message: string } | null>(null);
@@ -399,13 +404,17 @@ export function Order({
       setError(checked.error);
       return false;
     }
+    if (limits !== null && chosen === null) {
+      setError('Blackwing could not read the custom limits. Fix them, or pick one of the options.');
+      return false;
+    }
     const r = await createAuditAction({
       assetId: asset.id,
       objective: composeObjective(focus, focusText),
       intrusiveness: chosenCare,
-      minutes: limits?.minutes ?? null,
-      requests: limits?.requests ?? null,
-      costUsd: limits?.costUsd ?? null,
+      minutes: chosen?.minutes ?? null,
+      requests: chosen?.requests ?? null,
+      costUsd: chosen?.costUsd ?? null,
       excludedPaths: [],
       releaseProven: 'hold',
       testAccounts: checked.accounts.flatMap<AuditInput['testAccounts'][number]>((a) =>
@@ -498,12 +507,12 @@ export function Order({
     { label: 'Paths to avoid', value: 'None', tag: 'Default' },
     { label: 'Signed-in testing', value: 'As a visitor', tag: 'Default' },
     // The limits come from the workspace; when they did not load, the row is left out rather than stating none.
-    ...(limits === null
+    ...(chosen === null
       ? []
       : [
           {
             label: 'Limits',
-            value: `${limits.minutes} min · ${limits.requests.toLocaleString('en-US')} req · ${usd(limits.costUsd)}`,
+            value: `${chosen.minutes} min · ${chosen.requests.toLocaleString('en-US')} req · ${usd(chosen.costUsd)}`,
             tag: 'Suggested' as const,
           },
         ]),
@@ -717,11 +726,19 @@ export function Order({
                 Probing gently, anything that would change data waits for your yes. Only looking, it is refused. Either way,
                 destructive requests (like DELETE) are never sent.
               </p>
-              <p className="m-0 text-[12.5px] text-muted-foreground">
-                {limits === null
-                  ? "Next, I'll read the plan back with your workspace's suggested limits."
-                  : `Next, I'll read the plan back: suggested limits are ${limitsPhrase(limits)}.`}
-              </p>
+              {settings === null || limits === null ? (
+                <p className="m-0 text-[12.5px] text-muted-foreground">
+                  Next, I&apos;ll read the plan back with your workspace&apos;s suggested limits.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <h2 className="m-0 text-[15px] font-semibold leading-[22px]">How long may it run, and how much may it spend?</h2>
+                  <p className="m-0 text-[13px] leading-5 text-muted-foreground">
+                    Bigger limits cover more of the site. If it stops at a limit, you can continue where it left off.
+                  </p>
+                  <LimitsEditor value={limits} onChange={setChosen} settings={settings} />
+                </div>
+              )}
             </div>
           ) : null}
         </section>

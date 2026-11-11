@@ -28,6 +28,8 @@ describe('ledger words', () => {
     expect(ledgerWords('gate2.expired', { method: 'post', url: 'http://127.0.0.1:3001/api/Users?x=1' }, 'g')).toBe(
       'No answer in time: POST /api/Users?x=1 was not sent',
     );
+    expect(ledgerWords('gate2.approve_all', { decided: 3 }, 't')).toBe('Allowed 3 requests at once');
+    expect(ledgerWords('gate2.deny_all', { decided: 1 }, 't')).toBe('Denied 1 request at once');
     expect(ledgerWords('gate2.expired', {}, 'g')).toBe('No answer in time: the request was not sent');
   });
 

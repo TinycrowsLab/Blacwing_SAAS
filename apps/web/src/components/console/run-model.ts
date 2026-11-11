@@ -595,6 +595,7 @@ const RULE_WORDS: Readonly<Record<string, string>> = {
   destructive_method: 'destructive requests are never sent',
   above_max_intrusiveness: 'above the care level you chose',
   unknown_role: 'no test account has that role',
+  credential_change: 'it would change the test account password',
   request_budget: 'the request limit is reached',
   gate2_required: 'it needs your decision',
   credentials_in_url: 'a username and password in the address',

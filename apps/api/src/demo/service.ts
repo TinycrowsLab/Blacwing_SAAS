@@ -55,6 +55,22 @@ export class DemoRefusal extends HttpException {
   }
 }
 
+/** One request's outcome in a decide-all: `closed` is a run that was killed under it. */
+export interface Gate2ManyReceipt {
+  readonly id: string;
+  readonly result: 'decided' | 'already_decided' | 'expired' | 'closed' | 'not_found';
+}
+export interface Gate2ManyResult {
+  readonly decision: 'approve' | 'deny';
+  readonly results: Gate2ManyReceipt[];
+  readonly decided: number;
+  readonly alreadyDecided: number;
+  readonly expired: number;
+  readonly closed: number;
+  readonly notFound: number;
+  readonly audit: AuditRef;
+}
+
 export const INTRUSIVENESS = ['passive', 'active_safe'] as const;
 /** Gate 3 release mode of a request: `hold` waits for a human, `auto` releases what the validator proves. */
 export const RELEASE_MODES = ['hold', 'auto'] as const;
@@ -881,7 +897,12 @@ export class DemoService {
    * Retest: a new pending request with the same answers. The test-account values are copied server-side. With
    * `untriedFromRunId`, the test cases that run left untried are appended to the objective.
    */
-  async cloneRequest(actor: DemoActor, id: string, untriedFromRunId?: string): Promise<Record<string, unknown>> {
+  async cloneRequest(
+    actor: DemoActor,
+    id: string,
+    untriedFromRunId?: string,
+    limits?: { readonly budgetRequests: number; readonly budgetSeconds: number; readonly costCapUsd: number },
+  ): Promise<Record<string, unknown>> {
     const row = await this.store.getRequest(this.tenantId, id);
     if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
     const objective =
@@ -890,9 +911,9 @@ export class DemoService {
       assetId: row.asset_id,
       objective,
       intrusiveness: row.intrusiveness === 'passive' ? 'passive' : 'active_safe',
-      budgetRequests: row.budget_requests,
-      budgetSeconds: row.budget_seconds,
-      costCapUsd: Number(row.cost_cap_usd),
+      budgetRequests: limits?.budgetRequests ?? row.budget_requests,
+      budgetSeconds: limits?.budgetSeconds ?? row.budget_seconds,
+      costCapUsd: limits?.costCapUsd ?? Number(row.cost_cap_usd),
       excludedPaths: row.scope.excludedPaths ?? [],
       releaseProven: releaseModeOf(row),
       testAccounts: row.test_accounts.map((a) => ({
@@ -923,7 +944,11 @@ export class DemoService {
         'That audit left no test case untried.',
       );
     }
-    const text = `${row.objective}\n\nContinue with the test cases left untried in audit ${shortId(run.id)}: ${titles.join('; ')}`;
+    // Where it left off: the proven findings come along so the next audit does not spend its limits proving them again.
+    const proven = (await this.store.listFindingsForRun(this.tenantId, run.id, false)).map((f) => f.title);
+    const done = proven.length === 0 ? '' : ` Already proven there, do not test again: ${proven.join('; ')}.`;
+    const base = `${row.objective.split('\n\nContinue with the test cases left untried in audit ')[0] ?? row.objective}\n\n`;
+    const text = `${base}Continue with the test cases left untried in audit ${shortId(run.id)}: ${titles.join('; ')}.${done}`;
     return text.slice(0, OBJECTIVE_MAX);
   }
 
@@ -1559,6 +1584,61 @@ export class DemoService {
       override: selfApproved ? 'admin' : null,
     });
     return this.gate2(id, actor, audit);
+  }
+
+  /**
+   * Decides the listed Gate 2 requests one by one through `decideGate2` (role, killed run, deadline, already-decided
+   * and the per-request ledger entry all unchanged), then ledgers one summary. Only the ids the person was shown are
+   * touched; an id that is not this tenant's is reported as not found and nothing about it is revealed.
+   */
+  async decideGate2Many(
+    actor: DemoActor,
+    ids: readonly string[],
+    decision: 'approve' | 'deny',
+    reason: string | null,
+  ): Promise<Gate2ManyResult> {
+    requireRole(
+      actor,
+      ['asset-owner', 'appsec-engineer'],
+      'Only an asset owner or an appsec engineer decides Gate 2.',
+    );
+    const unique = [...new Set(ids)];
+    const results: Gate2ManyReceipt[] = [];
+    for (const id of unique) {
+      try {
+        await this.decideGate2(actor, id, decision, reason);
+        results.push({ id, result: 'decided' });
+      } catch (error) {
+        if (!(error instanceof DemoRefusal)) throw error;
+        results.push({ id, result: await this.gate2Refusal(id) });
+      }
+    }
+    const count = (r: Gate2ManyReceipt['result']): number => results.filter((x) => x.result === r).length;
+    const summary = {
+      decided: count('decided'),
+      alreadyDecided: count('already_decided'),
+      expired: count('expired'),
+      closed: count('closed'),
+      notFound: count('not_found'),
+    };
+    const audit = await this.audit(actor, `gate2.${decision}_all`, 'tenant', this.tenantId, {
+      decision,
+      reason,
+      requested: unique.length,
+      ...summary,
+      decidedIds: results.filter((x) => x.result === 'decided').map((x) => x.id).join(','),
+    });
+    return { decision, results, ...summary, audit };
+  }
+
+  /** Why a single decision did not go through, in the words of the receipt. */
+  private async gate2Refusal(id: string): Promise<Gate2ManyReceipt['result']> {
+    const row = await this.store.getGate2(this.tenantId, id);
+    if (row === null) return 'not_found';
+    if (row.status !== 'pending') return row.close_reason === 'deadline' ? 'expired' : 'already_decided';
+    if (row.deadline_at.getTime() <= Date.now()) return 'expired';
+    // Anything else the single path refused (a killed run) leaves the request closed.
+    return 'closed';
   }
 
   /** A suspected finding is for analysts only: anyone else gets the same 404 as for a missing one. */

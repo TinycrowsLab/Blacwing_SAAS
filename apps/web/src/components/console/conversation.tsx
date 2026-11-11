@@ -13,7 +13,8 @@ import { memo, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, 
 
 import { buttonClass, Icon, SeverityChip, VoiceTag, withRedactions } from './design';
 import { statusTone } from './flight-deck';
-import { Gate2Card } from './gate2-view';
+import { DecideAllBar } from './gate2-all';
+import { Gate2Card, roleFromPathKey } from './gate2-view';
 import { Markdown } from './markdown';
 import {
   type CallRow,
@@ -685,7 +686,7 @@ export const Conversation = memo(function Conversation({
         role="log"
         aria-label="Conversation"
         aria-live="off"
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]"
+        className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]"
       >
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-3.5 pb-6 pr-2 pt-3">
           {items.length > shown.length ? (
@@ -720,6 +721,21 @@ export const Conversation = memo(function Conversation({
       </div>
       {/* The pills get their own strip under the log (never on top of a line or a card's buttons). Phones show the
           pinned gold banner instead of the decision pill. */}
+      {waiting >= 2 ? (
+        <div className="shrink-0 border-t border-border px-3 py-2">
+          <DecideAllBar
+            scope="run"
+            requests={gate2
+              .filter((g) => g.status === 'pending')
+              .map((g) => ({
+                id: g.id,
+                method: g.method,
+                url: g.url,
+                role: g.asRole ?? roleFromPathKey(g.pathKey),
+              }))}
+          />
+        </div>
+      ) : null}
       {pills ? (
         <div className={`flex shrink-0 flex-wrap items-center justify-center gap-2 border-t border-border px-3 py-1.5 ${jump ? '' : 'max-md:hidden'}`}>
           {hidden[0] === undefined || decisionPill === null ? null : (

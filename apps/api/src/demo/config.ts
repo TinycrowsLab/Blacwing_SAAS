@@ -21,9 +21,9 @@ export const OBJECTIVE_MAX = 2000;
 
 /** Budget limits of one assessment request: the request schema validates against them, the presets are clamped to them. */
 export const BUDGET_LIMITS = {
-  requests: { min: 10, max: 5000 },
-  minutes: { min: 1, max: 120 },
-  costUsd: { min: 0.5, max: 100 },
+  requests: { min: 10, max: 20000 },
+  minutes: { min: 1, max: 480 },
+  costUsd: { min: 0.5, max: 200 },
 } as const;
 
 export interface BudgetPreset {
@@ -42,6 +42,7 @@ export const BUDGET_PRESETS: readonly BudgetPreset[] = [
   { key: 'quick', label: 'Quick', minutes: 10, requests: 300, costUsd: 3 },
   { key: 'standard', label: 'Standard', minutes: 30, requests: 1000, costUsd: 8 },
   { key: 'thorough', label: 'Thorough', minutes: 120, requests: 5000, costUsd: 25 },
+  { key: 'deep', label: 'Deep', minutes: 240, requests: 10000, costUsd: 60 },
 ].map((p) => ({
   ...p,
   minutes: clamp(p.minutes, BUDGET_LIMITS.minutes),

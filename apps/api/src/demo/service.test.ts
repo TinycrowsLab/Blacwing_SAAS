@@ -2,7 +2,7 @@
 // the Gate 2 countdown and the ownership proof.
 import { describe, expect, it, vi } from 'vitest';
 
-import { amendRequestSchema, gate2DecisionSchema, killScopeSchema, triageManySchema, workspaceSchema } from './controller.js';
+import { amendRequestSchema, gate2DecideAllSchema, gate2DecisionSchema, killScopeSchema, triageManySchema, workspaceSchema } from './controller.js';
 import {
   ALL_ROLES,
   DemoRefusal,
@@ -463,7 +463,7 @@ describe('workspace (B1)', () => {
       settings: {
         gate2TimeoutS: 120,
         selfApprove: true,
-        limits: { requests: { min: 10, max: 5000 }, minutes: { min: 1, max: 120 } },
+        limits: { requests: { min: 10, max: 20000 }, minutes: { min: 1, max: 480 } },
         webhook: { configured: true, host: 'hooks.example.com' },
       },
     });
@@ -476,11 +476,11 @@ describe('workspace (B1)', () => {
     const { settings } = (await service.workspace(admin)) as {
       settings: { presets: { minutes: number; requests: number; costUsd: number }[] };
     };
-    expect(settings.presets.map((p) => p.minutes)).toEqual([10, 30, 120]);
+    expect(settings.presets.map((p) => p.minutes)).toEqual([10, 30, 120, 240]);
     for (const p of settings.presets) {
       expect(p.requests).toBeGreaterThanOrEqual(10);
-      expect(p.requests).toBeLessThanOrEqual(5000);
-      expect(p.costUsd).toBeLessThanOrEqual(100);
+      expect(p.requests).toBeLessThanOrEqual(20000);
+      expect(p.costUsd).toBeLessThanOrEqual(200);
     }
   });
 
@@ -878,6 +878,7 @@ describe('clone with untried cases (P1-cov2)', () => {
     const store = {
       getRequest: vi.fn().mockResolvedValue(request),
       getRun: vi.fn().mockResolvedValue({ id: runId, request_id: runRequest }),
+      listFindingsForRun: vi.fn().mockResolvedValue([]),
       lastEvents: vi.fn().mockResolvedValue([{ seq: 9, kind: 'coverage.summary', data: { cases }, message: '', stage: 'done', at: new Date() }]),
       getAsset: vi.fn().mockResolvedValue({ ...asset('t'), ownership_status: 'verified' }),
       insertRequest: vi.fn(),
@@ -895,7 +896,7 @@ describe('clone with untried cases (P1-cov2)', () => {
     ]);
     await service.cloneRequest(engineer, 'q1', runId);
     expect(store.insertRequest).toHaveBeenCalledWith(expect.objectContaining({
-      objective: 'Look.\n\nContinue with the test cases left untried in audit 00000001: SQL injection in search; Reflected XSS',
+      objective: 'Look.\n\nContinue with the test cases left untried in audit 00000001: SQL injection in search; Reflected XSS.',
     }));
   });
 
@@ -1112,5 +1113,68 @@ describe('retest one finding (P2-rt1)', () => {
     await expect(retestService(proven('GET', 'GET'), false).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
       response: { code: 'retest_in_progress' },
     });
+  });
+});
+
+describe('decide all Gate 2 (one shared reason)', () => {
+  const owner = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['asset-owner'] };
+  const g = (id: string, status: string, over: Record<string, unknown> = {}) => ({
+    id,
+    run_id: 'r1',
+    method: 'POST',
+    url: 'https://app.example.com/x?q=1',
+    status,
+    close_reason: null,
+    created_at: new Date(),
+    deadline_at: new Date(Date.now() + 60_000),
+    ...over,
+  });
+  function setup(rows: Record<string, ReturnType<typeof g>>, decided: string[]) {
+    const store = {
+      getGate2: vi.fn((_t: string, id: string) => Promise.resolve(rows[id] ?? null)),
+      getRun: vi.fn().mockResolvedValue({ id: 'r1', request_id: 'q1', state: 'running', pins: {} }),
+      getRequest: vi.fn().mockResolvedValue({ requester_id: 'other' }),
+      decideGate2: vi.fn((_t: string, id: string) => Promise.resolve(decided.includes(id))),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e', hash: 'h' }),
+      latestAudit: vi.fn().mockResolvedValue(null),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('decides each id through the single path and ledgers each plus one summary', async () => {
+    const rows = {
+      a: g('a', 'pending'),
+      b: g('b', 'approved'),
+      c: g('c', 'pending', { deadline_at: new Date(Date.now() - 1000) }),
+    };
+    const { store, service } = setup(rows, ['a']);
+    const out = await service.decideGate2Many(owner, ['a', 'b', 'c', 'zz', 'a'], 'approve', 'our own test lab');
+    expect(out.results).toEqual([
+      { id: 'a', result: 'decided' },
+      { id: 'b', result: 'already_decided' },
+      { id: 'c', result: 'expired' },
+      { id: 'zz', result: 'not_found' },
+    ]);
+    expect(out).toMatchObject({ decided: 1, alreadyDecided: 1, expired: 1, notFound: 1 });
+    expect(store.decideGate2).toHaveBeenCalledTimes(3);
+    const actions = store.appendAudit.mock.calls.map((c) => (c[1] as { action: string }).action);
+    expect(actions).toEqual(['gate2.approve', 'gate2.approve_all']);
+  });
+
+  it('refuses a role that cannot decide Gate 2, touching nothing', async () => {
+    const { store, service } = setup({}, []);
+    await expect(
+      service.decideGate2Many({ ...owner, roles: ['viewer'] }, ['a'], 'deny', null),
+    ).rejects.toBeInstanceOf(Error);
+    expect(store.decideGate2).not.toHaveBeenCalled();
+  });
+
+  it('validates the body: ids required and unique, an approve needs the same 8-character reason', () => {
+    const id = '0197a5d0-aaaa-7000-8000-000000000001';
+    expect(gate2DecideAllSchema.safeParse({ ids: [id], decision: 'approve', reason: 'safe lab data' }).success).toBe(true);
+    expect(gate2DecideAllSchema.safeParse({ ids: [id], decision: 'approve', reason: 'short' }).success).toBe(false);
+    expect(gate2DecideAllSchema.safeParse({ ids: [id], decision: 'deny' }).success).toBe(true);
+    expect(gate2DecideAllSchema.safeParse({ ids: [], decision: 'deny' }).success).toBe(false);
+    expect(gate2DecideAllSchema.safeParse({ ids: [id, id], decision: 'deny' }).success).toBe(false);
   });
 });

@@ -61,6 +61,12 @@ export function ledgerWords(action: string, payload: Payload, targetId: string):
         ? 'No answer in time: the request was not sent'
         : `No answer in time: ${method.toUpperCase()} ${pathOf(url)} was not sent`;
     }
+    case 'gate2.approve_all':
+    case 'gate2.deny_all': {
+      const n = typeof payload.decided === 'number' ? payload.decided : 0;
+      const what = `${n} ${n === 1 ? 'request' : 'requests'}`;
+      return action === 'gate2.approve_all' ? `Allowed ${what} at once` : `Denied ${what} at once`;
+    }
     case 'finding.reopen':
       return 'Reopened a dismissed finding';
     case 'finding.retest':

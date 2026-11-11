@@ -56,6 +56,7 @@ export default async function NewAuditPage({
       assets={assets}
       viewerName={session.user.name}
       limits={suggestedLimits(workspace)}
+      settings={workspace?.settings ?? null}
     />
   );
 }

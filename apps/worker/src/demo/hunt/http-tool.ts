@@ -8,7 +8,7 @@ import { scrub, scrubHeaders } from '@blackwing/errors/scrub';
 import { newId } from '@blackwing/ids';
 
 import { applySetCookies, cookieHeader, MAX_LOGINS, newSession, performLogin, redirectsToLogin, type Session, type Step } from './login.js';
-import { checkScope, classifyMethod, gateKey, stateChangeHint } from './scope.js';
+import { checkScope, classifyMethod, gateKey, setsNewPassword, stateChangeHint } from './scope.js';
 import { isDisallowedAddress } from '../../run/preflight/address-guard.js';
 
 import type { Gate2Ask, HuntContext } from './context.js';
@@ -434,6 +434,15 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
   if (ctx.run.intrusiveness === 'passive' && methodClass !== 'active_safe') return block(ctx, agent, req, 'above_max_intrusiveness');
   const account = req.as_role === undefined ? undefined : ctx.run.testAccounts.find((a) => a.role.toLowerCase() === req.as_role?.toLowerCase());
   if (req.as_role !== undefined && account === undefined) return block(ctx, agent, req, 'unknown_role');
+  if (account !== undefined && setsNewPassword(scope.url, req.body)) {
+    return block(
+      ctx,
+      agent,
+      req,
+      'credential_change',
+      `Not sent: it would change the password of test account "${account.role}", which locks Blackwing out of the rest of the audit. To show a missing CSRF or CAPTCHA check, send a confirmation that does not match the new password, so the site refuses the change.`,
+    );
+  }
   if (ctx.state.requestsUsed >= ctx.run.budgetRequests) return block(ctx, agent, req, 'request_budget');
   let gate2Id: string | undefined;
   if (methodClass === 'state_changing') {

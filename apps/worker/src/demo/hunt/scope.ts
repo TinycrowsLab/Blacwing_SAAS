@@ -170,3 +170,39 @@ export function checkScope(rawUrl: string, scope: Scope): ScopeVerdict {
 export function gateKey(method: string, url: URL, role?: string): string {
   return `${method.toUpperCase()} ${url.origin}${url.pathname} as ${role?.toLowerCase() ?? 'no test account'}`;
 }
+
+const NEW_PASSWORD_FIELD = /^(?:new[_-]?pass(?:word|wd)?|pass(?:word|wd)?[_-]?new|new[_-]?pwd)$/i;
+const CONFIRM_PASSWORD_FIELD = /^(?:(?:conf(?:irm)?|repeat|verify|again)[_-]?pass(?:word|wd)?|pass(?:word|wd)?[_-]?(?:conf(?:irm)?|repeat|verify|again|2))$/i;
+
+function paramsOf(url: URL, body: string | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const [k, v] of url.searchParams) out.set(k, v);
+  const text = (body ?? '').trim();
+  if (text.startsWith('{')) {
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (parsed !== null && typeof parsed === 'object') {
+        for (const [k, v] of Object.entries(parsed)) if (typeof v === 'string') out.set(k, v);
+      }
+    } catch {
+      // Not JSON: nothing to read.
+    }
+  } else if (text !== '') {
+    for (const [k, v] of new URLSearchParams(text)) out.set(k, v);
+  }
+  return out;
+}
+
+/**
+ * Whether a request sent as a test account would set that account's new password: a new-password field with no
+ * confirmation field, or with a confirmation that matches. Mismatched values are allowed (the site refuses the change,
+ * which is how a missing CSRF or CAPTCHA check is shown without locking the runner out of its own account).
+ */
+export function setsNewPassword(url: URL, body: string | undefined): boolean {
+  const params = paramsOf(url, body);
+  const keys = [...params.keys()];
+  const fresh = keys.find((k) => NEW_PASSWORD_FIELD.test(k));
+  if (fresh === undefined) return false;
+  const confirm = keys.find((k) => CONFIRM_PASSWORD_FIELD.test(k));
+  return confirm === undefined || params.get(confirm) === params.get(fresh);
+}

@@ -186,7 +186,17 @@ const decisionSchema = z.strictObject({
 /** Optional body: an empty request keeps the plain clone. */
 const cloneSchema = z.preprocess(
   (body) => body ?? {},
-  z.strictObject({ untriedFromRunId: z.string().regex(UUID).optional() }),
+  z.strictObject({
+    untriedFromRunId: z.string().regex(UUID).optional(),
+    /** Continue with other limits (a bigger tier after a run stopped at one); omitted keeps the original limits. */
+    limits: z
+      .strictObject({
+        budgetRequests: planFields.budgetRequests,
+        budgetSeconds: planFields.budgetSeconds,
+        costCapUsd: planFields.costCapUsd,
+      })
+      .optional(),
+  }),
 );
 
 /** The wizard's answers: plain JSON, bounded. Test-account secrets never belong here. */
@@ -230,6 +240,23 @@ export const gate2DecisionSchema = z
     path: ['reason'],
     message: 'Approve needs a reason of at least 8 characters.',
   });
+/** The ids the person was shown, one shared reason; the same reason rule as a single Allow. */
+export const gate2DecideAllSchema = z
+  .strictObject({
+    ids: z
+      .array(z.string().regex(UUID))
+      .min(1)
+      .max(LIMITS.batchIds)
+      .refine((ids) => new Set(ids.map((id) => id.toLowerCase())).size === ids.length, {
+        message: 'Each request may be listed once.',
+      }),
+    decision: z.enum(['approve', 'deny']),
+    reason: z.string().trim().max(LIMITS.reason).optional(),
+  })
+  .refine((v) => v.decision === 'deny' || (v.reason ?? '').length >= LIMITS.reasonMin, {
+    path: ['reason'],
+    message: 'Approve needs a reason of at least 8 characters.',
+  });
 const triageSchema = z.strictObject({
   decision: z.enum(['release', 'dismiss']),
   reason: z.string().trim().min(LIMITS.reasonMin).max(LIMITS.reason),
@@ -265,6 +292,7 @@ class EmergencyContactDto extends createZodDto(emergencyContactSchema) {}
 class EmergencyTokenDto extends createZodDto(emergencyTokenSchema) {}
 class EmergencyRunsDto extends createZodDto(emergencyRunsSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
+class Gate2DecideAllDto extends createZodDto(gate2DecideAllSchema) {}
 const targetCheckQuerySchema = z.strictObject({ origin: z.url({ protocol: /^https?$/ }).max(LIMITS.url) });
 class TargetCheckQueryDto extends createZodDto(targetCheckQuerySchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
@@ -557,6 +585,7 @@ export class DemoController {
       await this.actor(headers),
       uuid(id, 'request'),
       runId === undefined ? undefined : uuid(runId, 'run'),
+      body.limits,
     );
   }
 
@@ -610,6 +639,21 @@ export class DemoController {
   @HttpCode(HttpStatus.OK)
   async killScope(@Headers() headers: RequestHeaders, @ZodBody(KillScopeDto) body: z.infer<typeof killScopeSchema>): Promise<unknown> {
     return this.service.killScope(await this.actor(headers), body);
+  }
+
+  /** Declared before `gate2/:id/...`; a distinct path, so no route shadows it. */
+  @Post('gate2/decide-all')
+  @HttpCode(HttpStatus.OK)
+  async decideAllGate2(
+    @Headers() headers: RequestHeaders,
+    @ZodBody(Gate2DecideAllDto) body: Gate2DecideAllDto,
+  ): Promise<unknown> {
+    return this.service.decideGate2Many(
+      await this.actor(headers),
+      body.ids,
+      body.decision,
+      body.reason === undefined || body.reason === '' ? null : body.reason,
+    );
   }
 
   @Get('gate2/:id')

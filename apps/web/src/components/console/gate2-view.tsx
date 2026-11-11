@@ -21,6 +21,7 @@ import {
   postDecision,
   readDraft,
 } from './gate2-actions';
+import { DecideAllBar } from './gate2-all';
 import { pathOf } from './run-model';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
@@ -1298,6 +1299,17 @@ export function Gate2Inbox({
         term="Gate 2"
         lede="Blackwing wants to send something that could change data. No answer means denied."
         count={open + more}
+      />
+      <DecideAllBar
+        scope="inbox"
+        requests={items
+          .filter((i) => !closed.has(i.gate2.id) && decidedHere(i.gate2.id) === null)
+          .map((i) => ({
+            id: i.gate2.id,
+            method: i.gate2.method,
+            url: i.gate2.url,
+            role: i.asRole ?? i.gate2.asRole ?? roleFromPathKey(i.gate2.pathKey),
+          }))}
       />
       {groups.map((group, n) => {
         const head = group[0];
