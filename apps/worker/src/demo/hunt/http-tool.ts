@@ -87,11 +87,14 @@ function cutBytes(text: string, limit: number): string {
 }
 
 /** Every test-account credential as it may come back: the full header value, the bare token after the scheme, and their JSON-escaped forms. */
-function secretsOf(accounts: HuntContext['run']['testAccounts'], sessions: ReadonlyMap<string, Session>): string[] {
+function secretsOf(accounts: HuntContext['run']['testAccounts'], sessions: ReadonlyMap<string, Session>, inRequest: boolean): string[] {
   const values = accounts.flatMap((a) => [
     a.headerValue,
     a.headerValue.slice(a.headerValue.indexOf(' ') + 1),
-    ...(a.login === undefined ? [] : [a.login.password, new URLSearchParams({ p: a.login.password }).toString().slice(2), encodeURIComponent(a.login.password)]),
+    // A short password (DVWA's `password`) would garble every page that uses the word, so it is redacted only in what we send.
+    ...(a.login === undefined || (!inRequest && a.login.password.length < MIN_SESSION_SECRET)
+      ? []
+      : [a.login.password, new URLSearchParams({ p: a.login.password }).toString().slice(2), encodeURIComponent(a.login.password)]),
   ]);
   // Session cookies of a login-form account stay inside the runner (short values such as `security=low` are not secrets).
   for (const session of sessions.values()) for (const value of session.jar.values()) if (value.length >= MIN_SESSION_SECRET) values.push(value);
@@ -100,14 +103,14 @@ function secretsOf(accounts: HuntContext['run']['testAccounts'], sessions: Reado
     .sort((a, b) => b.length - a.length);
 }
 
-function redactor(ctx: HuntContext): (text: string) => string {
-  const secrets = secretsOf(ctx.run.testAccounts, ctx.state.sessions);
+function redactor(ctx: HuntContext, inRequest = false): (text: string) => string {
+  const secrets = secretsOf(ctx.run.testAccounts, ctx.state.sessions, inRequest);
   return (text) => secrets.reduce((acc, secret) => acc.replaceAll(secret, REDACTED), text);
 }
 
 /** Stored form of a request that was not sent: the model's headers and body, scrubbed. */
 function unsentRequest(ctx: HuntContext, req: HttpRequest): SentRequest {
-  const redact = redactor(ctx);
+  const redact = redactor(ctx, true);
   return {
     method: req.method.toUpperCase(),
     url: scrub(req.url),
@@ -214,7 +217,7 @@ async function raiseGate2(ctx: HuntContext, agent: string, req: HttpRequest, url
   const id = newId();
   const deadlineAt = new Date(ctx.deps.now() + ctx.deps.gate2TimeoutMs);
   // Agent-authored; test-account credentials are injected as headers by the runner, never into the body.
-  const body = req.body === undefined ? null : scrub(redactor(ctx)(req.body)).slice(0, GATE2_BODY_MAX_CHARS);
+  const body = req.body === undefined ? null : scrub(redactor(ctx, true)(req.body)).slice(0, GATE2_BODY_MAX_CHARS);
   const key = gateKey(method, url, role);
   const ask: Gate2Ask = { id, key, label: `${method} ${url.pathname} as ${role ?? 'no test account'}`, agent, caseId: options.caseId ?? null, deadlineAt: deadlineAt.getTime(), status: 'pending' };
   await ctx.store.insertGate2(ctx.run, {
@@ -364,7 +367,7 @@ function runnerStep(ctx: HuntContext, role: string): Step {
       method: req.method,
       url: scrub(req.url),
       headers: scrubHeaders(Object.fromEntries(Object.entries(req.headers).map(([n, v]) => [n, n.toLowerCase() === 'cookie' ? `[redacted: role ${role}]` : v]))),
-      body: req.body === undefined ? null : scrub(redact(req.body)),
+      body: req.body === undefined ? null : scrub(redactor(ctx, true)(req.body)),
       asRole: role,
     };
     const started = ctx.deps.now();
@@ -376,11 +379,12 @@ function runnerStep(ctx: HuntContext, role: string): Step {
         redirect: 'manual',
         signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), ctx.signal]),
       });
-      const body = cutBytes(redact(Buffer.from(await response.arrayBuffer()).toString('utf8')), STORED_BODY_BYTES);
+      const raw = Buffer.from(await response.arrayBuffer()).toString('utf8');
+      const body = cutBytes(redact(raw), STORED_BODY_BYTES);
       const ms = ctx.deps.now() - started;
       const exchangeId = await recordExchange(ctx, 'runner', request, 'sent', { status: response.status, headers: Object.fromEntries([...response.headers.entries()].map(([n, v]) => [n, redact(v)])), body: scrub(body), ms });
       await ctx.log.emit('http.sent', 'runner', `runner: ${req.method} ${request.url} -> ${response.status} (sign-in)`, { agent: 'runner', exchangeId, method: req.method, url: request.url, status: response.status, bytes: body.length, ms, asRole: role });
-      return { status: response.status, location: response.headers.get('location'), setCookies: response.headers.getSetCookie(), body };
+      return { status: response.status, location: response.headers.get('location'), setCookies: response.headers.getSetCookie(), body: raw };
     } catch (error) {
       await recordExchange(ctx, 'runner', request, 'error', { reason: error instanceof Error ? error.name : 'unknown', ms: ctx.deps.now() - started });
       return null;
@@ -482,7 +486,7 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
     method,
     url: scrub(req.url),
     headers: scrubHeaders(Object.fromEntries(Object.entries(sentHeaders).map(([name, value]) => [name, redact(value)]))),
-    body: req.body === undefined ? null : scrub(redact(req.body)),
+    body: req.body === undefined ? null : scrub(redactor(ctx, true)(req.body)),
     asRole: account?.role ?? null,
   };
   const started = ctx.deps.now();
