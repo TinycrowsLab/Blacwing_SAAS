@@ -69,6 +69,7 @@ describe('coverage', () => {
     ctx.state.roleCounts.set('alice', 3);
     ctx.state.requestsUsed = 10;
     expect(coverageOf(ctx, 'request_budget')).toEqual({
+      loginWall: false,
       cases: [
         { id: 'sqli', title: 'SQLi in search', agent: 'web-api-specialist', status: 'executed', note: null, requests: 4, candidates: 0 },
         { id: 'idor', title: 't', agent: 'authz-specialist', status: 'skipped', note: 'one object only', requests: 0, candidates: 0 },
@@ -124,10 +125,26 @@ describe('runner-owned rounds', () => {
     expect(nextRound(ctx, { ...at, round: 2 })).toBeNull();
   });
 
+  it('asks for another round when inputs were found and a class has no case, once per class, and never behind a login wall', () => {
+    const ctx = withRun(big);
+    ctx.state.requestsUsed = 400;
+    ctx.state.inputsSeen = 3;
+    ctx.state.cases.set('sqli', { ...base, requests: 2, title: 'SQL injection in search' });
+    const next = nextRound(ctx, { ...at, round: 2 });
+    expect(next?.widen).toBe(true);
+    expect(next?.prompt).toContain('No test case covers: reflected XSS, stored XSS, OS command injection, file inclusion and path traversal, file upload, CSRF');
+    expect(nextRound(ctx, { ...at, round: 3 })).toBeNull();
+    const walled = withRun(big);
+    walled.state.requestsUsed = 400;
+    walled.state.inputsSeen = 3;
+    walled.state.loginWall = true;
+    expect(nextRound(walled, { ...at, round: 2 })).toBeNull();
+  });
+
   it('never starts a round without budget or past the round cap', () => {
     const ctx = withRun(big);
     ctx.state.cases.set('sqli', { ...base });
-    expect(nextRound(ctx, { ...at, round: 3 })).toBeNull();
+    expect(nextRound(ctx, { ...at, round: 4 })).toBeNull();
     expect(nextRound(ctx, { ...at, spentUsd: 7.5 })).toBeNull();
     expect(nextRound(ctx, { ...at, elapsedS: 870 })).toBeNull();
     ctx.state.requestsUsed = 950;

@@ -596,6 +596,19 @@ describe('release mode (B3) and retest clone (B5)', () => {
     expect(dto.releaseProven).toBe('auto');
   });
 
+  it('stores a login-form account server-side and never reads its password back', async () => {
+    const { store, service } = requestService(stored({ excludedPaths: [], releaseProven: 'hold' }));
+    await service.createRequest(engineer, {
+      assetId: 'a1', objective: 'x', intrusiveness: 'active_safe', budgetRequests: 300, budgetSeconds: 600, costCapUsd: 3, excludedPaths: [], releaseProven: 'hold',
+      testAccounts: [{ role: 'admin', username: 'admin', password: 'hunter2-pw', loginUrl: 'http://t.test/login.php' }],
+    });
+    expect(store.insertRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ test_accounts: [{ role: 'admin', header_name: 'Cookie', header_value: '', username: 'admin', password: 'hunter2-pw', login_url: 'http://t.test/login.php' }] }),
+    );
+    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'admin', username: 'admin' }] }).success).toBe(true);
+    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'admin', username: 'admin', headerName: 'X' }] }).success).toBe(false);
+  });
+
   it('treats a request created before release modes as auto (unchanged behaviour)', async () => {
     const { service } = requestService(stored({ excludedPaths: [] }));
     expect((await service.request('q1')).releaseProven).toBe('auto');

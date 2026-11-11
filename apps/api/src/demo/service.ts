@@ -25,6 +25,7 @@ import {
   type RequestRow,
   type RunEventRow,
   type RunRow,
+  type TestAccountRow,
 } from './store.js';
 import { InProcessRateLimiter } from '../rate-limit/limiter.js';
 
@@ -184,7 +185,7 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
     version: row.version,
     requester: { id: row.requester_id, name: row.requester_name },
     approver: row.approver_id === null ? null : { id: row.approver_id, name: row.approver_name },
-    testAccounts: row.test_accounts.map(accountView),
+    testAccounts: row.test_accounts.map((a) => accountView(a)),
     decisionReason: row.decision_reason,
     decidedAt: iso(row.decided_at),
     createdAt: row.created_at.toISOString(),
@@ -990,7 +991,12 @@ export class DemoService {
         ? row.test_accounts.map((a) => ({ ...a }))
         : input.testAccounts.map((a) => {
             const stored = row.test_accounts.find((s) => s.role.toLowerCase() === a.role.toLowerCase());
-            const kept = stored !== undefined && (a.username === undefined) === (stored.username === undefined) ? stored : undefined;
+            const kept =
+              stored !== undefined &&
+              (a.username === undefined) === (stored.username === undefined) &&
+              (a.username !== undefined || stored.header_name.toLowerCase() === (a.headerName ?? '').toLowerCase())
+                ? stored
+                : undefined;
             if (a.username !== undefined) {
               const password = a.password ?? kept?.password;
               if (password === undefined) {
@@ -1019,7 +1025,7 @@ export class DemoService {
       budget: [row.budget_requests, row.budget_seconds, Number(row.cost_cap_usd)],
       excludedPaths: row.scope.excludedPaths ?? [],
       releaseProven: releaseModeOf(row),
-      testAccounts: row.test_accounts.map(accountKey),
+      testAccounts: row.test_accounts.map((a) => accountKey(a)),
     };
     const after = {
       objective: next.objective,
@@ -1027,7 +1033,7 @@ export class DemoService {
       budget: [next.budget_requests, next.budget_seconds, next.cost_cap_usd],
       excludedPaths: next.excludedPaths,
       releaseProven: next.releaseProven,
-      testAccounts: accounts.map(accountKey),
+      testAccounts: accounts.map((a) => accountKey(a)),
     };
     const changed = (Object.keys(before) as (keyof typeof before)[]).filter(
       (key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]),
@@ -1179,7 +1185,7 @@ export class DemoService {
           seconds: row.budget_seconds,
           costUsd: Number(row.cost_cap_usd),
         },
-        testAccounts: row.test_accounts.map(accountView),
+        testAccounts: row.test_accounts.map((a) => accountView(a)),
         releaseProven: releaseModeOf(row),
         requesterId: row.requester_id,
         approverId: row.approver_id,
