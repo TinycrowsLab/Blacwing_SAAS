@@ -1,3 +1,4 @@
+import type { CaseState } from './context.js';
 import type { Scope } from './scope.js';
 import type { ShotResult } from './screenshot.js';
 
@@ -20,7 +21,11 @@ export interface HuntRun {
     readonly headerName: string;
     readonly headerValue: string;
     /** Login-form mode: the runner signs in with these and keeps the session; headerName/headerValue are unused. */
-    readonly login?: { readonly username: string; readonly password: string; readonly loginUrl: string | null };
+    readonly login?: {
+      readonly username: string;
+      readonly password: string;
+      readonly loginUrl: string | null;
+    };
   }[];
   /** Gate 3 mode chosen on the plan: `hold` keeps proven findings for a human release, `auto` releases them at once. */
   readonly releaseProven: 'hold' | 'auto';
@@ -129,26 +134,52 @@ export interface RetestResult {
   readonly detail: Record<string, unknown>;
 }
 
+/** What a resumed run carries forward from its last recorded `coverage.summary`: the test cases, proven count and spend. */
+export interface ResumeState {
+  /** The run's test cases by id, as last recorded. Outcome is preserved by each case's requests and candidates. */
+  readonly cases: ReadonlyMap<string, CaseState>;
+  /** Findings already proven (confirmed or released): the follow-up loop does not prove them again. */
+  readonly findings: number;
+  /** Requests already sent and dollars already spent, so budgets and the cost cap continue, not restart. */
+  readonly requestsUsed: number;
+  readonly costUsd: number;
+}
+
 /** Persistence the hunt needs. Implemented over `pg` in ../store-pg.ts, faked in unit tests. */
 export interface HuntStore {
   claimQueuedRun(): Promise<HuntRun | null>;
+  /**
+   * The state a claimed run resumes from, rebuilt from its last `coverage.summary` event, or null for a run that has
+   * never recorded coverage (a fresh run, which starts from recon). Read once per claim.
+   */
+  loadResumeState(runId: string): Promise<ResumeState | null>;
   /** Marks runs (and retests) left `running` by a dead worker as failed and denies their pending Gate 2 requests. */
   failStaleRuns(): Promise<StaleRun[]>;
   /** Allocates the next seq itself: the API appends events to the same run. */
   appendEvent(runId: string, event: RunEvent): Promise<void>;
   readControl(runId: string): Promise<RunControl>;
   insertExchange(run: HuntRun, row: ExchangeRow): Promise<void>;
-  listExchanges(runId: string, limit: number): Promise<{ method: string; url: string; status: number | null; bytes: number }[]>;
+  listExchanges(
+    runId: string,
+    limit: number,
+  ): Promise<{ method: string; url: string; status: number | null; bytes: number }[]>;
   insertGate2(run: HuntRun, row: Gate2Row): Promise<void>;
   readGate2(id: string): Promise<{ status: Gate2Status; decidedBy: string | null }>;
   /** Moves a still-pending request to `status` with `reason`; returns the status it ends with. An expiry is ledgered. */
-  closeGate2(id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status>;
+  closeGate2(
+    id: string,
+    status: 'denied' | 'expired',
+    reason: Gate2CloseReason,
+  ): Promise<Gate2Status>;
   /** Closes every pending request of the run as `expired` (no person answered; `close_reason` = reason), each ledgered; returns their ids. */
   closePendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]>;
   /** Returns the id of the inserted row (a proven row also upgrades a suspected one); a suspected copy returns the stored row's id; null for a proven duplicate. */
   insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
   /** The stored finding a duplicate candidate merged into (same tenant and fingerprint), or null. */
-  findingByFingerprint(run: HuntRun, fingerprint: string): Promise<{ readonly id: string; readonly title: string } | null>;
+  findingByFingerprint(
+    run: HuntRun,
+    fingerprint: string,
+  ): Promise<{ readonly id: string; readonly title: string } | null>;
   /**
    * Older copies of one issue (same asset and identity key) still awaiting Gate 3 are dismissed as superseded by the
    * newer proof `findingId`, each on the ledger; returns their ids. Nothing is released: the newest copy still waits.

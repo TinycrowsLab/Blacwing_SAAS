@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 
 import { InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
-import { limitSettingsAction, runAgainAction } from './actions';
+import { limitSettingsAction, resumeRunAction, runAgainAction } from './actions';
 import { Disclosure } from './disclosure';
 import { useNudge } from './nudge';
 import { LimitsEditor, type LimitValues } from '../order/plan-editors';
@@ -31,12 +31,15 @@ const endedPhrase = (endReason: string): string => {
 export function ContinueCard({
   requestId,
   runId,
+  state,
   endReason,
   untried,
   current,
 }: {
   readonly requestId: string;
   readonly runId: string;
+  /** The run's terminal state: `failed`/`killed` continue in place; a limit-stopped `completed` run clones with new limits. */
+  readonly state: string;
   readonly endReason: string;
   readonly untried: number;
   /** The limits this run had: the card suggests the next bigger tier. */
@@ -72,6 +75,9 @@ export function ContinueCard({
 
   if (dismissed) return null;
   const cases = untried === 1 ? '1 test case' : `${untried} test cases`;
+  // A run that stopped on an error or was stopped continues in place under its approved plan; one that hit a budget
+  // limit needs new limits, so it clones into a fresh audit the requester approves once.
+  const canResume = state === 'failed' || state === 'killed';
   return (
     <section
       id="continue"
@@ -84,38 +90,63 @@ export function ContinueCard({
           left off?
         </h2>
         <p className="m-0 text-[13px] leading-5 text-muted-foreground">
-          The next audit picks up the untried cases and skips what is already proven. It uses the
-          limits shown below; you approve the plan before it starts.
+          {canResume
+            ? 'It continues the same audit — same scope, same approved limits and authorisation — and runs only the cases left unfinished, skipping what is already proven. No new approval is needed.'
+            : 'The next audit picks up the untried cases and skips what is already proven. It uses the limits shown below; you approve the plan before it starts.'}
         </p>
       </div>
-      {settings === null || limits === null ? null : (
+      {canResume || settings === null || limits === null ? null : (
         <Disclosure title="Adjust the limits" heading={false}>
           <LimitsEditor value={limits} onChange={setLimits} settings={settings} />
         </Disclosure>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <PendingButton
-          icon="repeat"
-          pendingLabel="Preparing the plan…"
-          stayPending
-          disabled={limits === null}
-          className="h-10"
-          onAction={async () => {
-            setError(null);
-            const result = await runAgainAction(requestId, runId, limits);
-            if (!result.ok) {
-              setError(`We couldn't prepare the next audit: ${result.message}`);
-              return false;
-            }
-            const to = `/audits/${encodeURIComponent(result.data.id)}`;
-            window.dispatchEvent(new Event('bw:refresh'));
-            router.push(to);
-            nudge(() => window.location.pathname === to);
-            return true;
-          }}
-        >
-          Continue with {cases}
-        </PendingButton>
+        {canResume ? (
+          <PendingButton
+            icon="replay"
+            pendingLabel="Picking up where it stopped…"
+            stayPending
+            className="h-10"
+            onAction={async () => {
+              setError(null);
+              const result = await resumeRunAction(runId);
+              if (!result.ok) {
+                setError(`We couldn't continue this audit: ${result.message}`);
+                return false;
+              }
+              const to = `/runs/${encodeURIComponent(runId)}`;
+              window.dispatchEvent(new Event('bw:refresh'));
+              router.push(to);
+              nudge(() => window.location.pathname === to);
+              return true;
+            }}
+          >
+            Continue with {cases}
+          </PendingButton>
+        ) : (
+          <PendingButton
+            icon="repeat"
+            pendingLabel="Preparing the plan…"
+            stayPending
+            disabled={limits === null}
+            className="h-10"
+            onAction={async () => {
+              setError(null);
+              const result = await runAgainAction(requestId, runId, limits);
+              if (!result.ok) {
+                setError(`We couldn't prepare the next audit: ${result.message}`);
+                return false;
+              }
+              const to = `/audits/${encodeURIComponent(result.data.id)}`;
+              window.dispatchEvent(new Event('bw:refresh'));
+              router.push(to);
+              nudge(() => window.location.pathname === to);
+              return true;
+            }}
+          >
+            Continue with {cases}
+          </PendingButton>
+        )}
         <PendingButton
           variant="secondary"
           pendingLabel="Hiding…"

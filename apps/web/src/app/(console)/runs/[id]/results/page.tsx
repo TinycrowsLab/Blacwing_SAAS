@@ -124,7 +124,11 @@ export default async function ResultsPage({
   const stop = stopLine(run, Date.now(), cases);
   // The summary is written after the run is marked finished: keep refreshing for a couple of minutes to pick it up.
   const summaryPending =
-    !live && run.state === 'completed' && run.executiveSummary === null && run.finishedAt !== null && Date.now() - Date.parse(run.finishedAt) < SUMMARY_WAIT_MS;
+    !live &&
+    run.state === 'completed' &&
+    run.executiveSummary === null &&
+    run.finishedAt !== null &&
+    Date.now() - Date.parse(run.finishedAt) < SUMMARY_WAIT_MS;
   // The report card counts every proven issue, as the headline does, and says how many were dismissed.
   const severities = proven.map((f) => f.severity);
   const dismissed = proven.filter((f) => f.status === 'dismissed').length;
@@ -156,7 +160,8 @@ export default async function ResultsPage({
     excludedPaths: request?.excludedPaths ?? [],
     summary: run.summary,
   });
-  const untried = run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
+  const untried =
+    run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
 
   return (
     <div className="mx-auto grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
@@ -165,9 +170,14 @@ export default async function ResultsPage({
           <ContinueCard
             requestId={run.requestId}
             runId={run.id}
+            state={run.state}
             endReason={run.coverage?.endReason ?? ''}
             untried={untried}
-            current={{ minutes: Math.round(run.budget.seconds / SECONDS_PER_MINUTE), requests: run.budget.requests, costUsd: run.budget.costUsd }}
+            current={{
+              minutes: Math.round(run.budget.seconds / SECONDS_PER_MINUTE),
+              requests: run.budget.requests,
+              costUsd: run.budget.costUsd,
+            }}
           />
         )}
         <div className="flex flex-col gap-2">
@@ -192,7 +202,13 @@ export default async function ResultsPage({
             className={`m-0 flex items-center gap-1.5 text-[13px] font-medium ${stop.tone === 'ok' ? 'text-ok' : stop.tone === 'bad' ? 'text-bad' : stop.tone === 'warn' ? 'text-warn' : 'text-muted-foreground'}`}
           >
             <Icon
-              name={stop.tone === 'ok' ? 'check' : stop.tone === 'bad' || stop.tone === 'warn' ? 'warn' : 'clock'}
+              name={
+                stop.tone === 'ok'
+                  ? 'check'
+                  : stop.tone === 'bad' || stop.tone === 'warn'
+                    ? 'warn'
+                    : 'clock'
+              }
               size={14}
               className="shrink-0"
             />

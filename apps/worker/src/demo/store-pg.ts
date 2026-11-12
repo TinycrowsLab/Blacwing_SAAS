@@ -5,10 +5,27 @@ import { DEMO_GENESIS, demoAuditHash, type DemoAuditPayload } from '@blackwing/a
 import { scrub } from '@blackwing/errors/scrub';
 import { newId } from '@blackwing/ids';
 
+import { resumeCaseMap } from './hunt/resume.js';
 import { REPLAYS } from './hunt/validator.js';
 
 import type { ShotResult } from './hunt/screenshot.js';
-import type { ExchangeRow, FindingRow, Gate2CloseReason, Gate2Row, Gate2Status, HuntRun, HuntStore, RetestJob, RetestResult, RunControl, RunEvent, RunOutcome, StaleRun, SummaryFinding } from './hunt/types.js';
+import type {
+  ExchangeRow,
+  FindingRow,
+  Gate2CloseReason,
+  Gate2Row,
+  Gate2Status,
+  HuntRun,
+  HuntStore,
+  ResumeState,
+  RetestJob,
+  RetestResult,
+  RunControl,
+  RunEvent,
+  RunOutcome,
+  StaleRun,
+  SummaryFinding,
+} from './hunt/types.js';
 import type pg from 'pg';
 
 const pinsSchema = z.object({
@@ -30,7 +47,18 @@ const pinsSchema = z.object({
   }),
 });
 
-const testAccountsSchema = z.array(z.object({ role: z.string(), header_name: z.string(), header_value: z.string(), username: z.string().optional(), password: z.string().optional(), login_url: z.string().optional() })).default([]);
+const testAccountsSchema = z
+  .array(
+    z.object({
+      role: z.string(),
+      header_name: z.string(),
+      header_value: z.string(),
+      username: z.string().optional(),
+      password: z.string().optional(),
+      login_url: z.string().optional(),
+    }),
+  )
+  .default([]);
 
 interface ClaimedRow {
   id: string;
@@ -87,7 +115,15 @@ function toHuntRun(row: ClaimedRow): HuntRun {
       role: a.role,
       headerName: a.header_name,
       headerValue: a.header_value,
-      ...(a.username === undefined ? {} : { login: { username: a.username, password: a.password ?? '', loginUrl: a.login_url ?? null } }),
+      ...(a.username === undefined
+        ? {}
+        : {
+            login: {
+              username: a.username,
+              password: a.password ?? '',
+              loginUrl: a.login_url ?? null,
+            },
+          }),
     })),
     releaseProven: pins.request.releaseProven,
     labOrigins: pins.asset.labOrigins,
@@ -108,17 +144,40 @@ async function appendLedger(
   targetId: string,
   payload: DemoAuditPayload,
 ): Promise<void> {
-  await client.query("SELECT pg_advisory_xact_lock(hashtext('demo.audit_events:' || $1::text))", [tenantId]);
+  await client.query("SELECT pg_advisory_xact_lock(hashtext('demo.audit_events:' || $1::text))", [
+    tenantId,
+  ]);
   const last = await client.query<{ seq: number; hash: string }>(
     'SELECT seq, hash FROM demo.audit_events WHERE tenant_id = $1 ORDER BY seq DESC LIMIT 1',
     [tenantId],
   );
   const prevHash = last.rows[0]?.hash ?? DEMO_GENESIS;
-  const fields = { seq: (last.rows[0]?.seq ?? 0) + 1, at: new Date(), actorId: null, actorName: LEDGER_ACTOR, action, targetType, targetId, payload };
+  const fields = {
+    seq: (last.rows[0]?.seq ?? 0) + 1,
+    at: new Date(),
+    actorId: null,
+    actorName: LEDGER_ACTOR,
+    action,
+    targetType,
+    targetId,
+    payload,
+  };
   await client.query(
     `INSERT INTO demo.audit_events (id, tenant_id, seq, actor_id, actor_name, action, target_type, target_id, payload, prev_hash, hash, at)
      VALUES ($1, $2, $3, NULL, $4, $5, $6, $7, $8, $9, $10, $11)`,
-    [newId(), tenantId, fields.seq, LEDGER_ACTOR, action, targetType, targetId, JSON.stringify(payload), prevHash, demoAuditHash(prevHash, fields), fields.at],
+    [
+      newId(),
+      tenantId,
+      fields.seq,
+      LEDGER_ACTOR,
+      action,
+      targetType,
+      targetId,
+      JSON.stringify(payload),
+      prevHash,
+      demoAuditHash(prevHash, fields),
+      fields.at,
+    ],
   );
 }
 
@@ -126,17 +185,32 @@ async function appendLedger(
 const SUPERSEDED_REASON = 'Superseded: the same issue was proven again in a newer audit';
 
 export function pgHuntStore(pool: pg.Pool): HuntStore {
-  const gate2Status = async (id: string): Promise<{ status: Gate2Status; decidedBy: string | null }> => {
-    const r = await pool.query<{ status: Gate2Status; decided_by: string | null }>('SELECT status, decided_by FROM demo.gate2_requests WHERE id = $1', [id]);
+  const gate2Status = async (
+    id: string,
+  ): Promise<{ status: Gate2Status; decidedBy: string | null }> => {
+    const r = await pool.query<{ status: Gate2Status; decided_by: string | null }>(
+      'SELECT status, decided_by FROM demo.gate2_requests WHERE id = $1',
+      [id],
+    );
     const row = r.rows[0];
     return { status: row?.status ?? 'denied', decidedBy: row?.decided_by ?? null };
   };
   /** The close and its `gate2.expired` ledger entry commit together: an expiry is never unrecorded. */
-  const closeGate2 = async (id: string, status: 'denied' | 'expired', reason: Gate2CloseReason): Promise<Gate2Status> => {
+  const closeGate2 = async (
+    id: string,
+    status: 'denied' | 'expired',
+    reason: Gate2CloseReason,
+  ): Promise<Gate2Status> => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const moved = await client.query<{ tenant_id: string; run_id: string; method: string; url: string; deadline_at: Date }>(
+      const moved = await client.query<{
+        tenant_id: string;
+        run_id: string;
+        method: string;
+        url: string;
+        deadline_at: Date;
+      }>(
         `UPDATE demo.gate2_requests SET status = $2, decided_at = now(), close_reason = $3 WHERE id = $1 AND status = 'pending'
          RETURNING tenant_id, run_id, method, url, deadline_at`,
         [id, status, reason],
@@ -168,14 +242,52 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       const row = r.rows[0];
       return row === undefined ? null : toHuntRun(row);
     },
+    async loadResumeState(runId: string): Promise<ResumeState | null> {
+      const cov = await pool.query<{ data: unknown }>(
+        "SELECT data FROM demo.run_events WHERE run_id = $1 AND kind = 'coverage.summary' ORDER BY seq DESC LIMIT 1",
+        [runId],
+      );
+      const data = cov.rows[0]?.data;
+      // No recorded coverage: a fresh run, which starts from recon rather than resuming.
+      if (data === undefined) return null;
+      const run = await pool.query<{ requests_used: number; cost_usd: string }>(
+        'SELECT requests_used, cost_usd FROM demo.runs WHERE id = $1',
+        [runId],
+      );
+      const found = await pool.query<{ n: number }>(
+        "SELECT count(*)::int AS n FROM demo.findings WHERE run_id = $1 AND status IN ('confirmed', 'released')",
+        [runId],
+      );
+      return {
+        cases: resumeCaseMap(data),
+        findings: found.rows[0]?.n ?? 0,
+        requestsUsed: run.rows[0]?.requests_used ?? 0,
+        costUsd: Number(run.rows[0]?.cost_usd ?? 0),
+      };
+    },
     async claimQueuedRetest(): Promise<RetestJob | null> {
-      const r = await pool.query<ClaimedRow & { retest_id: string; finding_id: string; evidence: Record<string, unknown> | null; oracle: unknown }>(CLAIM_RETEST_SQL);
+      const r = await pool.query<
+        ClaimedRow & {
+          retest_id: string;
+          finding_id: string;
+          evidence: Record<string, unknown> | null;
+          oracle: unknown;
+        }
+      >(CLAIM_RETEST_SQL);
       const row = r.rows[0];
       if (row === undefined) return null;
-      const side = (key: string): unknown => (row.evidence?.[key] as { request?: unknown } | undefined)?.request;
+      const side = (key: string): unknown =>
+        (row.evidence?.[key] as { request?: unknown } | undefined)?.request;
       // Only the probe replays and the control may be sent: one request each, nothing more.
       const run = { ...toHuntRun(row), budgetRequests: REPLAYS + 1, budgetSeconds: RETEST_SECONDS };
-      return { id: row.retest_id, findingId: row.finding_id, run, probe: side('probe'), control: side('control'), oracle: row.oracle };
+      return {
+        id: row.retest_id,
+        findingId: row.finding_id,
+        run,
+        probe: side('probe'),
+        control: side('control'),
+        oracle: row.oracle,
+      };
     },
     async finishRetest(id: string, result: RetestResult): Promise<void> {
       await pool.query(
@@ -184,7 +296,13 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       );
     },
     async failStaleRuns(): Promise<StaleRun[]> {
-      const r = await pool.query<{ id: string; request_id: string; requests_used: number; cost_usd: string; findings: number }>(
+      const r = await pool.query<{
+        id: string;
+        request_id: string;
+        requests_used: number;
+        cost_usd: string;
+        findings: number;
+      }>(
         `UPDATE demo.runs r SET state = 'failed', finished_at = now() WHERE state IN ('running', 'paused')
          RETURNING id, request_id, requests_used, cost_usd,
            (SELECT count(*)::int FROM demo.findings f WHERE f.run_id = r.id AND f.status IN ('confirmed', 'released')) AS findings`,
@@ -194,11 +312,21 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         `UPDATE demo.finding_retests SET status = 'failed', finished_at = now(),
            detail = jsonb_build_object('reason', 'The worker restarted during the retest.') WHERE status = 'running'`,
       );
-      const asks = await pool.query<{ id: string }>("SELECT id FROM demo.gate2_requests WHERE run_id = ANY($1) AND status = 'pending'", [ids]);
+      const asks = await pool.query<{ id: string }>(
+        "SELECT id FROM demo.gate2_requests WHERE run_id = ANY($1) AND status = 'pending'",
+        [ids],
+      );
       for (const ask of asks.rows) await closeGate2(ask.id, 'expired', 'worker_restarted');
       // Terminal: the approval was used by this run; another run needs a new Gate 1 decision.
-      await pool.query("UPDATE demo.assessment_requests SET status = 'failed' WHERE id = ANY($1)", [r.rows.map((row) => row.request_id)]);
-      return r.rows.map((row) => ({ id: row.id, requestsUsed: row.requests_used, costUsd: Number(row.cost_usd), findings: row.findings }));
+      await pool.query("UPDATE demo.assessment_requests SET status = 'failed' WHERE id = ANY($1)", [
+        r.rows.map((row) => row.request_id),
+      ]);
+      return r.rows.map((row) => ({
+        id: row.id,
+        requestsUsed: row.requests_used,
+        costUsd: Number(row.cost_usd),
+        findings: row.findings,
+      }));
     },
     /** The API appends events to the same run, so the seq is computed in SQL; a lost race is retried. */
     async appendEvent(runId: string, event: RunEvent): Promise<void> {
@@ -217,12 +345,21 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       }
     },
     async readControl(runId: string): Promise<RunControl> {
-      const r = await pool.query<{ paused: boolean; kill_requested_at: Date | null; kill_requested_by: string | null }>(
-        'SELECT paused, kill_requested_at, kill_requested_by FROM demo.runs WHERE id = $1',
-        [runId],
-      );
+      const r = await pool.query<{
+        paused: boolean;
+        kill_requested_at: Date | null;
+        kill_requested_by: string | null;
+      }>('SELECT paused, kill_requested_at, kill_requested_by FROM demo.runs WHERE id = $1', [
+        runId,
+      ]);
       const row = r.rows[0];
-      return { paused: row?.paused ?? false, kill: row?.kill_requested_at === null || row?.kill_requested_at === undefined ? null : { by: row.kill_requested_by } };
+      return {
+        paused: row?.paused ?? false,
+        kill:
+          row?.kill_requested_at === null || row?.kill_requested_at === undefined
+            ? null
+            : { by: row.kill_requested_by },
+      };
     },
     async insertExchange(run: HuntRun, row: ExchangeRow): Promise<void> {
       await pool.query(
@@ -230,14 +367,31 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
            response_headers, response_body, duration_ms, outcome, reason)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
-          row.id, run.tenantId, run.id, row.seq, row.agent, row.method, row.url, JSON.stringify(row.requestHeaders), row.requestBody,
-          row.status, row.responseHeaders === null ? null : JSON.stringify(row.responseHeaders), row.responseBody, row.durationMs,
-          row.outcome, row.reason,
+          row.id,
+          run.tenantId,
+          run.id,
+          row.seq,
+          row.agent,
+          row.method,
+          row.url,
+          JSON.stringify(row.requestHeaders),
+          row.requestBody,
+          row.status,
+          row.responseHeaders === null ? null : JSON.stringify(row.responseHeaders),
+          row.responseBody,
+          row.durationMs,
+          row.outcome,
+          row.reason,
         ],
       );
     },
     async listExchanges(runId: string, limit: number) {
-      const r = await pool.query<{ method: string; url: string; status: number | null; bytes: number }>(
+      const r = await pool.query<{
+        method: string;
+        url: string;
+        status: number | null;
+        bytes: number;
+      }>(
         "SELECT method, url, status, COALESCE(length(response_body), 0) AS bytes FROM demo.http_exchanges WHERE run_id = $1 AND outcome = 'sent' ORDER BY seq DESC LIMIT $2",
         [runId, limit],
       );
@@ -248,16 +402,33 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         `INSERT INTO demo.gate2_requests (id, tenant_id, run_id, agent, method, url, path_key, intrusiveness, reason, why_outside, deadline_at,
            request_body, as_role)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'state_changing', $8, $9, $10, $11, $12)`,
-        [row.id, run.tenantId, run.id, row.agent, row.method, row.url, row.pathKey, row.reason, row.whyOutside, row.deadlineAt, row.body, row.asRole],
+        [
+          row.id,
+          run.tenantId,
+          run.id,
+          row.agent,
+          row.method,
+          row.url,
+          row.pathKey,
+          row.reason,
+          row.whyOutside,
+          row.deadlineAt,
+          row.body,
+          row.asRole,
+        ],
       );
     },
     readGate2: gate2Status,
     closeGate2,
     /** Asks the run closes itself (run end, kill): `expired`, not `denied` (no person said no), each on the ledger. */
     async closePendingGate2(runId: string, reason: 'run_ended' | 'killed'): Promise<string[]> {
-      const r = await pool.query<{ id: string }>("SELECT id FROM demo.gate2_requests WHERE run_id = $1 AND status = 'pending'", [runId]);
+      const r = await pool.query<{ id: string }>(
+        "SELECT id FROM demo.gate2_requests WHERE run_id = $1 AND status = 'pending'",
+        [runId],
+      );
       const closed: string[] = [];
-      for (const { id } of r.rows) if ((await closeGate2(id, 'expired', reason)) === 'expired') closed.push(id);
+      for (const { id } of r.rows)
+        if ((await closeGate2(id, 'expired', reason)) === 'expired') closed.push(id);
       return closed;
     },
     async insertFinding(run: HuntRun, row: FindingRow): Promise<string | null> {
@@ -278,24 +449,53 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
          }
          RETURNING id`,
         [
-          row.id, run.tenantId, run.id, run.assetId, row.fingerprint, row.title, row.testCaseId, row.vulnClass, row.cwe, row.owasp,
-          JSON.stringify({ level: row.severity }), JSON.stringify(row.location), row.status, JSON.stringify(row.oracle),
-          JSON.stringify(row.evidence), JSON.stringify(row.replay), row.reproCurl, row.agent, row.description, AUTO_RELEASE_REASON,
+          row.id,
+          run.tenantId,
+          run.id,
+          run.assetId,
+          row.fingerprint,
+          row.title,
+          row.testCaseId,
+          row.vulnClass,
+          row.cwe,
+          row.owasp,
+          JSON.stringify({ level: row.severity }),
+          JSON.stringify(row.location),
+          row.status,
+          JSON.stringify(row.oracle),
+          JSON.stringify(row.evidence),
+          JSON.stringify(row.replay),
+          row.reproCurl,
+          row.agent,
+          row.description,
+          AUTO_RELEASE_REASON,
           row.identityKey,
         ],
       );
       return r.rows[0]?.id ?? null;
     },
     async listFindingsForSummary(run: HuntRun): Promise<SummaryFinding[]> {
-      const r = await pool.query<{ title: string; severity: unknown; cwe_id: string; owasp_category: string; status: SummaryFinding['status']; location: Record<string, unknown> | null; remediation: string | null }>(
+      const r = await pool.query<{
+        title: string;
+        severity: unknown;
+        cwe_id: string;
+        owasp_category: string;
+        status: SummaryFinding['status'];
+        location: Record<string, unknown> | null;
+        remediation: string | null;
+      }>(
         `SELECT title, severity, cwe_id, owasp_category, status, location, evidence->>'remediation' AS remediation
          FROM demo.findings WHERE tenant_id = $1 AND run_id = $2 AND status IN ('released', 'confirmed', 'suspected') ORDER BY created_at`,
         [run.tenantId, run.id],
       );
       return r.rows.map((row) => {
-        const level = typeof row.severity === 'string' ? row.severity : (row.severity as { level?: unknown } | null)?.level;
+        const level =
+          typeof row.severity === 'string'
+            ? row.severity
+            : (row.severity as { level?: unknown } | null)?.level;
         const method = typeof row.location?.method === 'string' ? row.location.method : '';
-        const url = typeof row.location?.url === 'string' ? (row.location.url.split(/[?#]/, 1)[0] ?? '') : '';
+        const url =
+          typeof row.location?.url === 'string' ? (row.location.url.split(/[?#]/, 1)[0] ?? '') : '';
         return {
           title: scrub(row.title),
           severity: typeof level === 'string' ? level : 'info',
@@ -310,7 +510,15 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
     async saveScreenshots(run: HuntRun, findingId: string, result: ShotResult): Promise<void> {
       const meta: Record<string, unknown> = { status: result.status, note: result.note };
       for (const shot of result.shots) {
-        meta[shot.kind] = { width: shot.width, height: shot.height, bytes: shot.png.byteLength, mode: shot.mode, method: shot.method, url: shot.url, status: shot.status };
+        meta[shot.kind] = {
+          width: shot.width,
+          height: shot.height,
+          bytes: shot.png.byteLength,
+          mode: shot.mode,
+          method: shot.method,
+          url: shot.url,
+          status: shot.status,
+        };
       }
       const client = await pool.connect();
       try {
@@ -321,7 +529,18 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              ON CONFLICT (finding_id, kind) DO UPDATE SET png = EXCLUDED.png, width = EXCLUDED.width, height = EXCLUDED.height, mode = EXCLUDED.mode,
                request_method = EXCLUDED.request_method, request_url = EXCLUDED.request_url, response_status = EXCLUDED.response_status, created_at = now()`,
-            [findingId, run.tenantId, shot.kind, shot.png, shot.width, shot.height, shot.mode, shot.method, shot.url, shot.status],
+            [
+              findingId,
+              run.tenantId,
+              shot.kind,
+              shot.png,
+              shot.width,
+              shot.height,
+              shot.mode,
+              shot.method,
+              shot.url,
+              shot.status,
+            ],
           );
         }
         await client.query(
@@ -336,8 +555,14 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         client.release();
       }
     },
-    async findingByFingerprint(run: HuntRun, fingerprint: string): Promise<{ id: string; title: string } | null> {
-      const r = await pool.query<{ id: string; title: string }>('SELECT id, title FROM demo.findings WHERE tenant_id = $1 AND fingerprint = $2', [run.tenantId, fingerprint]);
+    async findingByFingerprint(
+      run: HuntRun,
+      fingerprint: string,
+    ): Promise<{ id: string; title: string } | null> {
+      const r = await pool.query<{ id: string; title: string }>(
+        'SELECT id, title FROM demo.findings WHERE tenant_id = $1 AND fingerprint = $2',
+        [run.tenantId, fingerprint],
+      );
       return r.rows[0] ?? null;
     },
     async supersedeCopies(run: HuntRun, findingId: string, identityKey: string): Promise<string[]> {
@@ -350,7 +575,12 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
           [run.tenantId, run.assetId, identityKey, findingId, SUPERSEDED_REASON],
         );
         for (const row of r.rows) {
-          await appendLedger(client, run.tenantId, 'finding.superseded', 'finding', row.id, { runId: row.run_id, by: findingId, byRunId: run.id, reason: SUPERSEDED_REASON });
+          await appendLedger(client, run.tenantId, 'finding.superseded', 'finding', row.id, {
+            runId: row.run_id,
+            by: findingId,
+            byRunId: run.id,
+            reason: SUPERSEDED_REASON,
+          });
         }
         await client.query('COMMIT');
         return r.rows.map((row) => row.id);
@@ -361,18 +591,33 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         client.release();
       }
     },
-    async recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void> {
-      await pool.query('UPDATE demo.findings SET delivery_status = $2, delivery_detail = $3, delivered_at = now() WHERE id = $1', [findingId, status, detail]);
+    async recordDelivery(
+      findingId: string,
+      status: 'delivered' | 'failed',
+      detail: string,
+    ): Promise<void> {
+      await pool.query(
+        'UPDATE demo.findings SET delivery_status = $2, delivery_detail = $3, delivered_at = now() WHERE id = $1',
+        [findingId, status, detail],
+      );
     },
     async saveProgress(runId: string, requestsUsed: number, costUsd: number): Promise<void> {
-      await pool.query('UPDATE demo.runs SET requests_used = $2, cost_usd = $3 WHERE id = $1', [runId, requestsUsed, costUsd]);
+      await pool.query('UPDATE demo.runs SET requests_used = $2, cost_usd = $3 WHERE id = $1', [
+        runId,
+        requestsUsed,
+        costUsd,
+      ]);
     },
     async finishRun(run: HuntRun, outcome: RunOutcome): Promise<void> {
-      await pool.query('UPDATE demo.runs SET state = $2, requests_used = $3, cost_usd = $4, summary = $5, finished_at = now() WHERE id = $1', [
-        run.id, outcome.state, outcome.requestsUsed, outcome.costUsd, outcome.summary,
-      ]);
+      await pool.query(
+        'UPDATE demo.runs SET state = $2, requests_used = $3, cost_usd = $4, summary = $5, finished_at = now() WHERE id = $1',
+        [run.id, outcome.state, outcome.requestsUsed, outcome.costUsd, outcome.summary],
+      );
       // Terminal either way: an approval starts one run (a failed run needs a new Gate 1 decision).
-      await pool.query('UPDATE demo.assessment_requests SET status = $3 WHERE tenant_id = $1 AND id = $2', [run.tenantId, run.requestId, outcome.state]);
+      await pool.query(
+        'UPDATE demo.assessment_requests SET status = $3 WHERE tenant_id = $1 AND id = $2',
+        [run.tenantId, run.requestId, outcome.state],
+      );
     },
     async markKilled(run: HuntRun): Promise<number> {
       const r = await pool.query<{ halt_ms: number }>(
@@ -381,7 +626,10 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
          WHERE id = $1 RETURNING halt_ms`,
         [run.id],
       );
-      await pool.query("UPDATE demo.assessment_requests SET status = 'killed' WHERE tenant_id = $1 AND id = $2", [run.tenantId, run.requestId]);
+      await pool.query(
+        "UPDATE demo.assessment_requests SET status = 'killed' WHERE tenant_id = $1 AND id = $2",
+        [run.tenantId, run.requestId],
+      );
       return r.rows[0]?.halt_ms ?? 0;
     },
   };

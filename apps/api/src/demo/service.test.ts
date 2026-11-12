@@ -2,7 +2,14 @@
 // the Gate 2 countdown and the ownership proof.
 import { describe, expect, it, vi } from 'vitest';
 
-import { amendRequestSchema, gate2DecideAllSchema, gate2DecisionSchema, killScopeSchema, triageManySchema, workspaceSchema } from './controller.js';
+import {
+  amendRequestSchema,
+  gate2DecideAllSchema,
+  gate2DecisionSchema,
+  killScopeSchema,
+  triageManySchema,
+  workspaceSchema,
+} from './controller.js';
 import {
   ALL_ROLES,
   DemoRefusal,
@@ -30,7 +37,8 @@ const policy: OriginPolicy = {
   platformPorts: [3000, 13400, 13401],
 };
 /** app.example.com and friends resolve to a public documentation address; IP literals resolve to themselves. */
-const lookup: Lookup = (host) => Promise.resolve([/^[\d.]+$/.test(host) || host.includes(':') ? host : '93.184.216.34']);
+const lookup: Lookup = (host) =>
+  Promise.resolve([/^[\d.]+$/.test(host) || host.includes(':') ? host : '93.184.216.34']);
 const options = { gate2TimeoutS: 300, origins: policy, lookup };
 const webhookOff = { webhookUrl: null, consoleOrigin: 'http://localhost:3000' };
 
@@ -47,7 +55,11 @@ describe('actorHasRole', () => {
 describe('originsOf', () => {
   it('reduces URLs to scheme, host and port and removes duplicates', () => {
     expect(
-      originsOf(['https://shop.example.com/app?q=1', 'https://shop.example.com/', 'https://api.example.com:8443/v1']),
+      originsOf([
+        'https://shop.example.com/app?q=1',
+        'https://shop.example.com/',
+        'https://api.example.com:8443/v1',
+      ]),
     ).toEqual(['https://shop.example.com', 'https://api.example.com:8443']);
   });
 });
@@ -85,7 +97,10 @@ function serviceWith(row: AssetRow) {
     markAssetVerified: vi.fn().mockResolvedValue(true),
     appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
   };
-  return { store, service: new DemoService(store as unknown as DemoStore, 't1', vi.fn(), webhookOff, options) };
+  return {
+    store,
+    service: new DemoService(store as unknown as DemoStore, 't1', vi.fn(), webhookOff, options),
+  };
 }
 
 describe('verifyAsset (owner attestation)', () => {
@@ -99,7 +114,12 @@ describe('verifyAsset (owner attestation)', () => {
       't1',
       expect.objectContaining({
         action: 'asset.verified',
-        payload: { method: 'owner_attestation', origin: 'https://app.example.com', statement, lab: false },
+        payload: {
+          method: 'owner_attestation',
+          origin: 'https://app.example.com',
+          statement,
+          lab: false,
+        },
       }),
     );
   });
@@ -107,17 +127,26 @@ describe('verifyAsset (owner attestation)', () => {
   it('only an asset owner may verify', async () => {
     const { store, service } = serviceWith(asset('abc123'));
     const engineer = { ...owner, roles: ['appsec-engineer'] };
-    await expect(service.verifyAsset(engineer, 'a1', { statement })).rejects.toBeInstanceOf(DemoRefusal);
+    await expect(service.verifyAsset(engineer, 'a1', { statement })).rejects.toBeInstanceOf(
+      DemoRefusal,
+    );
     expect(store.markAssetVerified).not.toHaveBeenCalled();
   });
 
-  it.each(['http://169.254.169.254', 'http://0.0.0.0', 'http://localhost:3000'])('still refuses %s', async (url) => {
-    const { store, service } = serviceWith({ ...asset('t'), base_url: url, allowed_origins: [url] });
-    await expect(service.verifyAsset(owner, 'a1', { statement })).rejects.toMatchObject({
-      response: { code: 'target_not_allowed' },
-    });
-    expect(store.markAssetVerified).not.toHaveBeenCalled();
-  });
+  it.each(['http://169.254.169.254', 'http://0.0.0.0', 'http://localhost:3000'])(
+    'still refuses %s',
+    async (url) => {
+      const { store, service } = serviceWith({
+        ...asset('t'),
+        base_url: url,
+        allowed_origins: [url],
+      });
+      await expect(service.verifyAsset(owner, 'a1', { statement })).rejects.toMatchObject({
+        response: { code: 'target_not_allowed' },
+      });
+      expect(store.markAssetVerified).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('kill', () => {
@@ -146,7 +175,10 @@ describe('kill', () => {
     expect(result.audit).toEqual({ eventId: 'e1', hash: 'h1' });
     expect(store.appendAudit).toHaveBeenCalledWith(
       't1',
-      expect.objectContaining({ action: 'run.kill', payload: { confirm: shortId(run.id).toUpperCase(), queued: false } }),
+      expect.objectContaining({
+        action: 'run.kill',
+        payload: { confirm: shortId(run.id).toUpperCase(), queued: false },
+      }),
     );
   });
 });
@@ -173,14 +205,22 @@ describe('kill with a blast radius', () => {
       getAsset: vi.fn().mockResolvedValue({ id: assetA, name: 'Shop' }),
       getTenant: vi.fn().mockResolvedValue({ id: 't1', name: opts.tenantName ?? 'Tiny Crows' }),
       killQueuedRun: vi.fn((_t: string, id: string) =>
-        Promise.resolve(runs.find((r) => r.id === id)?.state === 'queued' ? new Date('2026-11-05T10:00:00Z') : null),
+        Promise.resolve(
+          runs.find((r) => r.id === id)?.state === 'queued'
+            ? new Date('2026-11-05T10:00:00Z')
+            : null,
+        ),
       ),
       requestKill: vi.fn((_t: string, id: string) =>
-        Promise.resolve(opts.ended?.includes(id) === true ? null : new Date('2026-11-05T10:00:01Z')),
+        Promise.resolve(
+          opts.ended?.includes(id) === true ? null : new Date('2026-11-05T10:00:01Z'),
+        ),
       ),
       appendEvent: vi.fn(),
       appendAudits: vi.fn((_t: string, entries: readonly unknown[]) =>
-        Promise.resolve(entries.map(() => ({ eventId: `e${String((seq += 1))}`, hash: `h${String(seq)}` }))),
+        Promise.resolve(
+          entries.map(() => ({ eventId: `e${String((seq += 1))}`, hash: `h${String(seq)}` })),
+        ),
       ),
     };
     return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
@@ -188,17 +228,30 @@ describe('kill with a blast radius', () => {
 
   it('stops every live run on the target, one ledger entry per run and one for the scope', async () => {
     const { store, service } = scopeService();
-    await expect(service.killScope(actor, { scope: 'target', assetId: assetA, confirm: 'nope' })).rejects.toMatchObject({
+    await expect(
+      service.killScope(actor, { scope: 'target', assetId: assetA, confirm: 'nope' }),
+    ).rejects.toMatchObject({
       response: { code: 'kill_confirmation_mismatch' },
     });
     expect(store.requestKill).not.toHaveBeenCalled();
-    const result = await service.killScope(actor, { scope: 'target', assetId: assetA, confirm: '  shop ' });
+    const result = await service.killScope(actor, {
+      scope: 'target',
+      assetId: assetA,
+      confirm: '  shop ',
+    });
     expect(result.runs.map((r) => r.id)).toEqual(['r1', 'r2']);
     expect(result.killRequestedAt).toBe('2026-11-05T10:00:00.000Z');
     expect(store.requestKill).not.toHaveBeenCalledWith('t1', 'r3', 'u2');
-    const entries = store.appendAudits.mock.calls[0]?.[1] as { action: string; targetType: string; payload: unknown }[];
+    const entries = store.appendAudits.mock.calls[0]?.[1] as {
+      action: string;
+      targetType: string;
+      payload: unknown;
+    }[];
     expect(entries.map((e) => e.action)).toEqual(['run.kill', 'run.kill', 'kill.scope']);
-    expect(entries[2]).toMatchObject({ targetType: 'asset', payload: { scope: 'target', runs: 2, runIds: 'r1,r2' } });
+    expect(entries[2]).toMatchObject({
+      targetType: 'asset',
+      payload: { scope: 'target', runs: 2, runIds: 'r1,r2' },
+    });
     expect(result.audit).toEqual({ eventId: 'e3', hash: 'h3' });
   });
 
@@ -213,7 +266,9 @@ describe('kill with a blast radius', () => {
   it('refuses when nothing in the scope is live, and writes nothing', async () => {
     const { store, service } = scopeService({ ended: ['r1', 'r3'] });
     store.listLiveRuns.mockResolvedValue(runs.filter((r) => r.id !== 'r2'));
-    await expect(service.killScope(actor, { scope: 'workspace', confirm: 'Tiny Crows' })).rejects.toMatchObject({
+    await expect(
+      service.killScope(actor, { scope: 'workspace', confirm: 'Tiny Crows' }),
+    ).rejects.toMatchObject({
       response: { code: 'run_not_running' },
     });
     expect(store.appendAudits).not.toHaveBeenCalled();
@@ -232,11 +287,22 @@ describe('kill with a blast radius', () => {
 
 describe('createAsset', () => {
   const engineer = { ...owner, roles: ['appsec-engineer'] };
-  const input = { name: 'Again', baseUrl: 'https://app.example.com/other', extraOrigins: [], excludedPaths: [] };
+  const input = {
+    name: 'Again',
+    baseUrl: 'https://app.example.com/other',
+    extraOrigins: [],
+    excludedPaths: [],
+  };
 
   it('returns the existing asset for an origin that is already registered and inserts nothing', async () => {
     const store = { listAssets: vi.fn().mockResolvedValue([asset('abc')]), insertAsset: vi.fn() };
-    const service = new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options);
+    const service = new DemoService(
+      store as unknown as DemoStore,
+      't1',
+      fetch,
+      webhookOff,
+      options,
+    );
     const dto = await service.createAsset(engineer, input);
     expect(dto.id).toBe('a1');
     expect(store.insertAsset).not.toHaveBeenCalled();
@@ -246,8 +312,13 @@ describe('createAsset', () => {
 describe('Gate 2 decision body', () => {
   it('needs a reason of at least 8 characters to approve, and none to deny', () => {
     expect(gate2DecisionSchema.safeParse({ decision: 'approve' }).success).toBe(false);
-    expect(gate2DecisionSchema.safeParse({ decision: 'approve', reason: ' short ' }).success).toBe(false);
-    expect(gate2DecisionSchema.safeParse({ decision: 'approve', reason: 'safe, read-only probe' }).success).toBe(true);
+    expect(gate2DecisionSchema.safeParse({ decision: 'approve', reason: ' short ' }).success).toBe(
+      false,
+    );
+    expect(
+      gate2DecisionSchema.safeParse({ decision: 'approve', reason: 'safe, read-only probe' })
+        .success,
+    ).toBe(true);
     expect(gate2DecisionSchema.safeParse({ decision: 'deny' }).success).toBe(true);
   });
 });
@@ -290,7 +361,9 @@ describe('triage', () => {
 
   it('only an AppSec engineer may triage', async () => {
     const { store, service } = triageService('suspected', true);
-    await expect(service.triage(owner, 'f1', 'release', 'real issue, confirmed by hand')).rejects.toMatchObject({
+    await expect(
+      service.triage(owner, 'f1', 'release', 'real issue, confirmed by hand'),
+    ).rejects.toMatchObject({
       response: { code: 'role_required' },
     });
     expect(store.triageFinding).not.toHaveBeenCalled();
@@ -299,15 +372,27 @@ describe('triage', () => {
   it('releases a suspected finding, appends the audit and run event, and skips delivery without a webhook', async () => {
     const { store, service } = triageService('suspected', true);
     const dto = await service.triage(engineer, 'f1', 'release', 'real issue, confirmed by hand');
-    expect(store.triageFinding).toHaveBeenCalledWith('t1', 'f1', ['suspected', 'confirmed'], 'released', 'u1', 'real issue, confirmed by hand');
-    expect(store.appendEvent).toHaveBeenCalledWith('r1', expect.objectContaining({ kind: 'finding.released' }));
+    expect(store.triageFinding).toHaveBeenCalledWith(
+      't1',
+      'f1',
+      ['suspected', 'confirmed'],
+      'released',
+      'u1',
+      'real issue, confirmed by hand',
+    );
+    expect(store.appendEvent).toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({ kind: 'finding.released' }),
+    );
     expect(store.recordDelivery).not.toHaveBeenCalled();
     expect(dto.audit).toEqual({ eventId: 'e1', hash: 'h1' });
   });
 
   it('refuses a transition the conditional update rejects', async () => {
     const { service } = triageService('dismissed', false);
-    await expect(service.triage(engineer, 'f1', 'release', 'second thoughts here')).rejects.toMatchObject({
+    await expect(
+      service.triage(engineer, 'f1', 'release', 'second thoughts here'),
+    ).rejects.toMatchObject({
       response: { code: 'finding_not_triageable' },
     });
   });
@@ -325,7 +410,9 @@ describe('triage', () => {
 
   it('hides a suspected finding from a non-AppSec actor', async () => {
     const { service } = triageService('suspected', true);
-    await expect(service.finding(owner, 'f1')).rejects.toMatchObject({ response: { code: 'not_found' } });
+    await expect(service.finding(owner, 'f1')).rejects.toMatchObject({
+      response: { code: 'not_found' },
+    });
   });
 });
 
@@ -333,10 +420,26 @@ describe('run events', () => {
   it('hides finding.suspected events from a non-AppSec actor', async () => {
     const at = new Date();
     const store = {
-      getRun: vi.fn().mockResolvedValue({ id: 'r1', state: 'running', created_at: at, started_at: null, finished_at: null, kill_requested_at: null }),
+      getRun: vi
+        .fn()
+        .mockResolvedValue({
+          id: 'r1',
+          state: 'running',
+          created_at: at,
+          started_at: null,
+          finished_at: null,
+          kill_requested_at: null,
+        }),
       listEvents: vi.fn().mockResolvedValue([
         { seq: 1, kind: 'http.sent', stage: 'recon', message: 'GET', data: {}, at },
-        { seq: 2, kind: 'finding.suspected', stage: 'validator', message: 'Suspected: T', data: {}, at },
+        {
+          seq: 2,
+          kind: 'finding.suspected',
+          stage: 'validator',
+          message: 'Suspected: T',
+          data: {},
+          at,
+        },
       ]),
       listFindingsForRun: vi.fn().mockResolvedValue([]),
       listGate2ForRun: vi.fn().mockResolvedValue([]),
@@ -345,15 +448,26 @@ describe('run events', () => {
     };
     const service = new DemoService(store as unknown as DemoStore, 't1');
     const view = async (roles: string[]) =>
-      ((await service.run({ ...owner, roles }, 'r1', 0)) as { events: { kind: string }[]; lastSeq: number });
+      (await service.run({ ...owner, roles }, 'r1', 0)) as {
+        events: { kind: string }[];
+        lastSeq: number;
+      };
     expect((await view(['asset-owner'])).events.map((e) => e.kind)).toEqual(['http.sent']);
     expect((await view(['asset-owner'])).lastSeq).toBe(2);
-    expect((await view(['appsec-engineer'])).events.map((e) => e.kind)).toEqual(['http.sent', 'finding.suspected']);
+    expect((await view(['appsec-engineer'])).events.map((e) => e.kind)).toEqual([
+      'http.sent',
+      'finding.suspected',
+    ]);
   });
 });
 
 describe('demo admin self-approval', () => {
-  const requester = { id: 'u1', email: 'a@acme.test', name: 'A', roles: ['appsec-engineer', 'asset-owner'] };
+  const requester = {
+    id: 'u1',
+    email: 'a@acme.test',
+    name: 'A',
+    roles: ['appsec-engineer', 'asset-owner'],
+  };
   const admin = { ...requester, roles: [...ALL_ROLES], admin: true };
   const requestRow = (status: string) =>
     ({
@@ -389,7 +503,10 @@ describe('demo admin self-approval', () => {
       latestAudit: vi.fn().mockResolvedValue(null),
       ...extra,
     };
-    return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options) };
+    return {
+      store,
+      service: new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options),
+    };
   }
 
   it('lets the admin approve its own Gate 1 request and marks it in the audit payload', async () => {
@@ -448,7 +565,10 @@ describe('workspace (B1)', () => {
       store as unknown as DemoStore,
       't1',
       fetch,
-      { webhookUrl: 'https://hooks.example.com/services/SECRET', consoleOrigin: 'http://console.test' },
+      {
+        webhookUrl: 'https://hooks.example.com/services/SECRET',
+        consoleOrigin: 'http://console.test',
+      },
       { gate2TimeoutS: 120 },
     );
     return { store, service };
@@ -490,7 +610,11 @@ describe('workspace (B1)', () => {
     expect(store.renameTenant).toHaveBeenCalledWith('t1', 'Tinycrows');
     expect(store.appendAudit).toHaveBeenCalledWith(
       't1',
-      expect.objectContaining({ action: 'workspace.named', targetType: 'tenant', payload: { name: 'Tinycrows' } }),
+      expect.objectContaining({
+        action: 'workspace.named',
+        targetType: 'tenant',
+        payload: { name: 'Tinycrows' },
+      }),
     );
   });
 
@@ -511,20 +635,35 @@ describe('workspace (B1)', () => {
   it('adds the tenant name to the dashboard', async () => {
     const store = {
       getTenant: vi.fn().mockResolvedValue({ id: 't1', name: 'Tinycrows' }),
-      dashboardCounts: vi.fn().mockResolvedValue({ assets: 0, requestsPendingGate1: 0, runsRunning: 0, confirmedFindings: 0 }),
+      dashboardCounts: vi
+        .fn()
+        .mockResolvedValue({
+          assets: 0,
+          requestsPendingGate1: 0,
+          runsRunning: 0,
+          confirmedFindings: 0,
+        }),
       listAssets: vi.fn().mockResolvedValue([]),
       listPendingGate1: vi.fn().mockResolvedValue([]),
       listRuns: vi.fn().mockResolvedValue([]),
       listFindings: vi.fn().mockResolvedValue([]),
       listAwaitingFindings: vi.fn().mockResolvedValue([]),
       listPendingGate2: vi.fn().mockResolvedValue([]),
-      pendingCounts: vi.fn().mockResolvedValue({ gate1: 3, gate2: 1, gate3: 56, keptBack: 7, live: 2 }),
+      pendingCounts: vi
+        .fn()
+        .mockResolvedValue({ gate1: 3, gate2: 1, gate3: 56, keptBack: 7, live: 2 }),
       listLiveRuns: vi.fn().mockResolvedValue([]),
     };
     const service = new DemoService(store as unknown as DemoStore, 't1');
     const dashboard = await service.dashboard(admin);
     expect(dashboard.tenant).toEqual({ id: 't1', name: 'Tinycrows' });
-    expect(dashboard.pendingCounts).toEqual({ gate1: 3, gate2: 1, gate3: 56, keptBack: 7, live: 2 });
+    expect(dashboard.pendingCounts).toEqual({
+      gate1: 3,
+      gate2: 1,
+      gate3: 56,
+      keptBack: 7,
+      live: 2,
+    });
     expect(store.pendingCounts).toHaveBeenCalledWith('t1', true);
     expect(dashboard.liveRuns).toEqual([]);
   });
@@ -548,7 +687,9 @@ describe('release mode (B3) and retest clone (B5)', () => {
       budget_requests: 300,
       budget_seconds: 600,
       cost_cap_usd: '3',
-      test_accounts: [{ role: 'customer_a', header_name: 'Authorization', header_value: 'Bearer secret-a' }],
+      test_accounts: [
+        { role: 'customer_a', header_name: 'Authorization', header_value: 'Bearer secret-a' },
+      ],
       status: 'completed',
       decision_reason: null,
       decided_at: null,
@@ -588,14 +729,49 @@ describe('release mode (B3) and retest clone (B5)', () => {
   it('stores a login-form account server-side and never reads its password back', async () => {
     const { store, service } = requestService(stored({ excludedPaths: [], releaseProven: 'hold' }));
     await service.createRequest(engineer, {
-      assetId: 'a1', objective: 'x', intrusiveness: 'active_safe', budgetRequests: 300, budgetSeconds: 600, costCapUsd: 3, excludedPaths: [], releaseProven: 'hold',
-      testAccounts: [{ role: 'admin', username: 'admin', password: 'hunter2-pw', loginUrl: 'http://t.test/login.php' }],
+      assetId: 'a1',
+      objective: 'x',
+      intrusiveness: 'active_safe',
+      budgetRequests: 300,
+      budgetSeconds: 600,
+      costCapUsd: 3,
+      excludedPaths: [],
+      releaseProven: 'hold',
+      testAccounts: [
+        {
+          role: 'admin',
+          username: 'admin',
+          password: 'hunter2-pw',
+          loginUrl: 'http://t.test/login.php',
+        },
+      ],
     });
     expect(store.insertRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ test_accounts: [{ role: 'admin', header_name: 'Cookie', header_value: '', username: 'admin', password: 'hunter2-pw', login_url: 'http://t.test/login.php' }] }),
+      expect.objectContaining({
+        test_accounts: [
+          {
+            role: 'admin',
+            header_name: 'Cookie',
+            header_value: '',
+            username: 'admin',
+            password: 'hunter2-pw',
+            login_url: 'http://t.test/login.php',
+          },
+        ],
+      }),
     );
-    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'admin', username: 'admin' }] }).success).toBe(true);
-    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'admin', username: 'admin', headerName: 'X' }] }).success).toBe(false);
+    expect(
+      amendRequestSchema.safeParse({
+        version: 1,
+        testAccounts: [{ role: 'admin', username: 'admin' }],
+      }).success,
+    ).toBe(true);
+    expect(
+      amendRequestSchema.safeParse({
+        version: 1,
+        testAccounts: [{ role: 'admin', username: 'admin', headerName: 'X' }],
+      }).success,
+    ).toBe(false);
   });
 
   it('treats a request created before release modes as auto (unchanged behaviour)', async () => {
@@ -604,7 +780,9 @@ describe('release mode (B3) and retest clone (B5)', () => {
   });
 
   it('clones a request with its answers and test-account values kept server-side', async () => {
-    const { store, service } = requestService(stored({ excludedPaths: ['/admin'], releaseProven: 'hold' }));
+    const { store, service } = requestService(
+      stored({ excludedPaths: ['/admin'], releaseProven: 'hold' }),
+    );
     const dto = await service.cloneRequest(engineer, 'q1');
     expect(store.insertRequest).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -615,7 +793,9 @@ describe('release mode (B3) and retest clone (B5)', () => {
         budget_seconds: 600,
         cost_cap_usd: 3,
         scope: { excludedPaths: ['/admin'], releaseProven: 'hold' },
-        test_accounts: [{ role: 'customer_a', header_name: 'Authorization', header_value: 'Bearer secret-a' }],
+        test_accounts: [
+          { role: 'customer_a', header_name: 'Authorization', header_value: 'Bearer secret-a' },
+        ],
       }),
     );
     expect(JSON.stringify(dto)).not.toContain('secret-a');
@@ -624,7 +804,9 @@ describe('release mode (B3) and retest clone (B5)', () => {
 
   it('refuses a clone without the appsec role', async () => {
     const { store, service } = requestService(stored({}));
-    await expect(service.cloneRequest({ ...engineer, roles: ['auditor'] }, 'q1')).rejects.toBeInstanceOf(DemoRefusal);
+    await expect(
+      service.cloneRequest({ ...engineer, roles: ['auditor'] }, 'q1'),
+    ).rejects.toBeInstanceOf(DemoRefusal);
     expect(store.insertRequest).not.toHaveBeenCalled();
   });
 });
@@ -684,9 +866,16 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
     ['http://127.0.0.1:8091', 'listed it as a lab'],
   ])('refuses to register %s', async (baseUrl, words) => {
     const store = storeWith(lab);
-    const refusal = make(store).createAsset(engineer, { name: 'x', baseUrl, extraOrigins: [], excludedPaths: [] });
+    const refusal = make(store).createAsset(engineer, {
+      name: 'x',
+      baseUrl,
+      extraOrigins: [],
+      excludedPaths: [],
+    });
     await expect(refusal).rejects.toMatchObject({ response: { code: 'target_not_allowed' } });
-    await expect(refusal).rejects.toMatchObject({ response: { detail: expect.stringContaining(words) as unknown } });
+    await expect(refusal).rejects.toMatchObject({
+      response: { detail: expect.stringContaining(words) as unknown },
+    });
     expect(store.insertAsset).not.toHaveBeenCalled();
   });
 
@@ -703,7 +892,11 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
   });
 
   it('lets an attestation stand without any file at Gate 1', async () => {
-    const attested: AssetRow = { ...asset('tok'), ownership_status: 'verified', verification_method: 'owner_attestation' };
+    const attested: AssetRow = {
+      ...asset('tok'),
+      ownership_status: 'verified',
+      verification_method: 'owner_attestation',
+    };
     const store = storeWith(attested);
     const fetchImpl = vi.fn(() => Promise.resolve(new Response('gone', { status: 404 })));
     await make(store, fetchImpl).decideGate1(approver, 'q1', 'approve', null);
@@ -712,9 +905,12 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
   });
 
   it('rechecks at run start: an attested asset that is no longer a lab cannot start', async () => {
-    const store = storeWith({ ...lab, base_url: 'http://127.0.0.1:8091', allowed_origins: ['http://127.0.0.1:8091'] }, {
-      getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }),
-    });
+    const store = storeWith(
+      { ...lab, base_url: 'http://127.0.0.1:8091', allowed_origins: ['http://127.0.0.1:8091'] },
+      {
+        getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }),
+      },
+    );
     await expect(make(store).startRun(engineer, 'q1')).rejects.toMatchObject({
       response: { code: 'ownership_recheck_failed' },
     });
@@ -722,9 +918,15 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
   });
 
   it('pins the lab origins, drops the signing key id, and ledgers run.started with the approval', async () => {
-    const store = storeWith(lab, { getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }) });
+    const store = storeWith(lab, {
+      getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }),
+    });
     const started = await make(store).startRun(engineer, 'q1');
-    const pins = (store.insertRun.mock.calls[0]?.[0] as { pins: { asset: { labOrigins: string[] }; authorisation: Record<string, unknown> } }).pins;
+    const pins = (
+      store.insertRun.mock.calls[0]?.[0] as {
+        pins: { asset: { labOrigins: string[] }; authorisation: Record<string, unknown> };
+      }
+    ).pins;
     expect(pins.asset.labOrigins).toEqual(['http://127.0.0.1:3001']);
     expect(pins.authorisation).not.toHaveProperty('keyId');
     expect(store.latestAudit).toHaveBeenCalledWith('t1', 'request', 'q1', 'gate1.approve');
@@ -733,7 +935,12 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
       expect.objectContaining({
         action: 'run.started',
         targetId: started.id,
-        payload: { requestId: 'q1', approvalEventId: 'approve-1', version: 2, labOrigins: 'http://127.0.0.1:3001' },
+        payload: {
+          requestId: 'q1',
+          approvalEventId: 'approve-1',
+          version: 2,
+          labOrigins: 'http://127.0.0.1:3001',
+        },
       }),
     );
   });
@@ -743,21 +950,27 @@ describe('ownership allow-list and recheck (P0-5a)', () => {
       getRequest: vi.fn().mockResolvedValue({ ...pending, status: 'approved' }),
       findRunByRequest: vi.fn().mockResolvedValue({ id: 'r0' }),
     });
-    await expect(make(store).startRun(engineer, 'q1')).rejects.toMatchObject({ response: { code: 'run_already_started' } });
+    await expect(make(store).startRun(engineer, 'q1')).rejects.toMatchObject({
+      response: { code: 'run_already_started' },
+    });
     expect(store.claimRequestForRun).not.toHaveBeenCalled();
   });
 
   it('refuses a Gate 1 decision on an older plan version', async () => {
     const store = storeWith(lab);
-    await expect(make(store).decideGate1(approver, 'q1', 'approve', null, 1)).rejects.toMatchObject({
-      response: { code: 'plan_changed' },
-    });
+    await expect(make(store).decideGate1(approver, 'q1', 'approve', null, 1)).rejects.toMatchObject(
+      {
+        response: { code: 'plan_changed' },
+      },
+    );
     await make(store).decideGate1(approver, 'q1', 'approve', null, 2);
     expect(store.decideRequest).toHaveBeenCalledWith('t1', 'q1', 'u2', 'approved', null, 2);
-    expect(store.appendAudit).toHaveBeenCalledWith('t1', expect.objectContaining({ payload: expect.objectContaining({ version: 2 }) as unknown }));
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ payload: expect.objectContaining({ version: 2 }) as unknown }),
+    );
   });
 });
-
 
 describe('PATCH /requests/:id (P0-8a)', () => {
   const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
@@ -770,7 +983,9 @@ describe('PATCH /requests/:id (P0-8a)', () => {
     objective: 'Look.',
     scope: { excludedPaths: ['/setup.php'], releaseProven: 'hold' },
     intrusiveness: 'passive',
-    test_accounts: [{ role: 'alice', header_name: 'Authorization', header_value: 'Bearer alice-secret' }],
+    test_accounts: [
+      { role: 'alice', header_name: 'Authorization', header_value: 'Bearer alice-secret' },
+    ],
     budget_requests: 300,
     budget_seconds: 900,
     cost_cap_usd: '4.00',
@@ -799,17 +1014,30 @@ describe('PATCH /requests/:id (P0-8a)', () => {
         { role: 'bob', headerName: 'Authorization', headerValue: 'Bearer bob-secret' },
       ],
     });
-    expect(store.amendRequest).toHaveBeenCalledWith('t1', 'q1', 3, expect.objectContaining({
-      objective: 'Look harder.',
-      test_accounts: [
-        { role: 'Alice', header_name: 'authorization', header_value: 'Bearer alice-secret' },
-        { role: 'bob', header_name: 'Authorization', header_value: 'Bearer bob-secret' },
-      ],
-      scope: { excludedPaths: ['/setup.php'], releaseProven: 'hold' },
-    }));
-    const entry = store.appendAudit.mock.calls[0]?.[1] as { action: string; payload: Record<string, unknown> };
+    expect(store.amendRequest).toHaveBeenCalledWith(
+      't1',
+      'q1',
+      3,
+      expect.objectContaining({
+        objective: 'Look harder.',
+        test_accounts: [
+          { role: 'Alice', header_name: 'authorization', header_value: 'Bearer alice-secret' },
+          { role: 'bob', header_name: 'Authorization', header_value: 'Bearer bob-secret' },
+        ],
+        scope: { excludedPaths: ['/setup.php'], releaseProven: 'hold' },
+      }),
+    );
+    const entry = store.appendAudit.mock.calls[0]?.[1] as {
+      action: string;
+      payload: Record<string, unknown>;
+    };
     expect(entry.action).toBe('gate1.amend');
-    expect(entry.payload).toMatchObject({ version: 4, changed: 'objective,testAccounts', budget: '300 requests, 900 s, $4.00', accounts: 'Alice,bob' });
+    expect(entry.payload).toMatchObject({
+      version: 4,
+      changed: 'objective,testAccounts',
+      budget: '300 requests, 900 s, $4.00',
+      accounts: 'Alice,bob',
+    });
     expect(JSON.stringify(entry.payload)).not.toContain('secret');
     expect(JSON.stringify(dto)).not.toContain('secret');
     expect(dto.audit).toEqual({ eventId: 'e9', hash: 'h9' });
@@ -818,30 +1046,52 @@ describe('PATCH /requests/:id (P0-8a)', () => {
   it('refuses an account without a value that does not match a saved role and header', async () => {
     const { store, service } = amendService();
     await expect(
-      service.amendRequest(engineer, 'q1', { version: 3, testAccounts: [{ role: 'carol', headerName: 'Authorization' }] }),
-    ).rejects.toMatchObject({ response: { code: 'account_value_missing', detail: expect.stringContaining('carol') as unknown } });
+      service.amendRequest(engineer, 'q1', {
+        version: 3,
+        testAccounts: [{ role: 'carol', headerName: 'Authorization' }],
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'account_value_missing',
+        detail: expect.stringContaining('carol') as unknown,
+      },
+    });
     await expect(
-      service.amendRequest(engineer, 'q1', { version: 3, testAccounts: [{ role: 'alice', headerName: 'Cookie' }] }),
+      service.amendRequest(engineer, 'q1', {
+        version: 3,
+        testAccounts: [{ role: 'alice', headerName: 'Cookie' }],
+      }),
     ).rejects.toMatchObject({ response: { code: 'account_value_missing' } });
     expect(store.amendRequest).not.toHaveBeenCalled();
   });
 
   it('answers plan_changed for a stale version or a lost race, and request_not_pending once decided', async () => {
-    await expect(amendService().service.amendRequest(engineer, 'q1', { version: 2, objective: 'x' })).rejects.toMatchObject({
+    await expect(
+      amendService().service.amendRequest(engineer, 'q1', { version: 2, objective: 'x' }),
+    ).rejects.toMatchObject({
       response: { code: 'plan_changed' },
     });
-    await expect(amendService(null).service.amendRequest(engineer, 'q1', { version: 3, objective: 'x' })).rejects.toMatchObject({
+    await expect(
+      amendService(null).service.amendRequest(engineer, 'q1', { version: 3, objective: 'x' }),
+    ).rejects.toMatchObject({
       response: { code: 'plan_changed' },
     });
     const decided = { ...row, status: 'approved' } as RequestRow;
-    await expect(amendService(null, decided).service.amendRequest(engineer, 'q1', { version: 3, objective: 'x' })).rejects.toMatchObject({
+    await expect(
+      amendService(null, decided).service.amendRequest(engineer, 'q1', {
+        version: 3,
+        objective: 'x',
+      }),
+    ).rejects.toMatchObject({
       response: { code: 'request_not_pending' },
     });
   });
 
   it('lets only the requester (or an administrator) edit', async () => {
     const other = { ...engineer, id: 'u9' };
-    await expect(amendService().service.amendRequest(other, 'q1', { version: 3, objective: 'x' })).rejects.toMatchObject({
+    await expect(
+      amendService().service.amendRequest(other, 'q1', { version: 3, objective: 'x' }),
+    ).rejects.toMatchObject({
       response: { code: 'not_requester' },
     });
     const { store, service } = amendService();
@@ -853,8 +1103,21 @@ describe('PATCH /requests/:id (P0-8a)', () => {
     expect(amendRequestSchema.safeParse({ objective: 'x' }).success).toBe(false);
     expect(amendRequestSchema.safeParse({ version: 1 }).success).toBe(false);
     expect(amendRequestSchema.safeParse({ version: 1, budgetRequests: 5 }).success).toBe(false);
-    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'a', headerName: 'X-Key' }] }).success).toBe(true);
-    expect(amendRequestSchema.safeParse({ version: 1, testAccounts: [{ role: 'a', headerName: 'X' }, { role: 'A', headerName: 'X' }] }).success).toBe(false);
+    expect(
+      amendRequestSchema.safeParse({
+        version: 1,
+        testAccounts: [{ role: 'a', headerName: 'X-Key' }],
+      }).success,
+    ).toBe(true);
+    expect(
+      amendRequestSchema.safeParse({
+        version: 1,
+        testAccounts: [
+          { role: 'a', headerName: 'X' },
+          { role: 'A', headerName: 'X' },
+        ],
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -879,7 +1142,18 @@ describe('clone with untried cases (P1-cov2)', () => {
       getRequest: vi.fn().mockResolvedValue(request),
       getRun: vi.fn().mockResolvedValue({ id: runId, request_id: runRequest }),
       listFindingsForRun: vi.fn().mockResolvedValue([]),
-      lastEvents: vi.fn().mockResolvedValue([{ seq: 9, kind: 'coverage.summary', data: { cases }, message: '', stage: 'done', at: new Date() }]),
+      lastEvents: vi
+        .fn()
+        .mockResolvedValue([
+          {
+            seq: 9,
+            kind: 'coverage.summary',
+            data: { cases },
+            message: '',
+            stage: 'done',
+            at: new Date(),
+          },
+        ]),
       getAsset: vi.fn().mockResolvedValue({ ...asset('t'), ownership_status: 'verified' }),
       insertRequest: vi.fn(),
       findRunByRequest: vi.fn().mockResolvedValue(null),
@@ -895,36 +1169,158 @@ describe('clone with untried cases (P1-cov2)', () => {
       { id: 'c', title: 'Reflected XSS', status: 'not_run' },
     ]);
     await service.cloneRequest(engineer, 'q1', runId);
-    expect(store.insertRequest).toHaveBeenCalledWith(expect.objectContaining({
-      objective: 'Look.\n\nContinue with the test cases left untried in audit 00000001: SQL injection in search; Reflected XSS.',
-    }));
+    expect(store.insertRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        objective:
+          'Look.\n\nContinue with the test cases left untried in audit 00000001: SQL injection in search; Reflected XSS.',
+      }),
+    );
   });
 
   it('refuses when nothing was left untried, or the run belongs to another request', async () => {
-    await expect(cloneService([{ id: 'b', title: 'x', status: 'executed' }]).service.cloneRequest(engineer, 'q1', runId)).rejects.toMatchObject({
+    await expect(
+      cloneService([{ id: 'b', title: 'x', status: 'executed' }]).service.cloneRequest(
+        engineer,
+        'q1',
+        runId,
+      ),
+    ).rejects.toMatchObject({
       response: { code: 'nothing_untried' },
     });
-    await expect(cloneService([], 'q2').service.cloneRequest(engineer, 'q1', runId)).rejects.toMatchObject({
+    await expect(
+      cloneService([], 'q2').service.cloneRequest(engineer, 'q1', runId),
+    ).rejects.toMatchObject({
       response: { code: 'not_found' },
     });
+  });
+});
+
+describe('resume where it left off (continue in place)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const runId = '0197a5d0-cccc-7000-8000-000000000001';
+  const coverageEvents = (cases: unknown[]) => [
+    {
+      seq: 9,
+      kind: 'coverage.summary',
+      data: { cases },
+      message: '',
+      stage: 'done',
+      at: new Date(),
+    },
+  ];
+  function resumeStore(state: string, cases: unknown[], extra: Record<string, unknown> = {}) {
+    return {
+      getRun: vi.fn().mockResolvedValue({ id: runId, request_id: 'q1', asset_id: 'a1', state }),
+      lastEvents: vi.fn().mockResolvedValue(coverageEvents(cases)),
+      getAsset: vi.fn().mockResolvedValue({ ...asset('t'), ownership_status: 'verified' }),
+      markAssetUnverified: vi.fn().mockResolvedValue(true),
+      requeueRunForResume: vi.fn().mockResolvedValue(true),
+      appendEvent: vi.fn(),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e', hash: 'h' }),
+      ...extra,
+    };
+  }
+  const make = (store: ReturnType<typeof resumeStore>) =>
+    new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options);
+
+  it('re-queues the same run and records a continue event for a failed run with untried cases', async () => {
+    const store = resumeStore('failed', [
+      { id: 'a', title: 'SQLi', status: 'not_run' },
+      { id: 'b', title: 'IDOR', status: 'executed' },
+    ]);
+    const out = await make(store).resumeRun(engineer, runId);
+    expect(out).toMatchObject({ id: runId, state: 'queued' });
+    expect(store.requeueRunForResume).toHaveBeenCalledWith('t1', runId);
+    expect(store.appendEvent).toHaveBeenCalledWith(
+      runId,
+      expect.objectContaining({ kind: 'run.continue_requested' }),
+    );
+  });
+
+  it('resumes a run the operator stopped (killed) the same way', async () => {
+    const store = resumeStore('killed', [{ id: 'a', title: 'XSS', status: 'not_run' }]);
+    await make(store).resumeRun(engineer, runId);
+    expect(store.requeueRunForResume).toHaveBeenCalledWith('t1', runId);
+  });
+
+  it('refuses a run that is still running or already completed', async () => {
+    await expect(
+      make(resumeStore('completed', [{ id: 'a', title: 'x', status: 'not_run' }])).resumeRun(
+        engineer,
+        runId,
+      ),
+    ).rejects.toMatchObject({ response: { code: 'run_not_resumable' } });
+  });
+
+  it('refuses when nothing was left untried (a blocked case does not count)', async () => {
+    await expect(
+      make(resumeStore('failed', [{ id: 'a', title: 'x', status: 'blocked' }])).resumeRun(
+        engineer,
+        runId,
+      ),
+    ).rejects.toMatchObject({ response: { code: 'nothing_untried' } });
+  });
+
+  it('re-checks ownership and refuses, without re-queueing, if the target is no longer a lab', async () => {
+    const store = resumeStore('killed', [{ id: 'a', title: 'x', status: 'not_run' }], {
+      getAsset: vi.fn().mockResolvedValue({
+        ...asset('t'),
+        ownership_status: 'verified',
+        base_url: 'http://127.0.0.1:8091',
+        allowed_origins: ['http://127.0.0.1:8091'],
+      }),
+    });
+    await expect(make(store).resumeRun(engineer, runId)).rejects.toMatchObject({
+      response: { code: 'ownership_recheck_failed' },
+    });
+    expect(store.requeueRunForResume).not.toHaveBeenCalled();
+  });
+
+  it('refuses a non-engineer', async () => {
+    await expect(
+      make(resumeStore('failed', [{ id: 'a', title: 'x', status: 'not_run' }])).resumeRun(
+        { ...engineer, roles: ['auditor'] },
+        runId,
+      ),
+    ).rejects.toMatchObject({ response: { code: 'role_required' } });
   });
 });
 
 describe('batch Gate 3 (P1-rel1)', () => {
   const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
   const row = (id: string, status: string) =>
-    ({ id, run_id: 'r1', title: `T ${id}`, severity: 'high', status, asset_name: 'X', repro_curl: 'curl', owasp_category: 'A01' }) as unknown as FindingRow;
+    ({
+      id,
+      run_id: 'r1',
+      title: `T ${id}`,
+      severity: 'high',
+      status,
+      asset_name: 'X',
+      repro_curl: 'curl',
+      owasp_category: 'A01',
+    }) as unknown as FindingRow;
 
   it('moves what it can, reports conflicts and unknown ids, and ledgers one event per finding moved', async () => {
     const store = {
-      getFindings: vi.fn().mockResolvedValue([row('f1', 'confirmed'), row('f2', 'confirmed'), row('f3', 'dismissed')]),
+      getFindings: vi
+        .fn()
+        .mockResolvedValue([
+          row('f1', 'confirmed'),
+          row('f2', 'confirmed'),
+          row('f3', 'dismissed'),
+        ]),
       triageFindings: vi.fn().mockResolvedValue(['f1', 'f2']),
       appendAudits: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn(),
       recordDelivery: vi.fn(),
     };
     const service = new DemoService(store as unknown as DemoStore, 't1');
-    const out = await service.triageMany(engineer, ['f1', 'f2', 'f3', 'f4'], 'release', 'proven, reviewed by hand');
+    const out = await service.triageMany(
+      engineer,
+      ['f1', 'f2', 'f3', 'f4'],
+      'release',
+      'proven, reviewed by hand',
+    );
     expect(out).toEqual({
       results: [
         { id: 'f1', ok: true, status: 'released' },
@@ -936,17 +1332,37 @@ describe('batch Gate 3 (P1-rel1)', () => {
       conflicts: 1,
       failed: 1,
     });
-    expect(store.triageFindings).toHaveBeenCalledWith('t1', ['f1', 'f2', 'f3'], ['suspected', 'confirmed'], 'released', 'u1', 'proven, reviewed by hand');
+    expect(store.triageFindings).toHaveBeenCalledWith(
+      't1',
+      ['f1', 'f2', 'f3'],
+      ['suspected', 'confirmed'],
+      'released',
+      'u1',
+      'proven, reviewed by hand',
+    );
     const entries = store.appendAudits.mock.calls[0]?.[1] as { action: string; targetId: string }[];
-    expect(entries.map((e) => [e.action, e.targetId])).toEqual([['finding.release', 'f1'], ['finding.release', 'f2']]);
+    expect(entries.map((e) => [e.action, e.targetId])).toEqual([
+      ['finding.release', 'f1'],
+      ['finding.release', 'f2'],
+    ]);
     expect(store.appendEvent).toHaveBeenCalledTimes(2);
   });
 
   it('validates the body: 1..200 unique ids', () => {
     const id = '0197a5d0-aaaa-7000-8000-000000000001';
-    expect(triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [id] }).success).toBe(true);
-    expect(triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [] }).success).toBe(false);
-    expect(triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [id, id.toUpperCase()] }).success).toBe(false);
+    expect(
+      triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [id] }).success,
+    ).toBe(true);
+    expect(
+      triageManySchema.safeParse({ decision: 'release', reason: 'long enough', ids: [] }).success,
+    ).toBe(false);
+    expect(
+      triageManySchema.safeParse({
+        decision: 'release',
+        reason: 'long enough',
+        ids: [id, id.toUpperCase()],
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -1016,8 +1432,11 @@ describe('DTOs: queue, starter, Gate 2 details, OWASP and read-time scrub', () =
       title: 'Config exposed',
       owasp_category: 'A05',
       description: "$_DVWA[ 'db_password' ] = 'vulnerables';",
-      repro_curl: "curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln' http://x",
-      evidence: { probe: { response: { bodyExcerpt: '{"password":"hunter2"}', bodySha256: 'a'.repeat(64) } } },
+      repro_curl:
+        "curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln' http://x",
+      evidence: {
+        probe: { response: { bodyExcerpt: '{"password":"hunter2"}', bodySha256: 'a'.repeat(64) } },
+      },
       replay: {},
       oracle: {},
       location: {},
@@ -1038,7 +1457,12 @@ describe('DTOs: queue, starter, Gate 2 details, OWASP and read-time scrub', () =
     expect(findingDto(finding)).toMatchObject({
       owasp: 'A05:2021 Security Misconfiguration',
       identityKey: 'idk',
-      seenBefore: { runId: 'r0', findingId: 'f0', status: 'released', at: '2026-11-01T00:00:00.000Z' },
+      seenBefore: {
+        runId: 'r0',
+        findingId: 'f0',
+        status: 'released',
+        at: '2026-11-01T00:00:00.000Z',
+      },
     });
     const exchange = exchangeDto({
       id: 'x1',
@@ -1076,7 +1500,10 @@ describe('retest one finding (P2-rt1)', () => {
       asset_id: 'a1',
       status,
       location: { method: probe },
-      evidence: { probe: { request: { method: probe } }, control: { request: { method: control } } },
+      evidence: {
+        probe: { request: { method: probe } },
+        control: { request: { method: control } },
+      },
     }) as unknown as FindingRow;
 
   function retestService(row: FindingRow, inserted = true) {
@@ -1086,31 +1513,47 @@ describe('retest one finding (P2-rt1)', () => {
       insertRetest: vi.fn().mockResolvedValue(inserted),
       appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
     };
-    return { store, service: new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options) };
+    return {
+      store,
+      service: new DemoService(store as unknown as DemoStore, 't1', fetch, webhookOff, options),
+    };
   }
 
   it('queues a retest of a read-only probe and ledgers it', async () => {
     const { store, service } = retestService(proven('GET', 'GET'));
     const out = await service.requestRetest(engineer, 'f1');
     expect(out.status).toBe('queued');
-    expect(store.insertRetest).toHaveBeenCalledWith(expect.objectContaining({ finding_id: 'f1', requested_by: 'u1' }));
+    expect(store.insertRetest).toHaveBeenCalledWith(
+      expect.objectContaining({ finding_id: 'f1', requested_by: 'u1' }),
+    );
     expect(store.appendAudit).toHaveBeenCalledWith(
       't1',
-      expect.objectContaining({ action: 'finding.retest', payload: { retestId: out.retestId, runId: 'r1' } }),
+      expect.objectContaining({
+        action: 'finding.retest',
+        payload: { retestId: out.retestId, runId: 'r1' },
+      }),
     );
   });
 
   it('refuses a state-changing probe, an unproven finding and a second open retest', async () => {
-    await expect(retestService(proven('POST', 'POST')).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+    await expect(
+      retestService(proven('POST', 'POST')).service.requestRetest(engineer, 'f1'),
+    ).rejects.toMatchObject({
       response: { code: 'retest_needs_gate2' },
     });
-    await expect(retestService(proven('GET', 'DELETE')).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+    await expect(
+      retestService(proven('GET', 'DELETE')).service.requestRetest(engineer, 'f1'),
+    ).rejects.toMatchObject({
       response: { code: 'retest_needs_gate2' },
     });
-    await expect(retestService(proven('GET', 'GET', 'dismissed')).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+    await expect(
+      retestService(proven('GET', 'GET', 'dismissed')).service.requestRetest(engineer, 'f1'),
+    ).rejects.toMatchObject({
       response: { code: 'finding_not_retestable' },
     });
-    await expect(retestService(proven('GET', 'GET'), false).service.requestRetest(engineer, 'f1')).rejects.toMatchObject({
+    await expect(
+      retestService(proven('GET', 'GET'), false).service.requestRetest(engineer, 'f1'),
+    ).rejects.toMatchObject({
       response: { code: 'retest_in_progress' },
     });
   });
@@ -1148,7 +1591,12 @@ describe('decide all Gate 2 (one shared reason)', () => {
       c: g('c', 'pending', { deadline_at: new Date(Date.now() - 1000) }),
     };
     const { store, service } = setup(rows, ['a']);
-    const out = await service.decideGate2Many(owner, ['a', 'b', 'c', 'zz', 'a'], 'approve', 'our own test lab');
+    const out = await service.decideGate2Many(
+      owner,
+      ['a', 'b', 'c', 'zz', 'a'],
+      'approve',
+      'our own test lab',
+    );
     expect(out.results).toEqual([
       { id: 'a', result: 'decided' },
       { id: 'b', result: 'already_decided' },
@@ -1171,8 +1619,13 @@ describe('decide all Gate 2 (one shared reason)', () => {
 
   it('validates the body: ids required and unique, an approve needs the same 8-character reason', () => {
     const id = '0197a5d0-aaaa-7000-8000-000000000001';
-    expect(gate2DecideAllSchema.safeParse({ ids: [id], decision: 'approve', reason: 'safe lab data' }).success).toBe(true);
-    expect(gate2DecideAllSchema.safeParse({ ids: [id], decision: 'approve', reason: 'short' }).success).toBe(false);
+    expect(
+      gate2DecideAllSchema.safeParse({ ids: [id], decision: 'approve', reason: 'safe lab data' })
+        .success,
+    ).toBe(true);
+    expect(
+      gate2DecideAllSchema.safeParse({ ids: [id], decision: 'approve', reason: 'short' }).success,
+    ).toBe(false);
     expect(gate2DecideAllSchema.safeParse({ ids: [id], decision: 'deny' }).success).toBe(true);
     expect(gate2DecideAllSchema.safeParse({ ids: [], decision: 'deny' }).success).toBe(false);
     expect(gate2DecideAllSchema.safeParse({ ids: [id, id], decision: 'deny' }).success).toBe(false);

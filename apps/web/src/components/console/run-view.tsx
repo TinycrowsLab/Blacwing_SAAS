@@ -32,7 +32,14 @@ import {
 } from '@blackwing/ui';
 
 import { Conversation, shortTime } from './conversation';
-import { AuthorisedUnder, buttonClass, Icon, VoiceTag, withRedactions } from './design';
+import {
+  AuthorisedUnder,
+  buttonClass,
+  Icon,
+  InlineMessage,
+  VoiceTag,
+  withRedactions,
+} from './design';
 import { CLOCK_TONE, PendingButton, useCountdown } from './design-client';
 import {
   AccountsPanel,
@@ -48,7 +55,7 @@ import {
 import { plainWhy } from './gate2-view';
 import { KillButton } from './kill-dialog';
 import { Modal } from './modal';
-import { runAgainAction } from './results/actions';
+import { resumeRunAction, runAgainAction } from './results/actions';
 import { RunAgain } from './results/report-download';
 import { ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
 import {
@@ -248,60 +255,113 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
  *  action that matters — so the next step is never buried at the bottom of the conversation. Gold (your turn) only when
  *  a proven issue still awaits release; otherwise a calm neutral band. */
 function TerminalSummary({
+  runId,
   state,
   proven,
   untried,
   toReview,
   resultsHref,
 }: {
+  readonly runId: string;
   readonly state: string;
   readonly proven: number;
   readonly untried: number;
   readonly toReview: boolean;
   readonly resultsHref: string;
 }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
   const headline =
     state === 'completed'
       ? 'This audit finished.'
       : state === 'failed'
         ? 'This audit stopped with an error.'
         : 'This audit stopped early.';
-  const bits = [`${proven.toLocaleString('en-US')} ${proven === 1 ? 'issue' : 'issues'} confirmed`];
-  if (untried > 0)
-    bits.push(
-      `${untried.toLocaleString('en-US')} ${untried === 1 ? 'test case' : 'test cases'} not run`,
-    );
+  // A run that stopped on an error or was stopped continues under the SAME run id, no new approval. One that finished at
+  // a budget limit needs new limits, so its "Continue" opens the results card (the clone flow) instead.
+  const canResume = (state === 'failed' || state === 'killed') && untried > 0;
   return (
-    <div
-      className={`flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 text-[13px] md:px-6 ${toReview ? 'border-gold-line bg-gold-soft' : 'border-border bg-surface-2'}`}
-    >
-      <Icon
-        name={toReview ? 'hand' : 'check'}
-        size={16}
-        className={`shrink-0 ${toReview ? 'text-gold-ink' : 'text-foreground'}`}
-      />
-      <span className="min-w-0 flex-1">
-        <b className="font-semibold text-foreground">{headline}</b>{' '}
-        <span className="text-muted-foreground">{bits.join(' · ')}.</span>
-        {toReview ? (
-          <span className="font-medium text-gold-ink">
-            {' '}
-            {proven === 1 ? 'It is' : 'They are'} waiting for your release.
-          </span>
-        ) : null}
-      </span>
-      <div className="flex items-center gap-2.5">
-        {untried > 0 ? (
+    <div className="px-4 pt-4 md:px-6">
+      <div
+        className={`flex flex-col gap-3.5 rounded-[14px] border p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:gap-4 ${
+          toReview
+            ? 'border-gold-line bg-gradient-to-r from-gold-soft to-transparent'
+            : 'border-border bg-card'
+        }`}
+      >
+        <span
+          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-[12px] sm:self-center ${
+            toReview ? 'bg-gold text-on-gold' : 'bg-surface-2 text-foreground ring-1 ring-border'
+          }`}
+        >
+          <Icon name={toReview ? 'hand' : 'check'} size={22} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="m-0 text-[15px] font-semibold leading-tight text-foreground">
+            {headline}
+            {toReview ? (
+              <span className="text-gold-ink">
+                {' '}
+                {proven === 1 ? 'It is' : 'They are'} waiting for your release.
+              </span>
+            ) : null}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12.5px]">
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-2.5 py-0.5 font-medium text-foreground">
+              <b className="font-semibold">{proven.toLocaleString('en-US')}</b>
+              {proven === 1 ? 'issue' : 'issues'} confirmed
+            </span>
+            {untried > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-2.5 py-0.5 font-medium text-muted-foreground">
+                <b className="font-semibold text-foreground">{untried.toLocaleString('en-US')}</b>
+                {untried === 1 ? 'test case' : 'test cases'} not run
+              </span>
+            ) : null}
+          </div>
+          {error === null ? null : (
+            <div className="mt-2">
+              <InlineMessage tone="bad">{error}</InlineMessage>
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {canResume ? (
+            <PendingButton
+              icon="replay"
+              pendingLabel="Picking up where it stopped…"
+              stayPending
+              className="h-10"
+              onAction={async () => {
+                setError(null);
+                const result = await resumeRunAction(runId);
+                if (!result.ok) {
+                  setError(`We couldn't continue this audit: ${result.message}`);
+                  return false;
+                }
+                window.dispatchEvent(new Event('bw:refresh'));
+                router.refresh();
+                return true;
+              }}
+            >
+              Continue where it left off
+            </PendingButton>
+          ) : untried > 0 ? (
+            <Link href={`${resultsHref}#continue`} className={buttonClass('secondary', 'h-10')}>
+              <Icon name="replay" size={15} />
+              Continue where it left off
+            </Link>
+          ) : null}
           <Link
-            href={`${resultsHref}#continue`}
-            className="whitespace-nowrap text-[12.5px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+            href={resultsHref}
+            className={buttonClass(
+              toReview ? 'primary' : canResume ? 'secondary' : 'primary',
+              'h-10',
+            )}
           >
-            Continue where it left off
+            {toReview ? 'Review and release' : 'See results'}
+            <Icon name="arrow" size={15} />
           </Link>
-        ) : null}
-        <Link href={resultsHref} className={buttonClass(toReview ? 'primary' : 'secondary', 'h-9')}>
-          {toReview ? 'Review and release' : 'See results'}
-        </Link>
+        </div>
       </div>
     </div>
   );
@@ -1285,6 +1345,7 @@ export function RunView({
 
       {terminal ? (
         <TerminalSummary
+          runId={run.id}
           state={run.state}
           proven={teamMap.proven}
           untried={untriedCount}

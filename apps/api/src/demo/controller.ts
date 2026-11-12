@@ -98,13 +98,19 @@ const verifyAssetSchema = z.strictObject({
   statement: z.string().trim().min(LIMITS.statementMin).max(LIMITS.statement),
 });
 
-const roleField = z.string().trim().regex(/^[a-z][a-z0-9_-]{0,31}$/i);
+const roleField = z
+  .string()
+  .trim()
+  .regex(/^[a-z][a-z0-9_-]{0,31}$/i);
 const headerAccountShape = {
   role: roleField,
   headerName: z
     .string()
     .regex(/^[A-Za-z0-9-]{1,64}$/)
-    .refine((name) => !RESERVED_HEADERS.includes(name.toLowerCase()), 'This header cannot carry a credential.'),
+    .refine(
+      (name) => !RESERVED_HEADERS.includes(name.toLowerCase()),
+      'This header cannot carry a credential.',
+    ),
   headerValue: z.string().min(1).max(LIMITS.headerValue),
 };
 /** Login-form mode: the runner signs in with these and keeps the session; the password is stored server-side only. */
@@ -114,7 +120,10 @@ const loginAccountShape = {
   password: z.string().min(1).max(LIMITS.loginField),
   loginUrl: webUrl.optional(),
 };
-const testAccountSchema = z.union([z.strictObject(headerAccountShape), z.strictObject(loginAccountShape)]);
+const testAccountSchema = z.union([
+  z.strictObject(headerAccountShape),
+  z.strictObject(loginAccountShape),
+]);
 
 const uniqueRoles = (accounts: readonly { role: string }[]): boolean =>
   new Set(accounts.map((a) => a.role.toLowerCase())).size === accounts.length;
@@ -160,7 +169,10 @@ export const amendRequestSchema = z
     testAccounts: z
       .array(
         z.union([
-          z.strictObject({ ...headerAccountShape, headerValue: headerAccountShape.headerValue.optional() }),
+          z.strictObject({
+            ...headerAccountShape,
+            headerValue: headerAccountShape.headerValue.optional(),
+          }),
           z.strictObject({ ...loginAccountShape, password: loginAccountShape.password.optional() }),
         ]),
       )
@@ -204,13 +216,22 @@ const DRAFT_STEPS = 10;
 const DRAFT_BYTES = 16_000;
 const draftSchema = z.strictObject({
   step: z.number().int().min(1).max(DRAFT_STEPS),
-  answers: z.record(z.string().max(LIMITS.name), z.unknown()).refine((v) => JSON.stringify(v).length <= DRAFT_BYTES, 'Too large.'),
+  answers: z
+    .record(z.string().max(LIMITS.name), z.unknown())
+    .refine((v) => JSON.stringify(v).length <= DRAFT_BYTES, 'Too large.'),
 });
 
-const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });
+const killSchema = z.strictObject({
+  scope: z.literal('run'),
+  confirm: z.string().max(LIMITS.name),
+});
 /** A blast radius wider than one run: every run on a target, or every run in the workspace. */
 export const killScopeSchema = z.discriminatedUnion('scope', [
-  z.strictObject({ scope: z.literal('target'), assetId: z.string().regex(UUID), confirm: z.string().max(LIMITS.name) }),
+  z.strictObject({
+    scope: z.literal('target'),
+    assetId: z.string().regex(UUID),
+    confirm: z.string().max(LIMITS.name),
+  }),
   z.strictObject({ scope: z.literal('workspace'), confirm: z.string().max(LIMITS.name) }),
 ]);
 export const emergencyLinkSchema = z.strictObject({
@@ -222,7 +243,10 @@ export const emergencyContactSchema = z.strictObject({
   contact: z
     .strictObject({
       name: z.string().trim().min(1).max(LIMITS.emergencyLabel),
-      phone: z.string().trim().regex(/^\+?[0-9][0-9 ()./-]{2,38}$/, 'Use digits, spaces and + ( ) - . only.'),
+      phone: z
+        .string()
+        .trim()
+        .regex(/^\+?[0-9][0-9 ()./-]{2,38}$/, 'Use digits, spaces and + ( ) - . only.'),
     })
     .nullable(),
 });
@@ -293,10 +317,14 @@ class EmergencyTokenDto extends createZodDto(emergencyTokenSchema) {}
 class EmergencyRunsDto extends createZodDto(emergencyRunsSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
 class Gate2DecideAllDto extends createZodDto(gate2DecideAllSchema) {}
-const targetCheckQuerySchema = z.strictObject({ origin: z.url({ protocol: /^https?$/ }).max(LIMITS.url) });
+const targetCheckQuerySchema = z.strictObject({
+  origin: z.url({ protocol: /^https?$/ }).max(LIMITS.url),
+});
 class TargetCheckQueryDto extends createZodDto(targetCheckQuerySchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
-class ReopenDto extends createZodDto(z.strictObject({ reason: z.string().trim().min(LIMITS.reasonMin).max(LIMITS.reason) })) {}
+class ReopenDto extends createZodDto(
+  z.strictObject({ reason: z.string().trim().min(LIMITS.reasonMin).max(LIMITS.reason) }),
+) {}
 class TriageDto extends createZodDto(triageSchema) {}
 class ReportQueryDto extends createZodDto(reportQuerySchema) {}
 class RunReportQueryDto extends createZodDto(runReportQuerySchema) {}
@@ -363,11 +391,7 @@ export class DemoController {
     this.internal(headers);
     const email = headers['x-bw-demo-user'];
     if (typeof email !== 'string' || email === '') {
-      throw new DemoRefusal(
-        HttpStatus.UNAUTHORIZED,
-        'demo_user_missing',
-        'No user was presented.',
-      );
+      throw new DemoRefusal(HttpStatus.UNAUTHORIZED, 'demo_user_missing', 'No user was presented.');
     }
     const rolesHeader = headers['x-bw-demo-roles'];
     const roles =
@@ -392,7 +416,13 @@ export class DemoController {
         'The user is not active in the tenant.',
       );
     if (admin) {
-      return { id: user.id, email: user.email, name: user.name, roles: [...ALL_ROLES], admin: true };
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        roles: [...ALL_ROLES],
+        admin: true,
+      };
     }
     return { id: user.id, email: user.email, name: user.name, roles };
   }
@@ -436,7 +466,10 @@ export class DemoController {
 
   @Post('emergency-links/:id/revoke')
   @HttpCode(HttpStatus.OK)
-  async revokeEmergencyLink(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+  async revokeEmergencyLink(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+  ): Promise<unknown> {
     return this.service.revokeEmergencyLink(await this.actor(headers), uuid(id, 'emergency link'));
   }
 
@@ -483,7 +516,10 @@ export class DemoController {
   }
 
   @Get('target-check')
-  async targetCheck(@Headers() headers: RequestHeaders, @ZodQuery(TargetCheckQueryDto) query: TargetCheckQueryDto): Promise<unknown> {
+  async targetCheck(
+    @Headers() headers: RequestHeaders,
+    @ZodQuery(TargetCheckQueryDto) query: TargetCheckQueryDto,
+  ): Promise<unknown> {
     await this.actor(headers);
     return this.service.checkTarget(query.origin);
   }
@@ -495,12 +531,18 @@ export class DemoController {
   }
 
   @Post('assets')
-  async createAsset(@Headers() headers: RequestHeaders, @ZodBody(CreateAssetDto) body: CreateAssetDto): Promise<unknown> {
+  async createAsset(
+    @Headers() headers: RequestHeaders,
+    @ZodBody(CreateAssetDto) body: CreateAssetDto,
+  ): Promise<unknown> {
     return this.service.createAsset(await this.actor(headers), body);
   }
 
   @Delete('assets/:id')
-  async archiveAsset(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+  async archiveAsset(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+  ): Promise<unknown> {
     return this.service.archiveAsset(await this.actor(headers), uuid(id, 'asset'));
   }
 
@@ -525,12 +567,19 @@ export class DemoController {
   }
 
   @Put('drafts/:id')
-  async saveDraft(@Headers() headers: RequestHeaders, @Param('id') id: string, @ZodBody(DraftDto) body: DraftDto): Promise<unknown> {
+  async saveDraft(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @ZodBody(DraftDto) body: DraftDto,
+  ): Promise<unknown> {
     return this.service.saveDraft(await this.actor(headers), uuid(id, 'draft'), body);
   }
 
   @Delete('drafts/:id')
-  async discardDraft(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+  async discardDraft(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+  ): Promise<unknown> {
     return this.service.discardDraft(await this.actor(headers), uuid(id, 'draft'));
   }
 
@@ -556,7 +605,13 @@ export class DemoController {
     @ZodBody(DecisionDto) body: DecisionDto,
   ): Promise<unknown> {
     const actor = await this.actor(headers);
-    return this.service.decideGate1(actor, uuid(id, 'request'), body.decision, body.reason, body.version ?? null);
+    return this.service.decideGate1(
+      actor,
+      uuid(id, 'request'),
+      body.decision,
+      body.reason,
+      body.version ?? null,
+    );
   }
 
   /** Edits a pending plan in place. Test-account values the browser does not resend are kept server-side. */
@@ -625,6 +680,12 @@ export class DemoController {
     return this.service.setPaused(await this.actor(headers), uuid(id, 'run'), false);
   }
 
+  @Post('runs/:id/continue')
+  @HttpCode(HttpStatus.OK)
+  async continueRun(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+    return this.service.resumeRun(await this.actor(headers), uuid(id, 'run'));
+  }
+
   @Post('runs/:id/kill')
   @HttpCode(HttpStatus.OK)
   async kill(
@@ -637,7 +698,10 @@ export class DemoController {
 
   @Post('kill')
   @HttpCode(HttpStatus.OK)
-  async killScope(@Headers() headers: RequestHeaders, @ZodBody(KillScopeDto) body: z.infer<typeof killScopeSchema>): Promise<unknown> {
+  async killScope(
+    @Headers() headers: RequestHeaders,
+    @ZodBody(KillScopeDto) body: z.infer<typeof killScopeSchema>,
+  ): Promise<unknown> {
     return this.service.killScope(await this.actor(headers), body);
   }
 
@@ -715,12 +779,21 @@ export class DemoController {
     @Param('id') id: string,
     @ZodBody(TriageDto) body: TriageDto,
   ): Promise<unknown> {
-    return this.service.triage(await this.actor(headers), uuid(id, 'finding'), body.decision, body.reason);
+    return this.service.triage(
+      await this.actor(headers),
+      uuid(id, 'finding'),
+      body.decision,
+      body.reason,
+    );
   }
 
   @Post('findings/:id/reopen')
   @HttpCode(HttpStatus.OK)
-  async reopen(@Headers() headers: RequestHeaders, @Param('id') id: string, @ZodBody(ReopenDto) body: ReopenDto): Promise<unknown> {
+  async reopen(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @ZodBody(ReopenDto) body: ReopenDto,
+  ): Promise<unknown> {
     return this.service.reopen(await this.actor(headers), uuid(id, 'finding'), body.reason);
   }
 

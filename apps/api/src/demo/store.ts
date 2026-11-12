@@ -342,7 +342,10 @@ export class DemoStore {
   }
 
   /** Runs `fn` in one transaction under the tenant's RLS context (`tenants` and `memberships` force row security). */
-  private async inTenant<T>(tenantId: string, fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+  private async inTenant<T>(
+    tenantId: string,
+    fn: (client: pg.PoolClient) => Promise<T>,
+  ): Promise<T> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -583,7 +586,12 @@ export class DemoStore {
   }
 
   /** Amends a pending plan in place, only at the version the editor saw. Returns the new version, or null. */
-  async amendRequest(tenantId: string, id: string, version: number, plan: RequestAmend): Promise<number | null> {
+  async amendRequest(
+    tenantId: string,
+    id: string,
+    version: number,
+    plan: RequestAmend,
+  ): Promise<number | null> {
     const r = await this.pool.query<{ version: number }>(
       `UPDATE demo.assessment_requests
        SET objective = $4, scope = $5, intrusiveness = $6, budget_requests = $7, budget_seconds = $8,
@@ -724,6 +732,28 @@ export class DemoStore {
     return r.rows[0]?.killed_at ?? null;
   }
 
+  /**
+   * Puts a run that stopped on an error or was stopped back in the queue, under the SAME run id, so the worker
+   * continues it where it left off. Keeps requests_used and cost_usd (budgets and the cost cap carry forward) and
+   * clears the stop state (kill flags, pause, finish, summary). Also reopens its request as running. False when the
+   * run is not in a resumable state (only `failed` or `killed`).
+   */
+  async requeueRunForResume(tenantId: string, id: string): Promise<boolean> {
+    const r = await this.pool.query(
+      `WITH requeued AS (
+         UPDATE demo.runs SET state = 'queued', paused = false, started_at = null, finished_at = null,
+           kill_requested_at = null, kill_requested_by = null, killed_at = null, halt_ms = null, summary = null
+         WHERE tenant_id = $1 AND id = $2 AND state IN ('failed', 'killed') RETURNING request_id
+       ), reopened AS (
+         UPDATE demo.assessment_requests SET status = 'running'
+         WHERE tenant_id = $1 AND id IN (SELECT request_id FROM requeued)
+       )
+       SELECT request_id FROM requeued`,
+      [tenantId, id],
+    );
+    return (r.rowCount ?? 0) === 1;
+  }
+
   /** Flags a running run for the worker, which polls the flag. Keeps the first request time. */
   async requestKill(tenantId: string, id: string, by: string | null): Promise<Date | null> {
     const r = await this.pool.query<{ kill_requested_at: Date }>(
@@ -822,7 +852,11 @@ export class DemoStore {
   }
 
   /** One proof screenshot (PNG) of a finding of this tenant, or null. */
-  async getScreenshot(tenantId: string, findingId: string, kind: 'probe' | 'control'): Promise<{ png: Buffer; width: number; height: number; mode: string } | null> {
+  async getScreenshot(
+    tenantId: string,
+    findingId: string,
+    kind: 'probe' | 'control',
+  ): Promise<{ png: Buffer; width: number; height: number; mode: string } | null> {
     const r = await this.pool.query<{ png: Buffer; width: number; height: number; mode: string }>(
       'SELECT png, width, height, mode FROM demo.finding_screenshots WHERE tenant_id = $1 AND finding_id = $2 AND kind = $3',
       [tenantId, findingId, kind],
@@ -929,7 +963,12 @@ export class DemoStore {
   }
 
   /** Queues a retest. False when one is already open for the finding (one queued or running at a time). */
-  async insertRetest(row: { id: string; tenant_id: string; finding_id: string; requested_by: string }): Promise<boolean> {
+  async insertRetest(row: {
+    id: string;
+    tenant_id: string;
+    finding_id: string;
+    requested_by: string;
+  }): Promise<boolean> {
     try {
       await this.pool.query(
         `INSERT INTO demo.finding_retests (id, tenant_id, finding_id, requested_by) VALUES ($1, $2, $3, $4)`,
@@ -943,7 +982,11 @@ export class DemoStore {
   }
 
   /** The latest retests of a finding, newest first. */
-  async listRetests(tenantId: string, findingId: string, limit: number): Promise<FindingRetestRow[]> {
+  async listRetests(
+    tenantId: string,
+    findingId: string,
+    limit: number,
+  ): Promise<FindingRetestRow[]> {
     const r = await this.pool.query<FindingRetestRow>(
       `SELECT t.id, t.status, t.result, t.requested_by, u.name AS requested_by_name, t.detail, t.created_at,
          t.finished_at
@@ -1060,7 +1103,13 @@ export class DemoStore {
   }
 
   /** Creates the draft, or replaces its answers when it exists. Returns true when it was created, null when the id belongs to someone else. */
-  async saveDraft(tenantId: string, ownerId: string, id: string, step: number, answers: unknown): Promise<boolean | null> {
+  async saveDraft(
+    tenantId: string,
+    ownerId: string,
+    id: string,
+    step: number,
+    answers: unknown,
+  ): Promise<boolean | null> {
     const r = await this.pool.query<{ created: boolean }>(
       `INSERT INTO demo.drafts (id, tenant_id, owner_id, step, answers) VALUES ($3, $1, $2, $4, $5)
        ON CONFLICT (id) DO UPDATE SET step = EXCLUDED.step, answers = EXCLUDED.answers, updated_at = now()
@@ -1072,7 +1121,10 @@ export class DemoStore {
   }
 
   async deleteDraft(tenantId: string, ownerId: string, id: string): Promise<boolean> {
-    const r = await this.pool.query('DELETE FROM demo.drafts WHERE tenant_id = $1 AND owner_id = $2 AND id = $3', [tenantId, ownerId, id]);
+    const r = await this.pool.query(
+      'DELETE FROM demo.drafts WHERE tenant_id = $1 AND owner_id = $2 AND id = $3',
+      [tenantId, ownerId, id],
+    );
     return (r.rowCount ?? 0) === 1;
   }
 
@@ -1160,7 +1212,15 @@ export class DemoStore {
     const r = await this.pool.query<EmergencyLinkRow>(
       `INSERT INTO demo.emergency_links (id, tenant_id, token_hash, label, created_by, created_by_name, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [row.id, row.tenant_id, row.token_hash, row.label, row.created_by, row.created_by_name, row.expires_at],
+      [
+        row.id,
+        row.tenant_id,
+        row.token_hash,
+        row.label,
+        row.created_by,
+        row.created_by_name,
+        row.expires_at,
+      ],
     );
     const inserted = r.rows[0];
     if (inserted === undefined) throw new Error('emergency link insert returned nothing');
@@ -1187,7 +1247,11 @@ export class DemoStore {
   }
 
   /** Revokes a link that still works. Null when it is unknown, expired or already revoked. */
-  async revokeEmergencyLink(tenantId: string, id: string, by: string): Promise<EmergencyLinkRow | null> {
+  async revokeEmergencyLink(
+    tenantId: string,
+    id: string,
+    by: string,
+  ): Promise<EmergencyLinkRow | null> {
     const r = await this.pool.query<EmergencyLinkRow>(
       `UPDATE demo.emergency_links SET revoked_at = now(), revoked_by = $3
        WHERE tenant_id = $1 AND id = $2 AND revoked_at IS NULL AND expires_at > now() RETURNING *`,

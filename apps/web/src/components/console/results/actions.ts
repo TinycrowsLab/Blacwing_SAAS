@@ -16,7 +16,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function runAgainAction(
   requestId: string,
   untriedFromRunId: string | null = null,
-  limits: { readonly minutes: number; readonly requests: number; readonly costUsd: number } | null = null,
+  limits: {
+    readonly minutes: number;
+    readonly requests: number;
+    readonly costUsd: number;
+  } | null = null,
 ): Promise<ActionResult<{ id: string }>> {
   const session = await getViewer();
   if (session === null)
@@ -39,12 +43,39 @@ export async function runAgainAction(
                 ...(untriedFromRunId === null ? {} : { untriedFromRunId }),
                 ...(limits === null
                   ? {}
-                  : { limits: { budgetRequests: limits.requests, budgetSeconds: limits.minutes * SECONDS_PER_MINUTE, costCapUsd: limits.costUsd } }),
+                  : {
+                      limits: {
+                        budgetRequests: limits.requests,
+                        budgetSeconds: limits.minutes * SECONDS_PER_MINUTE,
+                        costCapUsd: limits.costUsd,
+                      },
+                    }),
               },
             }),
       }),
     );
     return { id: created.id };
+  });
+}
+
+/**
+ * "Continue where it left off" for a run that stopped on an error or was stopped: the API re-queues the SAME run under
+ * its pinned scope and authorisation (no new Gate 1), so the worker finishes the untried cases. Returns the same run id.
+ */
+export async function resumeRunAction(runId: string): Promise<ActionResult<{ id: string }>> {
+  const session = await getViewer();
+  if (session === null)
+    return {
+      ok: false,
+      code: 'unauthenticated',
+      message: 'Your session ended. Sign in again.',
+      status: HTTP_UNAUTHORIZED,
+    };
+  if (!UUID.test(runId))
+    return { ok: false, code: 'not_found', message: 'That audit does not exist.', status: 404 };
+  return toResult(async () => {
+    await callApi(session, `/runs/${encodeURIComponent(runId)}/continue`, { method: 'POST' });
+    return { id: runId };
   });
 }
 
