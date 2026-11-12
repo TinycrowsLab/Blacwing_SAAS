@@ -98,7 +98,7 @@
   --low-soft: #eef0f3;
   --sinfo: #4b5160;
   --sinfo-soft: #f0f1f3;
-  --focus: rgba(226, 178, 58, 0.45);
+  --focus: rgba(138, 99, 16, 0.8);
   --float-shadow: 0 8px 28px rgba(31, 23, 4, 0.06);
   --pop-shadow: 0 30px 80px rgba(23, 21, 15, 0.28);
 
@@ -178,7 +178,7 @@
   --low-soft: #252a33;
   --sinfo: #a8aeba;
   --sinfo-soft: #2a2c33;
-  --focus: rgba(226, 178, 58, 0.45);
+  --focus: rgba(233, 196, 106, 0.8);
   --float-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
 
   /* In dark, gold-ink is light: text on it is dark. */

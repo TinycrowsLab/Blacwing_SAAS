@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { limitSettingsAction, runAgainAction } from './actions';
+import { Disclosure } from './disclosure';
 import { useNudge } from './nudge';
 import { LimitsEditor, type LimitValues } from '../order/plan-editors';
 
@@ -58,8 +59,14 @@ export function ContinueCard({
     void limitSettingsAction().then((s) => {
       if (s === null) return;
       setSettings(s);
-      const bigger = s.presets.find((p) => p.minutes > current.minutes || p.requests > current.requests) ?? s.presets.at(-1);
-      setLimits(bigger === undefined ? current : { minutes: bigger.minutes, requests: bigger.requests, costUsd: bigger.costUsd });
+      const bigger =
+        s.presets.find((p) => p.minutes > current.minutes || p.requests > current.requests) ??
+        s.presets.at(-1);
+      setLimits(
+        bigger === undefined
+          ? current
+          : { minutes: bigger.minutes, requests: bigger.requests, costUsd: bigger.costUsd },
+      );
     });
   }, [storeKey, current]);
 
@@ -73,14 +80,18 @@ export function ContinueCard({
     >
       <div className="flex flex-col gap-1">
         <h2 className="m-0 text-[15px] font-semibold leading-[22px]">
-          This audit stopped {endedPhrase(endReason)} with {cases} not finished. Continue where it left off?
+          This audit stopped {endedPhrase(endReason)} with {cases} not finished. Continue where it
+          left off?
         </h2>
         <p className="m-0 text-[13px] leading-5 text-muted-foreground">
-          The next audit picks up the untried cases and skips what is already proven. Pick its limits; you approve the plan before it starts.
+          The next audit picks up the untried cases and skips what is already proven. It uses the
+          limits shown below; you approve the plan before it starts.
         </p>
       </div>
       {settings === null || limits === null ? null : (
-        <LimitsEditor value={limits} onChange={setLimits} settings={settings} />
+        <Disclosure title="Adjust the limits" heading={false}>
+          <LimitsEditor value={limits} onChange={setLimits} settings={settings} />
+        </Disclosure>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <PendingButton

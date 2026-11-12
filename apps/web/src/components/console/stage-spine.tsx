@@ -2,7 +2,10 @@
 // Your review, derived from the run's events in run-model.ts. Phones show "Testing · stage 4 of 6" instead. A stage
 // ticks only when its own work ended: one still busy behind the current stage shows a slate ring, one a stopped run
 // left open a dashed ring with "stopped at …".
+'use client';
+
 import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Icon } from './design';
 
@@ -40,6 +43,18 @@ function Mark({ state }: { readonly state: Stage['state'] }) {
   );
 }
 
+// The whole chain never fits on every desktop width, so the row scrolls rather than clips. A luminance mask fades
+// whichever edge still hides a stage — right while more follows, left once you have scrolled — so the scroll is a
+// visible affordance, never a silent cut. No overflow, no mask: the row looks exactly as before.
+const FADE = '28px';
+
+function maskFor(start: boolean, end: boolean): string | undefined {
+  if (!start && !end) return undefined;
+  const from = start ? `transparent 0, black ${FADE}` : 'black 0';
+  const to = end ? `black calc(100% - ${FADE}), transparent 100%` : 'black 100%';
+  return `linear-gradient(to right, ${from}, ${to})`;
+}
+
 export function StageSpine({
   stages,
   approvedAt,
@@ -53,23 +68,70 @@ export function StageSpine({
 }) {
   // A run that ended with nothing to review has no gold stage: phones then name the last one it reached.
   const currentAt = stages.findIndex((s) => s.state === 'current');
-  const index = currentAt >= 0 ? currentAt : stages.findLastIndex((s) => s.state !== 'upcoming' && s.state !== 'skipped');
+  const index =
+    currentAt >= 0
+      ? currentAt
+      : stages.findLastIndex((s) => s.state !== 'upcoming' && s.state !== 'skipped');
   const current = stages[index];
-  const reached = (s: Stage | undefined): boolean => s !== undefined && s.state !== 'upcoming' && s.state !== 'skipped';
+  const reached = (s: Stage | undefined): boolean =>
+    s !== undefined && s.state !== 'upcoming' && s.state !== 'skipped';
+
+  const olRef = useRef<HTMLOListElement | null>(null);
+  const [edges, setEdges] = useState<{ readonly start: boolean; readonly end: boolean }>({
+    start: false,
+    end: false,
+  });
+  const measure = useCallback(() => {
+    const el = olRef.current;
+    if (el === null) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setEdges({ start: el.scrollLeft > 1, end: el.scrollLeft < max - 1 });
+  }, []);
+  useEffect(() => {
+    measure();
+    const el = olRef.current;
+    if (el === null) return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [measure]);
+  const mask = maskFor(edges.start, edges.end);
+
   return (
-    <nav aria-label="Audit progress" className="border-b border-border bg-sidebar px-4 py-2.5 md:px-6">
+    <nav
+      aria-label="Audit progress"
+      className="border-b border-border bg-sidebar px-4 py-2.5 md:px-6"
+    >
       <p className="m-0 text-[12.5px] text-muted-foreground md:hidden">
         <strong className="font-semibold text-foreground">{current?.label ?? ''}</strong>
         {current === undefined ? '' : ` · stage ${index + 1} of ${stages.length}`}
         {current?.detail ? ` · ${current.detail}` : ''}
       </p>
-      <ol className="m-0 hidden list-none items-center overflow-x-auto p-0 [scrollbar-width:none] md:flex">
+      <ol
+        ref={olRef}
+        onScroll={measure}
+        style={mask === undefined ? undefined : { maskImage: mask, WebkitMaskImage: mask }}
+        className="m-0 hidden list-none items-center overflow-x-auto p-0 [scrollbar-width:none] md:flex"
+      >
         {stages.map((s, i) => {
-          const detail = i === 0 && approvedAt !== null ? `${s.detail}${s.detail === '' ? '' : ', '}${approvedAt}` : s.detail;
+          const detail =
+            i === 0 && approvedAt !== null
+              ? `${s.detail}${s.detail === '' ? '' : ', '}${approvedAt}`
+              : s.detail;
           const body = (
             <>
               <Mark state={s.state} />
-              <span className={s.state === 'current' ? 'font-semibold text-foreground' : s.state === 'done' || s.state === 'active' ? 'text-foreground' : ''}>
+              <span
+                className={
+                  s.state === 'current'
+                    ? 'font-semibold text-foreground'
+                    : s.state === 'done' || s.state === 'active'
+                      ? 'text-foreground'
+                      : ''
+                }
+              >
                 {s.label}
               </span>
               {/* Narrow desktops keep the row on one line: finished stages drop their counts there (the side panel and
@@ -98,11 +160,16 @@ export function StageSpine({
                 />
               ) : null}
               {s.key === 'review' && resultsHref !== null ? (
-                <Link href={resultsHref} className="flex shrink-0 items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground no-underline hover:underline">
+                <Link
+                  href={resultsHref}
+                  className="flex shrink-0 items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground no-underline hover:underline"
+                >
                   {body}
                 </Link>
               ) : (
-                <span className="flex shrink-0 items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground">{body}</span>
+                <span className="flex shrink-0 items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground">
+                  {body}
+                </span>
               )}
             </li>
           );

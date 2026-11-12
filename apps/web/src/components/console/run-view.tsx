@@ -10,7 +10,15 @@
 // shortcut: polling, not SSE; upgrade when the API gains an event stream.
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   DropdownMenu,
@@ -70,7 +78,14 @@ import { TeamMap } from './team-map';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
 import { decisionTitle } from '../../lib/plan-text';
-import { CARE_LABEL, type Gate2, pinnedAuthorisation, type Run, type RunEvent, runSchema } from '../../lib/schemas';
+import {
+  CARE_LABEL,
+  type Gate2,
+  pinnedAuthorisation,
+  type Run,
+  type RunEvent,
+  runSchema,
+} from '../../lib/schemas';
 
 const BACKOFF_MS = [1500, 3000, 6000, 10_000] as const;
 /** Pause and Resume give up after this long, so the answer (or the error) lands inside the 2 s budget. */
@@ -114,7 +129,10 @@ function useExchanges(runId: string) {
       const all: Exchange[] = [];
       try {
         for (;;) {
-          const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/exchanges?afterSeq=${lastSeq.current}`, { cache: 'no-store' });
+          const res = await fetch(
+            `/api/runs/${encodeURIComponent(runId)}/exchanges?afterSeq=${lastSeq.current}`,
+            { cache: 'no-store' },
+          );
           if (!res.ok) throw new Error(String(res.status));
           const page = exchangeListSchema.parse(await res.json());
           all.push(...page.items);
@@ -159,7 +177,12 @@ function Liveness({
   readonly short?: string;
   readonly className?: string;
 }) {
-  const dot = tone === 'live' ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : tone === 'quiet' ? 'bg-faint' : 'bg-warn';
+  const dot =
+    tone === 'live'
+      ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]'
+      : tone === 'quiet'
+        ? 'bg-faint'
+        : 'bg-warn';
   return (
     <span
       role="status"
@@ -184,7 +207,9 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
     >
       <Icon name="hand" size={16} className="shrink-0 text-gold-ink" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold md:hidden">{decisionTitle(g.method, g.url)}</span>
+        <span className="block truncate font-semibold md:hidden">
+          {decisionTitle(g.method, g.url)}
+        </span>
         <span className="hidden truncate md:block">
           <b className="font-semibold">{agentName(g.agent)} asks to send</b>{' '}
           <span className="font-mono text-[12.5px]">
@@ -193,7 +218,9 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
         </span>
         <span className="block truncate text-[11.5px] text-muted-foreground">
           <span className="md:hidden">{agentName(g.agent)}</span>
-          {g.whyOutside === '' ? null : <span className="max-md:hidden">{plainWhy(g.whyOutside)}</span>}
+          {g.whyOutside === '' ? null : (
+            <span className="max-md:hidden">{plainWhy(g.whyOutside)}</span>
+          )}
           {more > 0 ? ` · +${more} more` : ''}
         </span>
       </span>
@@ -202,7 +229,10 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
         {clock === null ? null : (
           <>
             {clock.label}
-            <span className="text-[11.5px] font-normal text-muted-foreground max-md:hidden"> left</span>
+            <span className="text-[11.5px] font-normal text-muted-foreground max-md:hidden">
+              {' '}
+              left
+            </span>
           </>
         )}
       </span>
@@ -214,14 +244,85 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
   );
 }
 
+/** Terminal "what needs you now" banner: one plain-language line of outcome at the top of the run page, with the one
+ *  action that matters — so the next step is never buried at the bottom of the conversation. Gold (your turn) only when
+ *  a proven issue still awaits release; otherwise a calm neutral band. */
+function TerminalSummary({
+  state,
+  proven,
+  untried,
+  toReview,
+  resultsHref,
+}: {
+  readonly state: string;
+  readonly proven: number;
+  readonly untried: number;
+  readonly toReview: boolean;
+  readonly resultsHref: string;
+}) {
+  const headline =
+    state === 'completed'
+      ? 'This audit finished.'
+      : state === 'failed'
+        ? 'This audit stopped with an error.'
+        : 'This audit stopped early.';
+  const bits = [`${proven.toLocaleString('en-US')} ${proven === 1 ? 'issue' : 'issues'} confirmed`];
+  if (untried > 0)
+    bits.push(
+      `${untried.toLocaleString('en-US')} ${untried === 1 ? 'test case' : 'test cases'} not run`,
+    );
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 text-[13px] md:px-6 ${toReview ? 'border-gold-line bg-gold-soft' : 'border-border bg-surface-2'}`}
+    >
+      <Icon
+        name={toReview ? 'hand' : 'check'}
+        size={16}
+        className={`shrink-0 ${toReview ? 'text-gold-ink' : 'text-foreground'}`}
+      />
+      <span className="min-w-0 flex-1">
+        <b className="font-semibold text-foreground">{headline}</b>{' '}
+        <span className="text-muted-foreground">{bits.join(' · ')}.</span>
+        {toReview ? (
+          <span className="font-medium text-gold-ink">
+            {' '}
+            {proven === 1 ? 'It is' : 'They are'} waiting for your release.
+          </span>
+        ) : null}
+      </span>
+      <div className="flex items-center gap-2.5">
+        {untried > 0 ? (
+          <Link
+            href={`${resultsHref}#continue`}
+            className="whitespace-nowrap text-[12.5px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            Continue where it left off
+          </Link>
+        ) : null}
+        <Link href={resultsHref} className={buttonClass(toReview ? 'primary' : 'secondary', 'h-9')}>
+          {toReview ? 'Review and release' : 'See results'}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The first render could not get the run (Blackwing was busy or did not answer in time): the page still opens, says
  * so calmly, and keeps trying with the same back-off as the live poll.
  */
 /** Honest queue copy: who is running, where this audit stands, and that nothing has reached the site. */
-function queueCopy(q: { readonly position: number; readonly ahead: number; readonly running: number; readonly concurrency: number }): string {
+function queueCopy(q: {
+  readonly position: number;
+  readonly ahead: number;
+  readonly running: number;
+  readonly concurrency: number;
+}): string {
   const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
-  const running = q.running > 0 ? `${plural(q.running, 'audit is', 'audits are')} running (Blackwing runs ${q.concurrency} at a time). ` : `Blackwing runs ${q.concurrency} at a time. `;
+  const running =
+    q.running > 0
+      ? `${plural(q.running, 'audit is', 'audits are')} running (Blackwing runs ${q.concurrency} at a time). `
+      : `Blackwing runs ${q.concurrency} at a time. `;
   const place =
     q.ahead === 0
       ? 'Yours is next and starts as soon as a slot frees.'
@@ -229,7 +330,13 @@ function queueCopy(q: { readonly position: number; readonly ahead: number; reado
   return `${running}${place} Nothing has been sent to the site yet.`;
 }
 
-export function RunViewLoader({ id, viewerName }: { readonly id: string; readonly viewerName: string | null }) {
+export function RunViewLoader({
+  id,
+  viewerName,
+}: {
+  readonly id: string;
+  readonly viewerName: string | null;
+}) {
   const [run, setRun] = useState<Run | null>(null);
   const [missing, setMissing] = useState(false);
   const [tries, setTries] = useState(0);
@@ -239,7 +346,9 @@ export function RunViewLoader({ id, viewerName }: { readonly id: string; readonl
     let n = 0;
     const attempt = async (): Promise<void> => {
       try {
-        const res = await fetch(`/api/runs/${encodeURIComponent(id)}?afterSeq=0`, { cache: 'no-store' });
+        const res = await fetch(`/api/runs/${encodeURIComponent(id)}?afterSeq=0`, {
+          cache: 'no-store',
+        });
         if (res.status === 404) {
           if (live) setMissing(true);
           return;
@@ -251,7 +360,10 @@ export function RunViewLoader({ id, viewerName }: { readonly id: string; readonl
         n += 1;
         if (!live) return;
         setTries(n);
-        timer = window.setTimeout(() => void attempt(), BACKOFF_MS[Math.min(n, BACKOFF_MS.length - 1)] ?? BACKOFF_MS[0]);
+        timer = window.setTimeout(
+          () => void attempt(),
+          BACKOFF_MS[Math.min(n, BACKOFF_MS.length - 1)] ?? BACKOFF_MS[0],
+        );
       }
     };
     void attempt();
@@ -262,21 +374,34 @@ export function RunViewLoader({ id, viewerName }: { readonly id: string; readonl
   }, [id]);
   if (run !== null) return <RunView initial={run} viewerName={viewerName} />;
   return (
-    <section role="status" className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center">
+    <section
+      role="status"
+      className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center"
+    >
       {missing ? (
         <>
-          <h1 className="m-0 text-[22px] font-semibold leading-8">We couldn&apos;t find that audit</h1>
-          <p className="m-0 text-[14px] leading-6 text-muted-foreground">The link may be old, or the audit belongs to another workspace.</p>
+          <h1 className="m-0 text-[22px] font-semibold leading-8">
+            We couldn&apos;t find that audit
+          </h1>
+          <p className="m-0 text-[14px] leading-6 text-muted-foreground">
+            The link may be old, or the audit belongs to another workspace.
+          </p>
           <Link href="/" className={buttonClass('primary')}>
             Go to Home
           </Link>
         </>
       ) : (
         <>
-          <span aria-hidden="true" className="size-5 rounded-full border-2 border-border-strong border-t-gold-ink motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
+          <span
+            aria-hidden="true"
+            className="size-5 rounded-full border-2 border-border-strong border-t-gold-ink motion-safe:animate-[bwspin_0.9s_linear_infinite]"
+          />
           <h1 className="m-0 text-[18px] font-semibold leading-7">Opening the audit…</h1>
           <p className="m-0 text-[13.5px] leading-6 text-muted-foreground">
-            {tries === 0 ? 'Loading the latest from Blackwing.' : 'Blackwing is busy for a moment. Reconnecting…'} The audit keeps running either way.
+            {tries === 0
+              ? 'Loading the latest from Blackwing.'
+              : 'Blackwing is busy for a moment. Reconnecting…'}{' '}
+            The audit keeps running either way.
           </p>
         </>
       )}
@@ -312,8 +437,16 @@ function RailDisclosure({
         className="flex w-full items-baseline gap-2 rounded-md py-0.5 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
       >
         <span className="text-[12.5px] font-semibold text-foreground">{title}</span>
-        {open ? null : <span className="ml-auto truncate text-[11.5px] font-normal text-muted-foreground tabular-nums">{summary}</span>}
-        <Icon name="chevron" size={14} className={`${open ? 'ml-auto' : ''} shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+        {open ? null : (
+          <span className="ml-auto truncate text-[11.5px] font-normal text-muted-foreground tabular-nums">
+            {summary}
+          </span>
+        )}
+        <Icon
+          name="chevron"
+          size={14}
+          className={`${open ? 'ml-auto' : ''} shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
       {open ? <div className="mt-2">{children}</div> : null}
     </section>
@@ -323,7 +456,17 @@ function RailDisclosure({
 /** Two diagonal arrows: the "open full screen" affordance (no such glyph in the icon set). */
 function ExpandIcon({ size = 14 }: { readonly size?: number }) {
   return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" />
     </svg>
   );
@@ -340,7 +483,13 @@ function download(name: string, text: string): void {
   }, 1000);
 }
 
-export function RunView({ initial, viewerName }: { readonly initial: Run; readonly viewerName: string | null }) {
+export function RunView({
+  initial,
+  viewerName,
+}: {
+  readonly initial: Run;
+  readonly viewerName: string | null;
+}) {
   const params = useSearchParams();
   const [run, setRun] = useState<Run>(initial);
   const [events, setEvents] = useState<RunEvent[]>(initial.events);
@@ -372,7 +521,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const moreRef = useRef<HTMLButtonElement>(null);
   const callOrigin = useRef<HTMLElement | null>(null);
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
-  const [openCall, setOpenCall] = useState<{ id: string; state: 'loading' | 'ready' | 'missing' | 'error' } | null>(null);
+  const [openCall, setOpenCall] = useState<{
+    id: string;
+    state: 'loading' | 'ready' | 'missing' | 'error';
+  } | null>(null);
   const lastSeq = useRef(initial.lastSeq);
   const failures = useRef(0);
   const terminal = TERMINAL_STATES.has(run.state);
@@ -381,7 +533,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
 
   const poll = useCallback(async (): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(initial.id)}?afterSeq=${lastSeq.current}`, { cache: 'no-store' });
+      const res = await fetch(
+        `/api/runs/${encodeURIComponent(initial.id)}?afterSeq=${lastSeq.current}`,
+        { cache: 'no-store' },
+      );
       if (!res.ok) throw new Error(String(res.status));
       const next = runSchema.parse(await res.json());
       lastSeq.current = Math.max(lastSeq.current, next.lastSeq);
@@ -495,7 +650,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const openExchange = useCallback(
     (id: string): void => {
       // Closing the sheet returns the keyboard to the row that opened it.
-      if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) callOrigin.current = document.activeElement;
+      if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body)
+        callOrigin.current = document.activeElement;
       if (exchangeItems.some((x) => x.id === id)) {
         setOpenCall({ id, state: 'ready' });
         return;
@@ -503,7 +659,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       setOpenCall({ id, state: 'loading' });
       void loadExchanges().then((fresh) => {
         setOpenCall((cur) =>
-          cur?.id !== id ? cur : { id, state: fresh === null ? 'error' : fresh.some((x) => x.id === id) ? 'ready' : 'missing' },
+          cur?.id !== id
+            ? cur
+            : {
+                id,
+                state:
+                  fresh === null ? 'error' : fresh.some((x) => x.id === id) ? 'ready' : 'missing',
+              },
         );
       });
     },
@@ -519,7 +681,11 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       });
       if (!res.ok) {
         const problem = (await res.json().catch(() => ({}))) as { message?: unknown };
-        setControlError(typeof problem.message === 'string' ? problem.message : `Couldn't ${action} the audit. Try again.`);
+        setControlError(
+          typeof problem.message === 'string'
+            ? problem.message
+            : `Couldn't ${action} the audit. Try again.`,
+        );
         return;
       }
       await poll();
@@ -533,7 +699,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   // ---- derived -----------------------------------------------------------------------------------------------------
   const host = hostOf(run.pins.asset?.baseUrl) ?? run.pins.asset?.name ?? 'Audit';
   const care = run.pins.request?.intrusiveness ?? '';
-  const pinnedRequest = run.pins.request as { releaseProven?: unknown; decidedAt?: unknown } | undefined;
+  const pinnedRequest = run.pins.request as
+    { releaseProven?: unknown; decidedAt?: unknown } | undefined;
   const release = pinnedRequest?.releaseProven === 'auto' ? 'auto' : 'hold';
   const approvedAt = typeof pinnedRequest?.decidedAt === 'string' ? pinnedRequest.decidedAt : null;
   const approver = run.pins.authorisation?.signedBy ?? null;
@@ -545,33 +712,57 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const gate2Key = JSON.stringify(run.gate2);
   const gate2 = useMemo(() => run.gate2, [gate2Key]);
   const stopped = run.state === 'killed' || run.state === 'failed';
-  const items = useMemo(() => conversationItems(events, gate2, viewerName, run.findings), [events, gate2, viewerName, run.findings]);
-  const shownItems = useMemo(() => (filter === null ? items : filterConversation(items, filter)), [items, filter]);
+  const items = useMemo(
+    () => conversationItems(events, gate2, viewerName, run.findings),
+    [events, gate2, viewerName, run.findings],
+  );
+  const shownItems = useMemo(
+    () => (filter === null ? items : filterConversation(items, filter)),
+    [items, filter],
+  );
   // Review is complete once every proven finding is released or dismissed. Kept-back (unproven) findings never block it:
   // they stay out of the report by default.
   const reviewed =
     run.state === 'completed' &&
     run.findings.some((f) => f.status === 'released' || f.status === 'dismissed') &&
     !run.findings.some((f) => f.status === 'confirmed');
-  const spine = useMemo(() => stages(events, { terminal, approvedBy, stopped, reviewed }), [events, terminal, approvedBy, stopped, reviewed]);
+  const spine = useMemo(
+    () => stages(events, { terminal, approvedBy, stopped, reviewed }),
+    [events, terminal, approvedBy, stopped, reviewed],
+  );
   const teamMap = useMemo(
     () => teamNodes(events, gate2, nowMs, terminal, stopped, run.paused),
     [events, gate2, nowMs, terminal, stopped, run.paused],
   );
   const cases = useMemo(() => caseList(events), [events]);
-  const cands = useMemo(() => candidates(events, { terminal, findings: run.findings }), [events, terminal, run.findings]);
+  const cands = useMemo(
+    () => candidates(events, { terminal, findings: run.findings }),
+    [events, terminal, run.findings],
+  );
   const pending = run.gate2.filter((g) => isOpenGate2(g, nowMs));
   const pendingIds = pending.map((g) => g.id).join(',');
   // Only an ask the runner waits on holds its agent; a non-blocking ask leaves it testing other cases.
   const waitingAgents = useMemo(
-    () => new Set(pendingIds === '' ? [] : blockingAsks(events, run.gate2.filter((g) => pendingIds.includes(g.id))).map((g) => g.agent)),
+    () =>
+      new Set(
+        pendingIds === ''
+          ? []
+          : blockingAsks(
+              events,
+              run.gate2.filter((g) => pendingIds.includes(g.id)),
+            ).map((g) => g.agent),
+      ),
     [pendingIds, run.gate2, events],
   );
   // The test plan also holds each case an open request names (`case:<id>`), blocking or not.
   const heldCases = useMemo(() => {
     const held = new Set(waitingAgents);
     for (const e of events)
-      if (e.kind === 'gate2.requested' && typeof e.data.caseId === 'string' && pendingIds.includes(String(e.data.gate2Id)))
+      if (
+        e.kind === 'gate2.requested' &&
+        typeof e.data.caseId === 'string' &&
+        pendingIds.includes(String(e.data.gate2Id))
+      )
         held.add(`case:${e.data.caseId}`);
     return held;
   }, [waitingAgents, events, pendingIds]);
@@ -592,21 +783,40 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const router = useRouter();
   const queued = run.state === 'queued';
   const startedMs = run.startedAt === null ? null : new Date(run.startedAt).getTime();
-  const end = run.finishedAt === null ? (mounted ? nowMs : (startedMs ?? 0)) : new Date(run.finishedAt).getTime();
+  const end =
+    run.finishedAt === null
+      ? mounted
+        ? nowMs
+        : (startedMs ?? 0)
+      : new Date(run.finishedAt).getTime();
   const start = startedMs ?? end;
   const elapsedS = Math.max(0, (end - start) / 1000);
   const lastEvent = events.findLast((e) => startedMs === null || Date.parse(e.at) >= startedMs);
-  const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk);
+  const polled = liveness(
+    nowMs,
+    lastEvent === undefined ? start : Date.parse(lastEvent.at),
+    failedSince,
+    lastOk,
+  );
   // Paused is not "live": no new request goes out. A failing poll still says so first.
-  const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests', short: 'Paused' } : polled;
+  const live =
+    run.paused && polled.tone !== 'reconnecting'
+      ? { tone: 'quiet' as const, text: 'Paused · no new requests', short: 'Paused' }
+      : polled;
   const waitsText = `${pending.length} ${pending.length === 1 ? 'decision waits' : 'decisions wait'} for you`;
   const resultsHref = `/runs/${encodeURIComponent(run.id)}/results`;
   // Cases the run never finished: the "Continue where it left off" menu item shows only when some are left.
-  const untriedCount = run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
+  const untriedCount =
+    run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
 
   // The pill names the same stage the spine marks current, so the two never disagree.
   const stage = spine.find((x) => x.state === 'current');
-  const working = stage === undefined || stage.key === 'approved' ? 'Starting' : stage.key === 'review' ? 'Testing' : stage.label;
+  const working =
+    stage === undefined || stage.key === 'approved'
+      ? 'Starting'
+      : stage.key === 'review'
+        ? 'Testing'
+        : stage.label;
   const stateText = terminal
     ? run.state === 'completed'
       ? 'Finished'
@@ -625,7 +835,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             ? `${working} · ${waitsText}`
             : working;
   const statePill =
-    pending.length > 0 && !terminal ? 'border-gold-line bg-gold-soft text-gold-ink' : 'border-border bg-surface-2 text-foreground';
+    pending.length > 0 && !terminal
+      ? 'border-gold-line bg-gold-soft text-gold-ink'
+      : 'border-border bg-surface-2 text-foreground';
 
   const lanes = useMemo(() => agentLanes(events), [events]);
   // The runner saves its request count every few seconds; the events show each request as it goes. Both are real
@@ -644,19 +856,40 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   // Automatic when the request chose it, or when the events show a release nobody made by hand. A run that found
   // nothing leaves nothing to review: never a gold "your turn" for an empty result.
   // Only a proven issue still awaiting release is "your turn"; kept-back ones are kept out of the report by default.
-  const toReviewNow = run.findings.some((f) => f.status === 'confirmed') || (run.findings.length === 0 && cands.some((c) => c.status === 'confirmed'));
-  const gate3 = release === 'auto' || teamMap.autoReleased ? 'Automatic' : terminal ? (reviewed ? 'Review complete' : toReviewNow ? 'Your turn' : 'Nothing to review') : 'After the run';
+  const toReviewNow =
+    run.findings.some((f) => f.status === 'confirmed') ||
+    (run.findings.length === 0 && cands.some((c) => c.status === 'confirmed'));
+  const gate3 =
+    release === 'auto' || teamMap.autoReleased
+      ? 'Automatic'
+      : terminal
+        ? reviewed
+          ? 'Review complete'
+          : toReviewNow
+            ? 'Your turn'
+            : 'Nothing to review'
+        : 'After the run';
   const onFilter = (a: string | null): void => {
     // The filter applies to whichever tab is open (the map sits above all of them).
     setFilter(a);
     setTeam(false);
   };
   // The agent filter applies to every tab, so "Showing one agent" is true wherever it shows.
-  const shownCases = useMemo(() => (filter === null ? cases : cases.filter((c) => c.agent === filter)), [cases, filter]);
+  const shownCases = useMemo(
+    () => (filter === null ? cases : cases.filter((c) => c.agent === filter)),
+    [cases, filter],
+  );
   // Memoised: the deck redraws its lanes and tables only when the events (or the filter) change, not on every tick.
-  const shownLanes = useMemo(() => (filter === null ? lanes : lanes.filter((l) => l.name === filter)), [lanes, filter]);
-  const shownRows = useMemo(() => (filter === null ? rows : rows.filter((r) => r.agent === filter)), [rows, filter]);
-  const shownExchanges = filter === null ? exchanges.items : exchanges.items.filter((x) => x.agent === filter);
+  const shownLanes = useMemo(
+    () => (filter === null ? lanes : lanes.filter((l) => l.name === filter)),
+    [lanes, filter],
+  );
+  const shownRows = useMemo(
+    () => (filter === null ? rows : rows.filter((r) => r.agent === filter)),
+    [rows, filter],
+  );
+  const shownExchanges =
+    filter === null ? exchanges.items : exchanges.items.filter((x) => x.agent === filter);
   const mapProps = { team: teamMap, gate1, gate3, ended: terminal, filter, onFilter };
   const onOpenPlan = useCallback((): void => {
     setTab('plan');
@@ -669,14 +902,23 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const onTabKey = (e: KeyboardEvent<HTMLDivElement>): void => {
     const i = TABS.findIndex((t) => t.id === tab);
     const next =
-      e.key === 'ArrowRight' ? TABS[(i + 1) % TABS.length] : e.key === 'ArrowLeft' ? TABS[(i - 1 + TABS.length) % TABS.length] : e.key === 'Home' ? TABS[0] : e.key === 'End' ? TABS.at(-1) : undefined;
+      e.key === 'ArrowRight'
+        ? TABS[(i + 1) % TABS.length]
+        : e.key === 'ArrowLeft'
+          ? TABS[(i - 1 + TABS.length) % TABS.length]
+          : e.key === 'Home'
+            ? TABS[0]
+            : e.key === 'End'
+              ? TABS.at(-1)
+              : undefined;
     if (next === undefined) return;
     e.preventDefault();
     setTab(next.id);
     tabRefs.current[next.id]?.focus();
   };
   const autoRelease = release === 'auto' || teamMap.autoReleased;
-  const roles = run.pins.request?.testAccounts?.map((a) => a.role) ?? run.coverage?.rolesConfigured ?? [];
+  const roles =
+    run.pins.request?.testAccounts?.map((a) => a.role) ?? run.coverage?.rolesConfigured ?? [];
   const used = accountUse(events);
   // Compact one-line summaries for the collapsed rail sections (the detail is one click away).
   const fmtMin = (s: number): string => (s < 60 ? `${Math.floor(s)}s` : `${Math.round(s / 60)}m`);
@@ -684,15 +926,31 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const accountsTotal = roles.reduce((n, r) => n + (used.get(r) ?? 0), 0);
   const accountsSummary = `${roles.length} ${roles.length === 1 ? 'account' : 'accounts'} · ${accountsTotal.toLocaleString('en-US')} sent`;
   const doneCount = cases.filter((c) => c.status === 'executed').length;
-  const planSummary = cases.length === 0 ? (terminal ? 'none recorded' : 'not recorded yet') : `${doneCount} of ${cases.length} done`;
+  const planSummary =
+    cases.length === 0
+      ? terminal
+        ? 'none recorded'
+        : 'not recorded yet'
+      : `${doneCount} of ${cases.length} done`;
   const sidePanel: ReactNode = (
     <>
       <RailDisclosure title="Limits you approved" summary={limitsSummary}>
-        <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} headless />
+        <LimitsPanel
+          elapsedS={elapsedS}
+          budget={run.budget}
+          requestsUsed={requestsUsed}
+          costUsd={run.costUsd}
+          headless
+        />
       </RailDisclosure>
       {roles.length === 0 ? null : (
         <RailDisclosure title="Account use" summary={accountsSummary}>
-          <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} headless />
+          <AccountsPanel
+            roles={roles}
+            used={used}
+            warned={events.some((e) => e.kind === 'accounts.unused')}
+            headless
+          />
         </RailDisclosure>
       )}
       {/* Beside the flight deck the panel carries its test cases and candidate findings (design 1a), in its words. */}
@@ -710,8 +968,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </>
       )}
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
-        Counts, limits and times come from the runner. Blackwing AI&apos;s messages are its own words and stay unverified until the
-        validator proves them.
+        Counts, limits and times come from the runner. Blackwing AI&apos;s messages are its own
+        words and stay unverified until the validator proves them.
       </p>
     </>
   );
@@ -784,12 +1042,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         <Icon name="arrow" size={12} />
       </button>
     ) : (
-      <span className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
+      <span
+        className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}
+      >
         {terminal ? null : <span aria-hidden="true" className="size-1.5 rounded-full bg-text" />}
         {stateText}
       </span>
     );
-  const exchange = openCall === null ? null : (exchanges.items.find((x) => x.id === openCall.id) ?? null);
+  const exchange =
+    openCall === null ? null : (exchanges.items.find((x) => x.id === openCall.id) ?? null);
   const firstOpen = pending[0];
   const authorisation = pinnedAuthorisation(run.pins);
 
@@ -801,16 +1062,24 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       {/* Header. Phones: the host and the 44 px controls share the first line, the state and liveness the second. */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-4 py-2.5 md:gap-y-2 md:px-6">
         <div className="min-w-0 flex-1">
-          <nav aria-label="Breadcrumb" className="hidden text-[12px] text-muted-foreground md:block">
+          <nav
+            aria-label="Breadcrumb"
+            className="hidden text-[12px] text-muted-foreground md:block"
+          >
             <Link href="/" className="text-muted-foreground no-underline hover:text-foreground">
               Audits
             </Link>{' '}
             / {host}
           </nav>
           <div className="flex min-w-0 items-center gap-2">
-            <h1 className="m-0 min-w-0 truncate text-[19px] font-semibold leading-[26px] tracking-[-0.01em]">{host}</h1>
+            <h1 className="m-0 min-w-0 truncate text-[19px] font-semibold leading-[26px] tracking-[-0.01em]">
+              {host}
+            </h1>
             {CARE_LABEL[care] === undefined ? null : (
-              <span title={care} className="hidden h-[26px] shrink-0 items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium md:inline-flex">
+              <span
+                title={care}
+                className="hidden h-[26px] shrink-0 items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium md:inline-flex"
+              >
                 {CARE_LABEL[care]}
               </span>
             )}
@@ -818,12 +1087,17 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2.5">
-          {liveShown ? <Liveness tone={live.tone} text={live.text} className="max-md:hidden" /> : null}
+          {liveShown ? (
+            <Liveness tone={live.tone} text={live.text} className="max-md:hidden" />
+          ) : null}
           {/* A run stopped before it started never ran: no "Ran for 0m 00s". */}
           {(terminal || queued) && startedMs === null ? null : (
             <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
               {terminal ? 'Ran for' : 'Elapsed'}
-              <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
+              <b
+                className="block text-[15px] font-semibold text-foreground tabular-nums"
+                suppressHydrationWarning
+              >
                 {hms(elapsedS)}
               </b>
             </div>
@@ -845,7 +1119,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             <PendingButton
               variant="secondary"
               className="max-md:h-11 max-md:w-11 max-md:px-0 max-md:[&_[aria-live]]:sr-only"
-              title={queued ? 'Waiting to start: nothing to pause yet' : run.paused ? 'Resume' : 'Pause'}
+              title={
+                queued ? 'Waiting to start: nothing to pause yet' : run.paused ? 'Resume' : 'Pause'
+              }
               icon={run.paused ? 'replay' : 'pause'}
               pendingLabel={run.paused ? 'Resuming…' : 'Pausing…'}
               disabled={stopping || run.state === 'queued'}
@@ -856,7 +1132,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             </PendingButton>
           )}
           {/* Phones stop from the top bar's red icon (spec §9), which targets this audit on its own page. */}
-          <KillButton run={terminal ? null : { id: run.id, assetName: host, startedAt: run.startedAt }} className="h-10 px-4 max-md:hidden" />
+          <KillButton
+            run={terminal ? null : { id: run.id, assetName: host, startedAt: run.startedAt }}
+            className="h-10 px-4 max-md:hidden"
+          />
           <button
             type="button"
             aria-label="Blackwing's team"
@@ -876,7 +1155,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             >
               <Icon name="more" size={18} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[260px] border border-border bg-card text-foreground shadow-float">
+            <DropdownMenuContent
+              align="end"
+              className="w-[260px] border border-border bg-card text-foreground shadow-float"
+            >
               <DropdownMenuItem
                 className="gap-2.5 lg:hidden"
                 onSelect={() => {
@@ -898,7 +1180,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               <DropdownMenuItem
                 className="gap-2.5"
                 onSelect={() => {
-                  download(`run-${run.id}-transcript.json`, JSON.stringify({ run: { ...run, events: undefined }, events }, null, 2));
+                  download(
+                    `run-${run.id}-transcript.json`,
+                    JSON.stringify({ run: { ...run, events: undefined }, events }, null, 2),
+                  );
                 }}
               >
                 <Icon name="download" size={15} />
@@ -955,7 +1240,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <span aria-live="polite" className={copied ? 'whitespace-nowrap text-[12px] font-medium text-ok' : 'sr-only'}>
+          <span
+            aria-live="polite"
+            className={copied ? 'whitespace-nowrap text-[12px] font-medium text-ok' : 'sr-only'}
+          >
             {copied ? 'Run id copied' : ''}
           </span>
         </div>
@@ -971,7 +1259,11 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         )}
       </header>
 
-      <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)} resultsHref={terminal ? resultsHref : null} />
+      <StageSpine
+        stages={spine}
+        approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)}
+        resultsHref={terminal ? resultsHref : null}
+      />
 
       {authorisation === null ? null : (
         <AuthorisedUnder
@@ -991,8 +1283,21 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         />
       )}
 
+      {terminal ? (
+        <TerminalSummary
+          state={run.state}
+          proven={teamMap.proven}
+          untried={untriedCount}
+          toReview={toReviewNow && !reviewed}
+          resultsHref={resultsHref}
+        />
+      ) : null}
+
       {queued && !stopping ? (
-        <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">
+        <p
+          role="status"
+          className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6"
+        >
           <Icon name="clock" size={14} className="shrink-0 text-foreground" />
           <span>
             <b className="font-semibold text-foreground">Waiting to start.</b>{' '}
@@ -1002,16 +1307,21 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       ) : null}
 
       {run.paused && !terminal && !stopping ? (
-        <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">
+        <p
+          role="status"
+          className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6"
+        >
           <Icon name="pause" size={14} className="shrink-0 text-foreground" />
           <span>
-            <b className="font-semibold text-foreground">Paused.</b> No new request goes out until you resume. An agent may
-            finish the thought it is on, and the time limit keeps running.
+            <b className="font-semibold text-foreground">Paused.</b> No new request goes out until
+            you resume. An agent may finish the thought it is on, and the time limit keeps running.
             {pending.length > 0 ? (
               <b className="font-semibold text-gold-ink">
                 {' '}
-                {pending.length === 1 ? 'The open decision keeps its clock' : `The ${pending.length} open decisions keep their clocks`}: no
-                answer in time is a denial.
+                {pending.length === 1
+                  ? 'The open decision keeps its clock'
+                  : `The ${pending.length} open decisions keep their clocks`}
+                : no answer in time is a denial.
               </b>
             ) : null}
           </span>
@@ -1019,11 +1329,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       ) : null}
 
       {/* A pending decision pins a gold banner under the top bar. */}
-      {firstOpen === undefined || terminal ? null : <DecisionBanner g={firstOpen} more={pending.length - 1} />}
+      {firstOpen === undefined || terminal ? null : (
+        <DecisionBanner g={firstOpen} more={pending.length - 1} />
+      )}
 
       {/* One row that fills the height: the side panel scrolls on its own instead of stretching the page. */}
       <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_316px]">
-        <div className="flex min-h-0 min-w-0 flex-col px-4 pt-3 md:px-[22px]">
+        <div className="flex min-h-0 min-w-0 flex-col px-4 pt-3 md:px-6">
           <div className="hidden md:block">
             <TeamMap
               {...mapProps}
@@ -1040,7 +1352,12 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             />
           </div>
           <div className="mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="flex min-w-0 max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-surface-2 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div
+              role="tablist"
+              aria-label="Live audit views"
+              onKeyDown={onTabKey}
+              className="flex min-w-0 max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-surface-2 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
               {TABS.map((t) => (
                 <button
                   key={t.id}
@@ -1097,12 +1414,12 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 onClick={() => {
                   setFocusTab(true);
                 }}
-                aria-label={`Open ${tabLabel} full screen`}
-                title="Full screen"
+                aria-label={`Expand ${tabLabel} to full screen`}
+                title="Expand this view"
                 className="hidden h-8 items-center gap-1.5 rounded-full border border-border px-3 text-[12px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus md:inline-flex"
               >
                 <ExpandIcon size={13} />
-                Full screen
+                Expand
               </button>
             </div>
           </div>
@@ -1115,7 +1432,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             {focusTab ? (
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
                 <p className="m-0 text-[13px]">{tabLabel} is open full screen.</p>
-                <button type="button" className={buttonClass('secondary', 'h-9 px-3.5 text-[13px]')} onClick={() => { setFocusTab(false); }}>
+                <button
+                  type="button"
+                  className={buttonClass('secondary', 'h-9 px-3.5 text-[13px]')}
+                  onClick={() => {
+                    setFocusTab(false);
+                  }}
+                >
                   Exit full screen
                 </button>
               </div>
@@ -1124,7 +1447,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             )}
           </div>
         </div>
-        <aside aria-label="Limits and findings" className="relative hidden min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-[18px] py-3.5 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin] lg:flex">
+        <aside
+          aria-label="Limits and findings"
+          className="relative hidden min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-[18px] py-3.5 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin] lg:flex"
+        >
           {sidePanel}
         </aside>
       </div>
@@ -1138,22 +1464,24 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         className="h-[calc(100dvh-24px)] w-[calc(100vw-24px)] max-w-[1200px]"
       >
         <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
-          <h2 className="m-0 text-[14px] font-semibold">{tabLabel}</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setFocusTab(false);
-            }}
-            aria-label="Exit full screen"
-            className="inline-flex size-9 items-center justify-center rounded-[10px] border border-border text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+            <h2 className="m-0 text-[14px] font-semibold">{tabLabel}</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFocusTab(false);
+              }}
+              aria-label="Exit full screen"
+              className="inline-flex size-9 items-center justify-center rounded-[10px] border border-border text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+            >
+              <Icon name="x" size={16} />
+            </button>
+          </div>
+          <div
+            className={`flex min-h-0 flex-1 flex-col px-4 ${tab === 'conversation' ? '' : 'overflow-y-auto py-3'}`}
           >
-            <Icon name="x" size={16} />
-          </button>
-        </div>
-        <div className={`flex min-h-0 flex-1 flex-col px-4 ${tab === 'conversation' ? '' : 'overflow-y-auto py-3'}`}>
-          {focusTab ? tabContent : null}
-        </div>
+            {focusTab ? tabContent : null}
+          </div>
         </div>
       </Modal>
       <RunDetailsSheet
@@ -1176,13 +1504,19 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         }}
       />
       <Sheet open={team} onOpenChange={setTeam}>
-        <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto border-border bg-card p-4 pt-5 text-foreground">
+        <SheetContent
+          side="bottom"
+          className="max-h-[85dvh] overflow-y-auto border-border bg-card p-4 pt-5 text-foreground"
+        >
           <SheetTitle className="sr-only">Blackwing&apos;s team</SheetTitle>
           <TeamMap {...mapProps} layout="column" />
         </SheetContent>
       </Sheet>
       <Sheet open={panel} onOpenChange={setPanel}>
-        <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-4 overflow-y-auto border-border bg-card p-5 pt-6 text-foreground">
+        <SheetContent
+          side="bottom"
+          className="flex max-h-[85dvh] flex-col gap-4 overflow-y-auto border-border bg-card p-5 pt-6 text-foreground"
+        >
           <SheetTitle className="sr-only">Limits and findings</SheetTitle>
           {sidePanel}
         </SheetContent>

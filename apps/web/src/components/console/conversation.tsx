@@ -9,7 +9,16 @@
 // arrives while following holds the view at its card (the clock and buttons stay on screen) until it is answered or
 // the reader scrolls away.
 import Link from 'next/link';
-import { memo, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import { buttonClass, Icon, SeverityChip, VoiceTag, withRedactions } from './design';
 import { statusTone } from './flight-deck';
@@ -32,7 +41,6 @@ import { agentInitials, agentName } from '../../lib/agents';
 
 import type { Gate2 } from '../../lib/schemas';
 
-const CALLS_SHOWN = 3;
 /** Very long runs show the newest items first; "Show earlier" reveals the rest. */
 const WINDOW = 400;
 /** Within this many pixels of the bottom counts as "at the bottom" (auto-follow on). */
@@ -41,15 +49,17 @@ const FOLLOW_SLACK_PX = 96;
 const HOLD_GAP_PX = 12;
 /** A pending card counts as seen while this much of it (its header and clock) is on screen. */
 const CARD_SEEN_PX = 56;
-/** A click this soon after "Show n more" lands on a row that slid under the pointer: ignore it. */
-const TOGGLE_GUARD_MS = 450;
 /** The host lines that end a run; each carries the "See results" next step. */
 const END_KINDS: ReadonlySet<string> = new Set(['run.completed', 'run.killed', 'run.failed']);
 
 const noSubscribe = (): (() => void) => () => undefined;
 /** False during the server render and hydration, true after: times are formatted in the viewer's own clock. */
 function useMounted(): boolean {
-  return useSyncExternalStore(noSubscribe, () => true, () => false);
+  return useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
 }
 
 /** The one clock format of the run page: "8:47 am" in the viewer's locale and time zone. */
@@ -64,7 +74,10 @@ function SentAt({ at }: { readonly at: string }) {
 function Time({ at }: { readonly at: string }) {
   const mounted = useMounted();
   return (
-    <time dateTime={at} className="ml-auto shrink-0 whitespace-nowrap pl-3 text-[11px] tabular-nums text-muted-foreground">
+    <time
+      dateTime={at}
+      className="ml-auto shrink-0 whitespace-nowrap pl-3 text-[11px] tabular-nums text-muted-foreground"
+    >
       {mounted ? shortTime(at) : ''}
     </time>
   );
@@ -111,7 +124,9 @@ function Clamp({
             ? undefined
             : {
                 maxHeight: lines * lineHeight,
-                ...(overflows ? { maskImage: 'linear-gradient(to bottom, #000 65%, transparent)' } : {}),
+                ...(overflows
+                  ? { maskImage: 'linear-gradient(to bottom, #000 65%, transparent)' }
+                  : {}),
               }
         }
       >
@@ -135,9 +150,16 @@ function Clamp({
 
 function Avatar({ agent }: { readonly agent: string }) {
   const tone =
-    agent === 'orchestrator' ? 'bg-text text-bg' : agent === 'validator' ? 'bg-ok-soft text-ok' : 'bg-slate-soft text-slate';
+    agent === 'orchestrator'
+      ? 'bg-text text-bg'
+      : agent === 'validator'
+        ? 'bg-ok-soft text-ok'
+        : 'bg-slate-soft text-slate';
   return (
-    <span aria-hidden="true" className={`flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[10px] font-bold ${tone}`}>
+    <span
+      aria-hidden="true"
+      className={`flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[10px] font-bold ${tone}`}
+    >
       {agent === 'validator' ? <Icon name="check" size={12} /> : agentInitials(agent)}
     </span>
   );
@@ -145,82 +167,138 @@ function Avatar({ agent }: { readonly agent: string }) {
 
 function CrowTile() {
   return (
-    <span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-gold-soft shadow-[inset_0_0_0_1px_var(--gold-line)]">
+    <span
+      aria-hidden="true"
+      className="flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-gold-soft shadow-[inset_0_0_0_1px_var(--gold-line)]"
+    >
       <img src="/brand/crow-shield.png" alt="" width={11} height={11} className="object-contain" />
     </span>
   );
 }
 
-function CallList({ calls, onOpen }: { readonly calls: readonly CallRow[]; readonly onOpen: (exchangeId: string) => void }) {
-  const [all, setAll] = useState(false);
-  const toggledAt = useRef(0);
+/** The full request list, as one quiet group with hairlines (prototype 04) — not a stack of boxes. */
+function CallRows({
+  calls,
+  onOpen,
+}: {
+  readonly calls: readonly CallRow[];
+  readonly onOpen: (exchangeId: string) => void;
+}) {
+  return (
+    <ul className="m-0 w-full list-none divide-y divide-border overflow-hidden rounded-[8px] border border-border bg-surface p-0">
+      {calls.map((c) => (
+        <li key={c.seq}>
+          {c.blocked ? (
+            <div className="flex min-h-[30px] items-center gap-2.5 bg-warn-soft px-2.5 py-1 text-[11.5px] text-warn">
+              <Icon name="lock" size={12} />
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">Blocked by scope: not sent</span> (
+                {ruleWords(c.rule ?? '')})
+                <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                  {c.method} {withRedactions(c.path)}
+                </span>
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={c.exchangeId === null}
+              onClick={() => {
+                if (c.exchangeId !== null) onOpen(c.exchangeId);
+              }}
+              title="Open the request and response"
+              className="flex h-[30px] w-full max-md:h-11 items-center gap-2.5 px-2.5 text-left font-mono text-[11.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus disabled:cursor-default"
+            >
+              <span className="font-medium text-slate">{c.method}</span>
+              <span className="min-w-0 flex-1 truncate">
+                {withRedactions(c.path)}
+                {c.asRole === null ? null : (
+                  <span className="text-muted-foreground"> · as {c.asRole}</span>
+                )}
+              </span>
+              <span
+                className={`rounded-[5px] px-1.5 py-px text-[10.5px] font-medium ${statusTone(c.status ?? 0)}`}
+              >
+                {c.status}
+              </span>
+              <span className="w-12 text-right text-[10.5px] text-muted-foreground">{c.ms} ms</span>
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CallList({
+  calls,
+  onOpen,
+}: {
+  readonly calls: readonly CallRow[];
+  readonly onOpen: (exchangeId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
   if (calls.length === 0) return null;
-  const shown = all ? calls : calls.slice(0, CALLS_SHOWN);
-  // One quiet group with hairlines, not a stack of boxes (prototype 04).
+  // A single request is not noise: show it. Repeated replays (a proven finding re-tests the same request) are, so a
+  // one-line summary stands in for the rows until "Show evidence" reveals the full list — no request is dropped.
+  if (calls.length === 1)
+    return (
+      <div className="mt-1.5 flex flex-col items-start gap-1 pl-8">
+        <CallRows calls={calls} onOpen={onOpen} />
+      </div>
+    );
+  const sent = calls.filter((c) => !c.blocked);
+  const blocked = calls.length - sent.length;
+  const statuses = [...new Set(sent.map((c) => c.status ?? 0))];
+  const only = statuses.length === 1 ? (statuses[0] ?? null) : null;
+  const oneEndpoint = new Set(sent.map((c) => `${c.method} ${c.path}`)).size === 1;
+  const n = sent.length.toLocaleString('en-US');
+  const summary =
+    sent.length >= 2 && oneEndpoint && only !== null && only !== 0
+      ? `Re-tested ${n} of ${n} times — same result (${only})`
+      : sent.length === 0
+        ? 'No request was sent'
+        : `${n} ${sent.length === 1 ? 'request' : 'requests'}${only !== null && only !== 0 ? ` · all ${only}` : ''}`;
   return (
     <div className="mt-1.5 flex flex-col items-start gap-1 pl-8">
-      <ul className="m-0 w-full list-none divide-y divide-border overflow-hidden rounded-[8px] border border-border bg-surface p-0">
-        {shown.map((c, i) => (
-          <li key={c.seq}>
-            {c.blocked ? (
-              <div className="flex min-h-[30px] items-center gap-2.5 bg-warn-soft px-2.5 py-1 text-[11.5px] text-warn">
-                <Icon name="lock" size={12} />
-                <span className="min-w-0 flex-1">
-                  <span className="font-medium">Blocked by scope: not sent</span> ({ruleWords(c.rule ?? '')})
-                  <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                    {c.method} {withRedactions(c.path)}
-                  </span>
-                </span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={c.exchangeId === null}
-                onClick={() => {
-                  // Only rows "Show n more" just slid under the pointer ignore a click that fast; the first rows never move.
-                  const slid = i >= CALLS_SHOWN && Date.now() - toggledAt.current < TOGGLE_GUARD_MS;
-                  if (c.exchangeId !== null && !slid) onOpen(c.exchangeId);
-                }}
-                title="Open the request and response"
-                className="flex h-[30px] w-full max-md:h-11 items-center gap-2.5 px-2.5 text-left font-mono text-[11.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus disabled:cursor-default"
-              >
-                <span className="font-medium text-slate">{c.method}</span>
-                <span className="min-w-0 flex-1 truncate">
-                  {withRedactions(c.path)}
-                  {c.asRole === null ? null : <span className="text-muted-foreground"> · as {c.asRole}</span>}
-                </span>
-                <span className={`rounded-[5px] px-1.5 py-px text-[10.5px] font-medium ${statusTone(c.status ?? 0)}`}>{c.status}</span>
-                <span className="w-12 text-right text-[10.5px] text-muted-foreground">{c.ms} ms</span>
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      {calls.length > CALLS_SHOWN ? (
-        <button
-          type="button"
-          aria-expanded={all}
-          onClick={() => {
-            toggledAt.current = Date.now();
-            setAll(!all);
-          }}
-          className="py-0.5 text-[12px] font-medium text-gold-ink hover:underline max-md:min-h-11"
-        >
-          {all ? 'Show fewer' : `Show ${calls.length - CALLS_SHOWN} more`}
-        </button>
-      ) : null}
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-0.5 py-0.5 text-left text-[12px] text-muted-foreground max-md:min-h-11"
+      >
+        <span className="text-foreground">{summary}</span>
+        {blocked > 0 ? (
+          <span className="text-warn">· {blocked.toLocaleString('en-US')} blocked by scope</span>
+        ) : null}
+        <span className="inline-flex items-center gap-1 font-medium text-gold-ink hover:underline">
+          <Icon name="chevron" size={12} className={open ? 'rotate-180' : ''} />
+          {open ? 'Hide requests' : 'Show evidence'}
+        </span>
+      </button>
+      {open ? <CallRows calls={calls} onOpen={onOpen} /> : null}
     </div>
   );
 }
 
-function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCall: (id: string) => void }) {
+function Turn({
+  turn,
+  onOpenCall,
+}: {
+  readonly turn: TurnItem;
+  readonly onOpenCall: (id: string) => void;
+}) {
   return (
     <div className="flex flex-col">
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px]">
         <Avatar agent={turn.agent} />
         <span className="font-semibold">{agentName(turn.agent)}</span>
         {agentName(turn.agent) === turn.agent ? null : (
-          <span className="hidden font-mono text-[10.5px] text-muted-foreground sm:inline">{turn.agent}</span>
+          <span className="hidden font-mono text-[10.5px] text-muted-foreground sm:inline">
+            {turn.agent}
+          </span>
         )}
         {turn.reply ? (
           <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-surface-2 px-2 py-px text-[11px] font-medium text-muted-foreground">
@@ -232,7 +310,10 @@ function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCa
         {turn.text === null && turn.tools.length === 0 ? (
           <>
             <span className="text-muted-foreground">
-              sent {turn.calls.length === 1 ? 'a request' : `${turn.calls.length.toLocaleString('en-US')} requests`}
+              sent{' '}
+              {turn.calls.length === 1
+                ? 'a request'
+                : `${turn.calls.length.toLocaleString('en-US')} requests`}
             </span>
             <VoiceTag voice="blackwing" title="Each request as the runner recorded it">
               Recorded by Blackwing
@@ -245,14 +326,21 @@ function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCa
       </div>
       {turn.text === null ? null : (
         <Clamp lines={6} lineHeight={22} className="ml-8 mt-1">
-          {turn.isError ? <p className="m-0 mb-1 text-[12.5px] font-medium text-bad">The agent reported an error.</p> : null}
+          {turn.isError ? (
+            <p className="m-0 mb-1 text-[12.5px] font-medium text-bad">
+              The agent reported an error.
+            </p>
+          ) : null}
           <Markdown text={turn.text} className="text-[14px] leading-[22px]" />
         </Clamp>
       )}
       {turn.tools.length === 0 ? null : (
         <div className="ml-8 mt-1.5 flex flex-wrap gap-1.5">
           {chipGroups(turn.tools).map((t, i) => (
-            <span key={`${t}-${i}`} className="inline-flex h-[22px] max-w-full items-center gap-1.5 truncate rounded-md bg-surface-2 px-2 text-[11.5px] text-muted-foreground">
+            <span
+              key={`${t}-${i}`}
+              className="inline-flex h-[22px] max-w-full items-center gap-1.5 truncate rounded-md bg-surface-2 px-2 text-[11.5px] text-muted-foreground"
+            >
               <Icon name="term" size={11} />
               {t}
             </span>
@@ -264,7 +352,45 @@ function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCa
   );
 }
 
-function ValidatorTurn({ v, onOpenCall }: { readonly v: ValidatorItem; readonly onOpenCall: (id: string) => void }) {
+/**
+ * A system note in the fine-line house style: a 2px left rule and a small coloured label carry the tone, the
+ * explanation stays in normal text on a quiet `--surface-2` card — no heavy saturated fill. Shared so every note
+ * (the validator's verdict, and any other) reads the same.
+ */
+function StatusNote({
+  tone,
+  label,
+  marker = null,
+  children = null,
+}: {
+  readonly tone: 'ok' | 'neutral' | 'warn';
+  readonly label: ReactNode;
+  readonly marker?: ReactNode;
+  readonly children?: ReactNode;
+}) {
+  const rule =
+    tone === 'ok' ? 'border-ok' : tone === 'warn' ? 'border-warn' : 'border-border-strong';
+  const labelTone = tone === 'ok' ? 'text-ok' : tone === 'warn' ? 'text-warn' : 'text-foreground';
+  return (
+    <div
+      className={`flex items-start gap-2 rounded-r-[8px] border-l-2 bg-surface-2 py-[7px] pl-3 pr-3 text-[13px] ${rule}`}
+    >
+      {marker}
+      <span className="min-w-0 text-foreground">
+        <b className={`font-semibold ${labelTone}`}>{label}</b>
+        {children === null ? null : <> {children}</>}
+      </span>
+    </div>
+  );
+}
+
+function ValidatorTurn({
+  v,
+  onOpenCall,
+}: {
+  readonly v: ValidatorItem;
+  readonly onOpenCall: (id: string) => void;
+}) {
   return (
     <div className="flex flex-col">
       <div className="flex min-w-0 items-center gap-2 text-[12.5px]">
@@ -279,41 +405,36 @@ function ValidatorTurn({ v, onOpenCall }: { readonly v: ValidatorItem; readonly 
           <span className="font-medium">{v.title}</span>
         </p>
         {v.verdict === 'proving' ? (
-          <p className="m-0 flex items-start gap-2 rounded-[10px] bg-slate-soft px-3 py-[7px] text-[13px] text-slate">
-            <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
-            <span>
-              Proving: replay {Math.min(v.replays, VALIDATOR_REPLAYS)} of {VALIDATOR_REPLAYS}
-              {v.control === null ? '' : ` · Negative control: ${v.control.matched ? 'it matched too' : 'behaved as expected'} (${v.control.status})`}
-            </span>
-          </p>
+          <StatusNote
+            tone="neutral"
+            label="Proving"
+            marker={
+              <span
+                aria-hidden="true"
+                className="mt-[3px] size-3 shrink-0 rounded-full border-2 border-border-strong border-t-foreground motion-safe:animate-[bwspin_0.9s_linear_infinite]"
+              />
+            }
+          >
+            — replay {Math.min(v.replays, VALIDATOR_REPLAYS)} of {VALIDATOR_REPLAYS}
+            {v.control === null
+              ? ''
+              : ` · Negative control: ${v.control.matched ? 'it matched too' : 'behaved as expected'} (${v.control.status})`}
+          </StatusNote>
         ) : v.verdict === 'proven' ? (
-          <p className="m-0 flex items-start gap-2 rounded-[10px] bg-ok-soft px-3 py-[7px] text-[13px] text-ok">
-            <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-current" />
-            <span>
-              <b className="font-semibold">Proven.</b> Replayed {v.matched} of {Math.max(v.replays, v.matched)} times; the control behaved as expected.{' '}
-              {v.autoReleased ? 'Released automatically.' : 'Waits for your release.'}
-            </span>
-          </p>
-        ) : v.verdict === 'merged' || v.verdict === 'unfinished' ? (
-          <p className="m-0 flex items-start gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface-2 px-3 py-[7px] text-[13px] text-muted-foreground">
-            <span aria-hidden="true" className="mt-[5px] h-[2px] w-2.5 shrink-0 rounded-full bg-current" />
-            <span>
-              {v.verdict === 'merged' ? (
-                <>
-                  <b className="font-semibold text-foreground">Merged</b> into {v.reason ?? 'a finding of the same issue'}.
-                </>
-              ) : (
-                <b className="font-semibold text-foreground">Not finished</b>
-              )}
-            </span>
-          </p>
+          <StatusNote tone="ok" label="Proven.">
+            Replayed {v.matched} of {Math.max(v.replays, v.matched)} times; the control behaved as
+            expected. {v.autoReleased ? 'Released automatically.' : 'Waits for your release.'}
+          </StatusNote>
+        ) : v.verdict === 'merged' ? (
+          <StatusNote tone="neutral" label="Merged">
+            into {v.reason ?? 'a finding of the same issue'}.
+          </StatusNote>
+        ) : v.verdict === 'unfinished' ? (
+          <StatusNote tone="neutral" label="Not finished" />
         ) : (
-          <p className="m-0 flex items-start gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface-2 px-3 py-[7px] text-[13px] text-muted-foreground">
-            <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-dashed border-current" />
-            <span>
-              <b className="font-semibold text-foreground">Not proven:</b> {v.reason ?? 'the replay did not hold'}. Kept back from the report.
-            </span>
-          </p>
+          <StatusNote tone="neutral" label="Not proven:">
+            {v.reason ?? 'the replay did not hold'}. Kept back from the report.
+          </StatusNote>
         )}
       </div>
       <CallList calls={v.calls} onOpen={onOpenCall} />
@@ -340,12 +461,24 @@ function HostLine({
       className={`flex items-start gap-2.5 text-[12.5px] leading-[19px] ${finished ? 'rounded-[12px] border border-gold-line bg-gold-soft p-3' : end ? 'rounded-[12px] border border-border bg-surface-2 p-3' : ''}`}
     >
       <CrowTile />
-      <span className={end ? 'flex flex-1 flex-wrap items-center gap-3 font-medium text-foreground' : warn ? 'font-medium text-warn' : 'text-muted-foreground'}>
+      <span
+        className={
+          end
+            ? 'flex flex-1 flex-wrap items-center gap-3 font-medium text-foreground'
+            : warn
+              ? 'font-medium text-warn'
+              : 'text-muted-foreground'
+        }
+      >
         {item.text}
         {item.kind === 'plan.cases' && onOpenPlan !== null ? (
           <>
             {' '}
-            <button type="button" onClick={onOpenPlan} className="font-medium text-gold-ink hover:underline max-md:min-h-11">
+            <button
+              type="button"
+              onClick={onOpenPlan}
+              className="font-medium text-gold-ink hover:underline max-md:min-h-11"
+            >
               Open the test plan
             </button>
           </>
@@ -383,7 +516,10 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
       const row = p.gate2.find((g) => g.id === item.gate2Id);
       if (row !== undefined)
         return (
-          <div data-gate2-row={row.id} data-gate2-pending={row.status === 'pending' ? row.id : undefined}>
+          <div
+            data-gate2-row={row.id}
+            data-gate2-pending={row.status === 'pending' ? row.id : undefined}
+          >
             <Gate2Card
               gate2={row}
               body={item.body}
@@ -394,9 +530,17 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
             {/* The runner did not wait on this ask: say whether the allowed request was actually sent, and when. */}
             {item.nonBlocking && row.status === 'approved' ? (
               <p className="m-0 ml-8 mt-1.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                <Icon name={item.sentAt === null ? 'clock' : 'check'} size={12} className="shrink-0" />
+                <Icon
+                  name={item.sentAt === null ? 'clock' : 'check'}
+                  size={12}
+                  className="shrink-0"
+                />
                 {item.sentAt === null ? (
-                  item.runEnded ? 'Allowed · not used before the audit ended' : 'Allowed · not used yet'
+                  item.runEnded ? (
+                    'Allowed · not used before the audit ended'
+                  ) : (
+                    'Allowed · not used yet'
+                  )
                 ) : (
                   <>
                     Allowed · sent at <SentAt at={item.sentAt} />
@@ -407,7 +551,17 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
           </div>
         );
       return item.decided === null ? null : (
-        <HostLine item={{ type: 'host', key: item.key, seq: item.seq, at: item.at, kind: 'gate2.decided', text: item.decided }} resultsHref={null} />
+        <HostLine
+          item={{
+            type: 'host',
+            key: item.key,
+            seq: item.seq,
+            at: item.at,
+            kind: 'gate2.decided',
+            text: item.decided,
+          }}
+          resultsHref={null}
+        />
       );
     }
   }
@@ -423,7 +577,8 @@ function Thread({ thread, ...p }: ChildProps & { readonly thread: ThreadItem }) 
             <Icon name="reply" size={13} className="-scale-x-100" />
           </span>
           <span className="truncate">
-            <span className="font-medium text-foreground">{agentName(thread.to)}</span>, continuing the {agentName(thread.from)}&apos;s task
+            <span className="font-medium text-foreground">{agentName(thread.to)}</span>, continuing
+            the {agentName(thread.from)}&apos;s task
           </span>
         </div>
       ) : (
@@ -438,13 +593,21 @@ function Thread({ thread, ...p }: ChildProps & { readonly thread: ThreadItem }) 
             <VoiceTag voice="claude" />
             <Time at={thread.at} />
           </div>
-          <Clamp lines={3} lineHeight={21} className="ml-8 mt-1 rounded-[4px_12px_12px_12px] border border-border bg-surface-2 px-3 py-2 text-[13.5px] leading-[21px]">
-            <span className="whitespace-pre-wrap">{thread.task === '' ? 'No instruction was recorded.' : thread.task}</span>
+          <Clamp
+            lines={3}
+            lineHeight={21}
+            className="ml-8 mt-1 rounded-[4px_12px_12px_12px] border border-border bg-surface-2 px-3 py-2 text-[13.5px] leading-[21px]"
+          >
+            <span className="whitespace-pre-wrap">
+              {thread.task === '' ? 'No instruction was recorded.' : thread.task}
+            </span>
           </Clamp>
         </>
       )}
       {thread.children.length === 0 ? null : (
-        <div className={`ml-3 flex flex-col gap-3 border-l-2 border-border pl-[18px] max-md:ml-1 max-md:pl-2.5 ${thread.continued ? 'mt-1.5' : 'mt-2.5'}`}>
+        <div
+          className={`ml-3 flex flex-col gap-3 border-l-2 border-border pl-[18px] max-md:ml-1 max-md:pl-2.5 ${thread.continued ? 'mt-1.5' : 'mt-2.5'}`}
+        >
           {thread.children.map((c) => (
             <Child key={c.key} item={c} {...p} />
           ))}
@@ -492,12 +655,19 @@ export const Conversation = memo(function Conversation({
   /** The pending decision the view holds at while following (its card's top stays on screen). */
   const hold = useRef<string | null>(null);
   const cardOf = (id: string): HTMLElement | null =>
-    scroller.current?.querySelector<HTMLElement>(`[data-gate2-pending="${CSS.escape(id)}"]`) ?? null;
+    scroller.current?.querySelector<HTMLElement>(`[data-gate2-pending="${CSS.escape(id)}"]`) ??
+    null;
   /** Where following scrolls to: the bottom, or the held card's top when that comes first. */
   const followTop = (el: HTMLElement): number => {
     const card = hold.current === null ? null : cardOf(hold.current);
     if (card === null) return el.scrollHeight;
-    return Math.min(el.scrollHeight, card.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - HOLD_GAP_PX);
+    return Math.min(
+      el.scrollHeight,
+      card.getBoundingClientRect().top -
+        el.getBoundingClientRect().top +
+        el.scrollTop -
+        HOLD_GAP_PX,
+    );
   };
   const stick = (el: HTMLElement): void => {
     el.scrollTop = followTop(el);
@@ -510,7 +680,10 @@ export const Conversation = memo(function Conversation({
   const checkPending = useCallback((): void => {
     const root = scroller.current;
     if (root === null) return;
-    setBelow(hold.current !== null && root.scrollHeight - root.scrollTop - root.clientHeight > FOLLOW_SLACK_PX);
+    setBelow(
+      hold.current !== null &&
+        root.scrollHeight - root.scrollTop - root.clientHeight > FOLLOW_SLACK_PX,
+    );
     const box = root.getBoundingClientRect();
     const ids: string[] = [];
     root.querySelectorAll<HTMLElement>('[data-gate2-pending]').forEach((el) => {
@@ -561,9 +734,14 @@ export const Conversation = memo(function Conversation({
     const el = scroller.current;
     if (hold.current !== null && !ids.includes(hold.current)) {
       // The held decision was answered: keep its receipt where the reader is looking, not jump to the bottom.
-      const receipt = el?.querySelector<HTMLElement>(`[data-gate2-row="${CSS.escape(hold.current)}"]`) ?? null;
+      const receipt =
+        el?.querySelector<HTMLElement>(`[data-gate2-row="${CSS.escape(hold.current)}"]`) ?? null;
       hold.current = null;
-      if (receipt !== null && el !== null && el.scrollHeight - el.clientHeight - el.scrollTop > FOLLOW_SLACK_PX) {
+      if (
+        receipt !== null &&
+        el !== null &&
+        el.scrollHeight - el.clientHeight - el.scrollTop > FOLLOW_SLACK_PX
+      ) {
         followRef.current = false;
         setFollow(false);
         receipt.scrollIntoView({ block: 'nearest' });
@@ -586,10 +764,15 @@ export const Conversation = memo(function Conversation({
   const goTo = useCallback((id: string): void => {
     const card = cardOf(id);
     if (card === null) return;
-    card.scrollIntoView({ block: card.offsetHeight > (scroller.current?.clientHeight ?? 0) ? 'start' : 'center', behavior: reduceMotion() ? 'auto' : 'smooth' });
+    card.scrollIntoView({
+      block: card.offsetHeight > (scroller.current?.clientHeight ?? 0) ? 'start' : 'center',
+      behavior: reduceMotion() ? 'auto' : 'smooth',
+    });
     // Deny is the safe default: the keyboard lands there.
     const buttons = [...card.querySelectorAll<HTMLButtonElement>('[data-gate2-open] button')];
-    (buttons.find((b) => b.textContent.trim().startsWith('Deny')) ?? buttons[0])?.focus({ preventScroll: true });
+    (buttons.find((b) => b.textContent.trim().startsWith('Deny')) ?? buttons[0])?.focus({
+      preventScroll: true,
+    });
   }, []);
   useEffect(() => {
     const first = pendingKey.split(',')[0];
@@ -604,7 +787,11 @@ export const Conversation = memo(function Conversation({
       const key = e.key.toLowerCase();
       if ((key !== 'd' && key !== 'a') || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
       const t = e.target;
-      if (t instanceof HTMLElement && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+      if (
+        t instanceof HTMLElement &&
+        (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))
+      )
+        return;
       const ids = pendingKey === '' ? [] : pendingKey.split(',');
       const box = scroller.current?.getBoundingClientRect();
       if (ids.length === 0 || box === undefined) return;
@@ -633,7 +820,9 @@ export const Conversation = memo(function Conversation({
     const card = cardOf(first);
     if (card === null) return;
     openedAtCard.current = true;
-    card.scrollIntoView({ block: card.offsetHeight > (scroller.current?.clientHeight ?? 0) ? 'start' : 'center' });
+    card.scrollIntoView({
+      block: card.offsetHeight > (scroller.current?.clientHeight ?? 0) ? 'start' : 'center',
+    });
     checkPending();
   }, [pendingKey, checkPending]);
 
@@ -651,7 +840,8 @@ export const Conversation = memo(function Conversation({
   const jump = !(follow && !below) && items.length > 0 && decisionPill === null;
   // The run's last line carries the gold next step; while it is scrolled out of view (say, after Stop held the view at
   // a decision's receipt) the strip carries it instead, so a finished or stopped run always shows exactly one.
-  const ended = resultsHref !== null && items.some((i) => i.type === 'host' && END_KINDS.has(i.kind));
+  const ended =
+    resultsHref !== null && items.some((i) => i.type === 'host' && END_KINDS.has(i.kind));
   const pills = !editing && (decisionPill !== null || jump);
   const pill =
     'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus';
@@ -669,12 +859,15 @@ export const Conversation = memo(function Conversation({
             return;
           }
           const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_SLACK_PX;
-          const atHold = hold.current !== null && Math.abs(el.scrollTop - followTop(el)) < FOLLOW_SLACK_PX;
+          const atHold =
+            hold.current !== null && Math.abs(el.scrollTop - followTop(el)) < FOLLOW_SLACK_PX;
           if (!atHold) hold.current = null;
           setFollow(atBottom || atHold);
         }}
         onFocus={(e) => {
-          setEditing(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement);
+          setEditing(
+            e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement,
+          );
           release(e.target);
         }}
         onPointerDown={(e) => {
@@ -707,10 +900,17 @@ export const Conversation = memo(function Conversation({
             </div>
           ) : null}
           {shown.map((item) =>
-            item.type === 'thread' ? <Thread key={item.key} thread={item} {...p} /> : <Child key={item.key} item={item} {...p} />,
+            item.type === 'thread' ? (
+              <Thread key={item.key} thread={item} {...p} />
+            ) : (
+              <Child key={item.key} item={item} {...p} />
+            ),
           )}
           {waitingFirst && shown.length > 0 ? (
-            <div role="status" className="flex items-center gap-2.5 text-[12.5px] text-muted-foreground">
+            <div
+              role="status"
+              className="flex items-center gap-2.5 text-[12.5px] text-muted-foreground"
+            >
               <span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">
                 <span className="size-3 rounded-full border-2 border-border-strong border-t-gold-ink motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
               </span>
@@ -737,7 +937,9 @@ export const Conversation = memo(function Conversation({
         </div>
       ) : null}
       {pills ? (
-        <div className={`flex shrink-0 flex-wrap items-center justify-center gap-2 border-t border-border px-3 py-1.5 ${jump ? '' : 'max-md:hidden'}`}>
+        <div
+          className={`flex shrink-0 flex-wrap items-center justify-center gap-2 border-t border-border px-3 py-1.5 ${jump ? '' : 'max-md:hidden'}`}
+        >
           {hidden[0] === undefined || decisionPill === null ? null : (
             <button
               type="button"

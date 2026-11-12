@@ -160,7 +160,7 @@ const eOut = (s: GState): EdgeTone =>
   s === 'done' ? 'done' : s === 'working' || s === 'waiting' ? 'active' : 'pending';
 
 // Horizontal geometry.
-const AW = 158;
+const AW = 204;
 const AH = 58;
 const RW = 112;
 const GS = 44; // gate diamond side
@@ -656,7 +656,7 @@ function NodeView({
       <>
         <span
           aria-hidden="true"
-          style={{ position: 'absolute', left: node.x - 58, top: node.y - GS / 2 - 18, width: 116 }}
+          style={{ position: 'absolute', left: node.x - 58, top: node.y - GS / 2 - 25, width: 116 }}
           className="text-center text-[10.5px] leading-[14px] text-muted-foreground"
         >
           {node.name}
@@ -674,7 +674,7 @@ function NodeView({
           className={`rotate-45 rounded-[4px] border-[1.5px] ${node.state === 'done' ? 'border-ok bg-ok-soft' : 'border-border-strong bg-surface'}`}
         />
         <b
-          style={{ position: 'absolute', left: node.x - 58, top: node.y + GS / 2 + 3, width: 116 }}
+          style={{ position: 'absolute', left: node.x - 58, top: node.y + GS / 2 + 10, width: 116 }}
           className="text-center text-[10.5px] font-semibold leading-[14px] text-foreground"
         >
           {node.who}
@@ -782,7 +782,8 @@ function GraphScene({
   const [ref, scale] = useFitScale(
     scene.width,
     scene.height,
-    full ? 0.55 : variant === 'column' ? 0.62 : 0.52,
+    // Legibility floor: never shrink the scene so far that the node text becomes unreadable.
+    full ? 0.6 : variant === 'column' ? 0.72 : 0.78,
     full ? 1.9 : 1,
     full,
   );
@@ -847,6 +848,10 @@ function Legend({ className = '' }: { readonly className?: string }) {
       <span className="flex items-center gap-1.5">
         <i aria-hidden="true" className="size-[7px] rounded-full bg-ok" />
         Done
+      </span>
+      <span className="flex items-center gap-1.5">
+        <i aria-hidden="true" className="h-[2px] w-2.5 rounded-full bg-muted-foreground" />
+        Stopped
       </span>
     </span>
   );

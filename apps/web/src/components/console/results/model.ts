@@ -6,8 +6,13 @@ import { scrub, scrubDeep } from '@blackwing/errors/scrub';
 
 import { finishedWhy } from '../../../lib/host-lines';
 import { resultsHeadline } from '../../../lib/plan-text';
-import { findingSchema, type AssessmentRequest, type Coverage, type Run } from '../../../lib/schemas';
-import { pathOf, shortId } from '../run-model';
+import {
+  findingSchema,
+  type AssessmentRequest,
+  type Coverage,
+  type Run,
+} from '../../../lib/schemas';
+import { pathOf } from '../run-model';
 
 export type FindingSummary = Run['findings'][number];
 type RunEvent = Run['events'][number];
@@ -56,9 +61,10 @@ export const findingDetailSchema = findingSchema
   }));
 export type FindingDetail = z.infer<typeof findingDetailSchema>;
 
-/** "Seen before in audit 01A1B919": the same issue (same site, method, path and weakness) in an earlier audit. */
+/** "Also seen in an earlier run": the same issue (same site, method, path and weakness) was found in an earlier audit.
+ *  Plain language, no run hash — the exact earlier run is on the finding's own page. */
 export const seenBeforeText = (f: Pick<FindingSummary, 'seenBefore'>): string | null =>
-  f.seenBefore === null ? null : `Seen before in audit ${shortId(f.seenBefore.runId)}`;
+  f.seenBefore === null ? null : 'Also seen in an earlier run';
 
 /** The findings filters (shared by the server page, which reads the URL, and the client list). */
 export const FINDING_STATUSES = [
@@ -112,10 +118,18 @@ export interface CaseCounts {
  * Test cases and how each ended: the runner's coverage when it recorded one (it also counts the cases nobody ran), else
  * the plan events (the latest plan total and each case's last status).
  */
-export function testCases(events: readonly RunEvent[], coverage: Coverage | null = null): CaseCounts {
+export function testCases(
+  events: readonly RunEvent[],
+  coverage: Coverage | null = null,
+): CaseCounts {
   if (coverage !== null && coverage.cases.length > 0) {
     const n = (status: string): number => coverage.cases.filter((c) => c.status === status).length;
-    return { executed: n('executed'), skipped: n('skipped'), blocked: n('blocked'), total: coverage.cases.length };
+    return {
+      executed: n('executed'),
+      skipped: n('skipped'),
+      blocked: n('blocked'),
+      total: coverage.cases.length,
+    };
   }
   const ids = new Set<string>();
   let total = 0;
@@ -159,7 +173,8 @@ export function headline(proven: readonly FindingSummary[]): string {
   const advice = resultsHeadline(open).slice(bare(open).length);
   // Proven is not the same as reported: say how many of them were dismissed (by a person, or as repeats of a newer proof).
   const dismissed = proven.filter((f) => f.status === 'dismissed').length;
-  const gone = dismissed === 0 ? '' : ` ${dismissed === 1 ? '1 is' : `${dismissed} are`} dismissed.`;
+  const gone =
+    dismissed === 0 ? '' : ` ${dismissed === 1 ? '1 is' : `${dismissed} are`} dismissed.`;
   return `${bare(all)}${gone}${open.length === 0 ? '' : advice}`.replace(
     'high-severity',
     'high\u2011severity',
@@ -183,10 +198,16 @@ export function duration(ms: number): string {
  * Why cases did not run, in words. "Blocked" is the model's own status; when the audit had a request that was denied,
  * that is the plain reason (the agent needed it), otherwise the safety rules or "could not run".
  */
-function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone: boolean): string[] {
+function notRun(
+  cases: CaseCounts,
+  run: Pick<Run, 'events' | 'gate2'>,
+  planDone: boolean,
+): string[] {
   // A person's "deny" has no close reason; an expiry or an ask the run closed at its end was simply not answered.
   const denied = run.gate2.some((g) => g.status === 'denied' && g.closeReason === null);
-  const runClosed = run.gate2.some((g) => g.closeReason === 'run_ended' || g.closeReason === 'killed');
+  const runClosed = run.gate2.some(
+    (g) => g.closeReason === 'run_ended' || g.closeReason === 'killed',
+  );
   const unanswered = run.gate2.some((g) => g.status !== 'pending' && g.status !== 'approved');
   const refused = run.events.some((e) => e.kind === 'policy.blocked');
   const b = cases.blocked;
@@ -200,12 +221,14 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>, planDone:
         : unanswered
           ? `${b} ${were(b)} skipped because the request ${it} needed ${runClosed ? 'was not answered before the audit ended' : 'got no answer in time'}`
           : refused
-          ? `${b} ${were(b)} stopped by the safety rules`
-          : `${b} could not run`;
+            ? `${b} ${were(b)} stopped by the safety rules`
+            : `${b} could not run`;
   const rest = cases.total - cases.executed - cases.skipped - cases.blocked;
   return [
     blocked,
-    cases.skipped > 0 && !planDone ? `${cases.skipped} ${were(cases.skipped)} skipped by Blackwing AI` : null,
+    cases.skipped > 0 && !planDone
+      ? `${cases.skipped} ${were(cases.skipped)} skipped by Blackwing AI`
+      : null,
     rest > 0 ? `${rest} ${were(rest)} not tried` : null,
   ].filter((x): x is string => x !== null);
 }
@@ -234,7 +257,13 @@ function claudeNotCovered(summary: string | null): string | null {
   for (const [i, line] of lines.slice(at).entries()) {
     // The note ends at the next heading, however Blackwing marked it (#, a bold line, or a short "Title:" line): what
     // follows is about confirmed, suspected or dismissed issues and must never reach a report.
-    if (i > 0 && (/^\s*#/.test(line) || /^\s*(\*\*|__)[^*_]+(\*\*|__):?\s*$/.test(line) || /^\s*[A-Z][^.:]{0,60}:\s*$/.test(line))) break;
+    if (
+      i > 0 &&
+      (/^\s*#/.test(line) ||
+        /^\s*(\*\*|__)[^*_]+(\*\*|__):?\s*$/.test(line) ||
+        /^\s*[A-Z][^.:]{0,60}:\s*$/.test(line))
+    )
+      break;
     rest.push(line);
   }
   const text = scrub(rest.join('\n').trim());
@@ -243,7 +272,9 @@ function claudeNotCovered(summary: string | null): string | null {
   // Clip at the end of a sentence or line, never mid-word.
   const head = text.slice(0, NOTE_MAX);
   const cut = Math.max(head.lastIndexOf('. '), head.lastIndexOf('\n'));
-  return cut > NOTE_MAX / 2 ? head.slice(0, cut + 1).trim() : `${head.slice(0, head.lastIndexOf(' '))}…`;
+  return cut > NOTE_MAX / 2
+    ? head.slice(0, cut + 1).trim()
+    : `${head.slice(0, head.lastIndexOf(' '))}…`;
 }
 
 /**
@@ -294,7 +325,10 @@ export function notTested(input: {
     return [{ what: scrub(c.title) || c.id, why }];
   });
   if (input.excludedPaths.length > 0)
-    rows.push({ what: input.excludedPaths.join(', '), why: 'Left out on purpose: the plan excluded these paths' });
+    rows.push({
+      what: input.excludedPaths.join(', '),
+      why: 'Left out on purpose: the plan excluded these paths',
+    });
   return { recorded: coverage !== null, rows, note: claudeNotCovered(input.summary ?? null) };
 }
 
@@ -318,13 +352,20 @@ function completedWhy(
   if (why.complete && claudeNotCovered(run.summary ?? null) !== null)
     return { text: `${why.text}; Blackwing AI names what it did not cover below`, complete: false };
   // "finished its plan … and skipped N" already names the skips; the not-tested list gives Blackwing AI's reasons.
-  const rest = cases === undefined || why.complete ? [] : notRun(cases, run, why.text.startsWith('Blackwing finished its plan'));
-  return { text: `${why.text}${rest.length === 0 ? '' : `; ${listWords(rest)}`}`, complete: why.complete };
+  const rest =
+    cases === undefined || why.complete
+      ? []
+      : notRun(cases, run, why.text.startsWith('Blackwing finished its plan'));
+  return {
+    text: `${why.text}${rest.length === 0 ? '' : `; ${listWords(rest)}`}`,
+    complete: why.complete,
+  };
 }
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
 export function stopLine(
-  run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events' | 'gate2'> & Partial<Pick<Run, 'summary'>>,
+  run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events' | 'gate2'> &
+    Partial<Pick<Run, 'summary'>>,
   now: number,
   cases?: CaseCounts,
 ): { tone: 'ok' | 'warn' | 'muted' | 'bad'; text: string } {
@@ -342,7 +383,10 @@ export function stopLine(
     case 'killed':
       return {
         tone: 'muted',
-        text: start === null ? 'Stopped before it started · you stopped testing' : `Stopped after ${took} · you stopped testing`,
+        text:
+          start === null
+            ? 'Stopped before it started · you stopped testing'
+            : `Stopped after ${took} · you stopped testing`,
       };
     case 'failed': {
       const failed = run.events.findLast((e) => e.kind === 'run.failed');
@@ -400,7 +444,6 @@ export interface DecisionRow {
   readonly by: string | null;
   readonly at: string | null;
 }
-
 
 /**
  * "Your decisions" for one run: Gate 1 (the request), Gate 2 (the run's decisions, with expiries), Gate 3 and stop
@@ -466,7 +509,12 @@ export function decisions(input: {
         group: 'Request',
         verb: 'Not sent',
         subject,
-        detail: [asRole, g.closeReason === 'killed' ? 'the audit was stopped before anyone answered' : 'not answered before the audit ended']
+        detail: [
+          asRole,
+          g.closeReason === 'killed'
+            ? 'the audit was stopped before anyone answered'
+            : 'not answered before the audit ended',
+        ]
           .filter(Boolean)
           .join(', '),
         reason: null,

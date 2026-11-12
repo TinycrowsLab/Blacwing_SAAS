@@ -4,6 +4,7 @@ import { Fragment } from 'react';
 
 import { Icon, VoiceTag } from '../design';
 import { Markdown } from '../markdown';
+import { Disclosure } from './disclosure';
 import { LocalTime } from './local-time';
 import { NavLink } from './nav-link';
 
@@ -38,10 +39,14 @@ export function YourDecisions({
   readonly chain: Ledger['chain'] | null;
 }) {
   return (
-    <section aria-labelledby="decisions-h" className="flex flex-col gap-1">
-      <h2 id="decisions-h" className="m-0 mb-1 text-[17px] font-semibold text-foreground">
-        Your decisions
-      </h2>
+    <Disclosure
+      title="Your decisions"
+      hint={
+        rows.length === 0
+          ? 'none yet'
+          : `${rows.length} ${rows.length === 1 ? 'decision' : 'decisions'}`
+      }
+    >
       {rows.length === 0 ? (
         <p className="m-0 py-2 text-[13px] text-muted-foreground">
           No decisions were needed on this audit yet.
@@ -121,7 +126,7 @@ export function YourDecisions({
           </NavLink>
         )}
       </p>
-    </section>
+    </Disclosure>
   );
 }
 
@@ -129,10 +134,14 @@ export function YourDecisions({
 export function NotTestedList({ data }: { readonly data: NotTested }) {
   if (data.rows.length === 0 && data.note === null) return null;
   return (
-    <section aria-labelledby="not-tested-h" className="flex flex-col gap-1">
-      <h2 id="not-tested-h" className="m-0 mb-1 text-[17px] font-semibold text-foreground">
-        What was not tested and why
-      </h2>
+    <Disclosure
+      title="What was not tested and why"
+      hint={
+        data.rows.length === 0
+          ? null
+          : `${data.rows.length} ${data.rows.length === 1 ? 'item' : 'items'}`
+      }
+    >
       <ul className="m-0 list-none p-0">
         {data.rows.map((r) => (
           <li
@@ -158,6 +167,6 @@ export function NotTestedList({ data }: { readonly data: NotTested }) {
       <p className="m-0 mt-1.5 text-[12.5px] leading-5 text-muted-foreground">
         No browser is used, so DOM-based XSS is not tested. The downloaded report lists the same.
       </p>
-    </section>
+    </Disclosure>
   );
 }

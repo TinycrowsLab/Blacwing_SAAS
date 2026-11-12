@@ -13,7 +13,7 @@ import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
 import { IssueStatus, ReleaseAll } from './issue-list';
 import { LocalTime } from './local-time';
-import { FINDING_STATUSES, seenBeforeText, SEVERITIES, type FindingSummary } from './model';
+import { FINDING_STATUSES, SEVERITIES, type FindingSummary } from './model';
 import { NavLink } from './nav-link';
 
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
@@ -25,6 +25,45 @@ const fold = (v: string): string =>
     .trim()
     .toLowerCase()
     .replace(/[\s_-]+/g, ' ');
+
+/** The order statuses are listed and ranked in; a lower rank is the more actionable state. */
+const STATUS_ORDER: readonly string[] = FINDING_STATUSES.map((s) => s.key);
+const statusRank = (status: string): number => {
+  const i = STATUS_ORDER.indexOf(status);
+  return i === -1 ? STATUS_ORDER.length : i;
+};
+
+/** What makes two findings the same issue: the server's stable identity, else the same title on the same target. */
+const dedupeKey = (f: FindingSummary): string =>
+  f.identityKey ?? `${f.assetName ?? ''}|${f.severity}|${fold(f.title)}`;
+
+interface FindingGroup {
+  key: string;
+  /** The row's finding: the most actionable member, which the title, severity and link come from. */
+  primary: FindingSummary;
+  /** Every distinct state this issue is in, most actionable first (e.g. Released and Dismissed together). */
+  statuses: string[];
+}
+
+/** Fold findings that are the same issue into one row, so a title never shows twice as unrelated rows. */
+function groupFindings(list: readonly FindingSummary[]): readonly FindingGroup[] {
+  const byKey = new Map<string, FindingGroup>();
+  const order: FindingGroup[] = [];
+  for (const f of list) {
+    const key = dedupeKey(f);
+    const group = byKey.get(key);
+    if (group === undefined) {
+      const next: FindingGroup = { key, primary: f, statuses: [f.status] };
+      byKey.set(key, next);
+      order.push(next);
+    } else {
+      if (statusRank(f.status) < statusRank(group.primary.status)) group.primary = f;
+      if (!group.statuses.includes(f.status)) group.statuses.push(f.status);
+    }
+  }
+  for (const group of order) group.statuses.sort((a, b) => statusRank(a) - statusRank(b));
+  return order;
+}
 
 export interface FindingFilters {
   readonly status?: string | undefined;
@@ -251,6 +290,8 @@ export function FindingsTable({
   const countBy = (skip: Key, test: (f: FindingSummary) => boolean): number =>
     items.filter((f) => match(f, skip) && test(f)).length;
   const shown = items.filter((f) => match(f));
+  // One row per issue: duplicates of the same finding (e.g. one Dismissed, one Released) share a row that shows both.
+  const groups = groupFindings(shown);
   const auditLabel = (id: string): string => {
     const run = known.get(id);
     const target = run?.target ?? items.find((f) => f.runId === id)?.assetName ?? 'Audit';
@@ -316,10 +357,10 @@ export function FindingsTable({
                   items.some((f) => f.runId === a && f.assetName === filters.target),
               )
               .map((a) => ({
-              key: a,
-              label: auditLabel(a),
-              count: countBy('audit', (f) => f.runId === a),
-            }))}
+                key: a,
+                label: auditLabel(a),
+                count: countBy('audit', (f) => f.runId === a),
+              }))}
           />
           {Object.values(filters).some((v) => v !== undefined) ? (
             <button
@@ -359,43 +400,50 @@ export function FindingsTable({
         </div>
       ) : (
         <ul className="m-0 flex list-none flex-col overflow-hidden rounded-[14px] border border-border bg-card p-0">
-          {shown.slice(0, limit).map((f) => (
-            <li key={f.id} className="border-b border-border last:border-b-0">
-              <NavLink
-                href={`/findings/${f.id}`}
-                className="flex min-h-[60px] flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus"
-              >
-                <span className="w-[88px] shrink-0">
-                  <SeverityChip severity={f.severity} />
-                </span>
-                <span className="flex min-w-0 flex-1 basis-60 flex-col">
-                  <span className="text-[14.5px] font-medium leading-[21px] text-foreground">
-                    {f.title}
+          {groups.slice(0, limit).map((g) => {
+            const f = g.primary;
+            return (
+              <li key={g.key} className="border-b border-border last:border-b-0">
+                <NavLink
+                  href={`/findings/${f.id}`}
+                  className="flex min-h-[60px] flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus"
+                >
+                  <span className="w-[88px] shrink-0">
+                    <SeverityChip severity={f.severity} />
                   </span>
-                  {seenBeforeText(f) === null ? null : (
-                    <span className="text-[12.5px] font-medium text-gold-ink">{seenBeforeText(f)}</span>
-                  )}
-                  <span className="text-[12.5px] text-muted-foreground">
-                    {[f.assetName, f.agent === null ? null : `found by the ${agentName(f.agent)}`]
-                      .filter(Boolean)
-                      .join(' · ')}
-                    {f.createdAt === undefined ? null : (
-                      <LocalTime iso={f.createdAt} style="datetime" prefix=" · " />
+                  <span className="flex min-w-0 flex-1 basis-60 flex-col">
+                    <span className="text-[14.5px] font-medium leading-[21px] text-foreground">
+                      {f.title}
+                    </span>
+                    {f.seenBefore === null ? null : (
+                      <span className="text-[12.5px] font-medium text-gold-ink">
+                        Also seen in an earlier run
+                      </span>
                     )}
+                    <span className="text-[12.5px] text-muted-foreground">
+                      {[f.assetName, f.agent === null ? null : agentName(f.agent)]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      {f.createdAt === undefined ? null : (
+                        <LocalTime iso={f.createdAt} style="datetime" prefix=" · " />
+                      )}
+                    </span>
                   </span>
-                </span>
-                <span className="ml-auto shrink-0">
-                  <IssueStatus status={f.status} />
-                </span>
-              </NavLink>
-            </li>
-          ))}
+                  <span className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1">
+                    {g.statuses.map((s) => (
+                      <IssueStatus key={s} status={s} />
+                    ))}
+                  </span>
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
       )}
-      {shown.length > limit ? (
+      {groups.length > limit ? (
         <div className="flex flex-wrap items-center justify-center gap-3 text-[12.5px] text-muted-foreground">
           <span>
-            Showing {limit.toLocaleString()} of {shown.length.toLocaleString()}
+            Showing {limit.toLocaleString()} of {groups.length.toLocaleString()}
           </span>
           <button
             type="button"
@@ -404,7 +452,7 @@ export function FindingsTable({
               setLimit((n) => n + FINDINGS_PAGE);
             }}
           >
-            Show {Math.min(FINDINGS_PAGE, shown.length - limit).toLocaleString()} more
+            Show {Math.min(FINDINGS_PAGE, groups.length - limit).toLocaleString()} more
           </button>
         </div>
       ) : null}
