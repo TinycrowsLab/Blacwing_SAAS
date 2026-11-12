@@ -7,14 +7,27 @@
 // motion. Plain name first, the mono agent id second (spec §1, prototype 04); the gate names sit in tooltips. Every
 // node has the same fixed height and the connectors a fixed width, so the map never changes size mid-run. Desktop draws
 // a row (collapsible); the phone's Team sheet draws the same nodes as a column.
+// The header's Full screen button opens a Modal with the phase view (PhaseMap): one card per phase with its agent count and
+// live states; a card expands to list its agents, and picking one filters the conversation to it.
 // The map row has 4px padding because its horizontal scroll box clips the selected and focus rings otherwise.
+import { useState } from 'react';
+
 import { Icon } from './design';
+import { Modal } from './modal';
 
 import type { Team, TeamNode } from './run-model';
 
 function Ring({ className = '' }: { readonly className?: string }) {
   return <span aria-hidden="true" className={`size-[9px] shrink-0 rounded-full border-2 border-current ${className}`} />;
 }
+
+const TONE: Readonly<Record<TeamNode['state'], string>> = {
+  working: 'border-slate bg-surface',
+  waiting: 'border-[1.5px] border-gold-ink bg-[repeating-linear-gradient(135deg,var(--gold-soft)_0_6px,var(--surface)_6px_12px)]',
+  done: 'border-border bg-surface',
+  idle: 'border-border bg-surface',
+  stopped: 'border-dashed border-border-strong bg-surface-2',
+};
 
 const STATE_WORD: Readonly<Record<TeamNode['state'], string>> = {
   working: 'working',
@@ -42,13 +55,7 @@ function NodeButton({
   /** A narrow row node (planner, validator): the action gets two lines. */
   readonly stacked?: boolean;
 }) {
-  const tone = {
-    working: 'border-slate bg-surface',
-    waiting: 'border-[1.5px] border-gold-ink bg-[repeating-linear-gradient(135deg,var(--gold-soft)_0_6px,var(--surface)_6px_12px)]',
-    done: 'border-border bg-surface',
-    idle: 'border-border bg-surface',
-    stopped: 'border-dashed border-border-strong bg-surface-2',
-  }[node.state];
+  const tone = TONE[node.state];
   const word = STATE_WORD[node.state];
   const said = node.sub.startsWith(word) ? `${node.name}: ${node.sub}` : `${node.name}, ${word}: ${node.sub}`;
   return (
@@ -136,6 +143,252 @@ function Down({ label }: { readonly label?: string | undefined }) {
 
 const plural = (n: number, one: string, many: string): string => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 
+type PhaseState = TeamNode['state'];
+
+interface Phase {
+  readonly key: string;
+  readonly name: string;
+  readonly blurb: string;
+  readonly agents: readonly TeamNode[];
+  /** The agents' technical label when the node has none of its own (planner, validator). */
+  readonly mono: string | null;
+  /** Phases without agents (the human gates, the report) show this instead of a count. */
+  readonly note: string | null;
+  readonly state: PhaseState;
+}
+
+const STATE_ORDER: readonly PhaseState[] = ['working', 'waiting', 'done', 'idle', 'stopped'];
+
+/** The phase's headline state: someone waiting on you outranks work, work outranks the rest. */
+function phaseState(agents: readonly TeamNode[]): PhaseState {
+  if (agents.length === 0) return 'idle';
+  if (agents.some((n) => n.state === 'waiting')) return 'waiting';
+  if (agents.some((n) => n.state === 'working')) return 'working';
+  if (agents.some((n) => n.state === 'stopped')) return 'stopped';
+  if (agents.every((n) => n.state === 'done')) return 'done';
+  return 'idle';
+}
+
+function StateMark({ state, spinning = false }: { readonly state: PhaseState; readonly spinning?: boolean }) {
+  if (state === 'working') {
+    return <Ring className={`text-slate ${spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`} />;
+  }
+  if (state === 'waiting') return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-[2px] border-[1.5px] border-gold-ink bg-gold-soft" />;
+  if (state === 'done') return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-full bg-ok" />;
+  if (state === 'stopped') return <i aria-hidden="true" className="h-[2px] w-2.5 shrink-0 rounded-full bg-muted-foreground" />;
+  return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-full border-[1.5px] border-border-strong" />;
+}
+
+function stateSummary(agents: readonly TeamNode[]): string {
+  return STATE_ORDER.map((st) => ({ st, n: agents.filter((a) => a.state === st).length }))
+    .filter((x) => x.n > 0)
+    .map((x) => `${x.n.toLocaleString('en-US')} ${STATE_WORD[x.st]}`)
+    .join(' · ');
+}
+
+function PhaseCard({
+  phase,
+  index,
+  open,
+  onToggle,
+  filter,
+  onPick,
+}: {
+  readonly phase: Phase;
+  readonly index: number;
+  readonly open: boolean;
+  readonly onToggle: () => void;
+  readonly filter: string | null;
+  readonly onPick: (id: string) => void;
+}) {
+  const count = phase.agents.length;
+  const expandable = count > 0;
+  const listId = `team-phase-${phase.key}`;
+  const head = (
+    <>
+      <span
+        aria-hidden="true"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 font-mono text-[12px] font-semibold text-muted-foreground"
+      >
+        {index + 1}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex flex-wrap items-center gap-x-2 text-[15px] font-semibold text-foreground">
+          {phase.name}
+          {expandable ? (
+            <span className="rounded-full bg-gold-soft px-2 py-px text-[11.5px] font-medium text-gold-ink">{plural(count, 'agent', 'agents')}</span>
+          ) : null}
+        </span>
+        <span className="text-[12.5px] text-muted-foreground">{expandable ? stateSummary(phase.agents) : (phase.note ?? phase.blurb)}</span>
+      </span>
+      <StateMark state={phase.state} spinning={phase.agents.some((a) => a.spinning)} />
+      {expandable ? <Icon name="chevron" size={14} className={`shrink-0 text-muted-foreground ${open ? 'rotate-180' : ''}`} /> : null}
+    </>
+  );
+  const frame = `flex w-full items-center gap-3 rounded-[14px] border px-4 py-3.5 text-left ${TONE[phase.state]}`;
+  return (
+    <div className="flex flex-col">
+      {expandable ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-label={`${phase.name}: ${plural(count, 'agent', 'agents')}, ${stateSummary(phase.agents)}. ${open ? 'Hide' : 'Show'} the agents.`}
+          onClick={onToggle}
+          className={`${frame} min-h-14 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus`}
+        >
+          {head}
+        </button>
+      ) : (
+        <div className={frame}>{head}</div>
+      )}
+      {expandable && open ? (
+        <ul id={listId} className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0 pl-4 sm:pl-11">
+          {phase.agents.map((n) => (
+            <li key={n.id}>
+              <button
+                type="button"
+                aria-pressed={filter === n.id}
+                aria-label={`${n.name}, ${STATE_WORD[n.state]}: ${n.sub}. Show only its part of the conversation.`}
+                onClick={() => {
+                  onPick(n.id);
+                }}
+                className={`flex min-h-11 w-full items-start gap-3 rounded-[10px] border px-3 py-2 text-left transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${TONE[n.state]} ${filter === n.id ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
+              >
+                <span className="mt-[5px]">
+                  <StateMark state={n.state} spinning={n.spinning} />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-[13.5px] font-semibold text-foreground">{n.name}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">{phase.mono ?? n.id}</span>
+                  </span>
+                  <span className={`break-words text-[12.5px] ${n.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}>{n.sub}</span>
+                </span>
+                <Icon name="arrow" size={13} className="mt-1 shrink-0 text-muted-foreground" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function PhaseMap({
+  team,
+  gate1,
+  gate3,
+  ended,
+  filter,
+  onPick,
+  onClose,
+}: {
+  readonly team: Team;
+  readonly gate1: string;
+  readonly gate3: string;
+  readonly ended: boolean;
+  readonly filter: string | null;
+  readonly onPick: (id: string) => void;
+  readonly onClose: () => void;
+}) {
+  const [opened, setOpened] = useState<readonly string[]>(['specialists']);
+  const toggle = (key: string): void => {
+    setOpened((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]));
+  };
+  const reviewDone = (team.autoReleased && team.proven > 0) || gate3 === 'Review complete';
+  const phases: readonly Phase[] = [
+    { key: 'approval', name: 'Approval', blurb: 'Scope approval', agents: [], mono: null, note: `Your approval: ${gate1}`, state: 'done' },
+    { key: 'plan', name: 'Recon and plan', blurb: 'Plans the work', agents: team.planner === null ? [] : [team.planner], mono: 'orchestrator', note: null, state: 'idle' },
+    { key: 'specialists', name: 'Specialists', blurb: 'Test the target', agents: team.specialists, mono: null, note: null, state: 'idle' },
+    { key: 'validation', name: 'Validation', blurb: 'Proves each finding', agents: team.validator === null ? [] : [team.validator], mono: 'replay engine', note: null, state: 'idle' },
+    {
+      key: 'review',
+      name: 'Your review',
+      blurb: 'Triage and release',
+      agents: [],
+      mono: null,
+      note: `${gate3}${team.proven === 0 ? '' : ` · ${plural(team.proven, 'proven issue', 'proven issues')}`}`,
+      state: reviewDone ? 'done' : 'idle',
+    },
+    {
+      key: 'report',
+      name: 'Report',
+      blurb: 'The final write-up',
+      agents: [],
+      mono: null,
+      note: `${plural(team.proven, 'proven issue', 'proven issues')}${ended ? '' : ' so far'}`,
+      state: ended ? 'done' : 'idle',
+    },
+  ];
+  const withState = phases.map((p) => (p.agents.length === 0 ? p : { ...p, state: phaseState(p.agents) }));
+  const total = withState.reduce((n, p) => n + p.agents.length, 0);
+  const links: Readonly<Record<string, string | undefined>> = {
+    plan: team.tasks === 0 ? undefined : plural(team.tasks, 'task given', 'tasks given'),
+    validation: team.candidates === 0 ? undefined : plural(team.candidates, 'candidate', 'candidates'),
+    review: team.proven === 0 ? undefined : plural(team.proven, 'proven issue', 'proven issues'),
+  };
+  return (
+    <div className="flex flex-col gap-5 p-5 sm:p-7">
+      <div className="flex items-start gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 className="m-0 flex items-center gap-2 text-[18px] font-semibold text-foreground">
+            <Icon name="team" size={18} />
+            Blackwing&apos;s team
+          </h2>
+          <p className="m-0 text-[13px] text-muted-foreground">
+            {plural(total, 'agent', 'agents')} across {withState.length.toLocaleString('en-US')} phases. Open a phase to see who is in it, then pick an agent to read only its part of the conversation.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-autofocus
+          aria-label="Close full screen team view"
+          onClick={onClose}
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+        >
+          <Icon name="x" size={16} />
+        </button>
+      </div>
+      <ol aria-label="Phases" className="m-0 flex list-none flex-col p-0">
+        {withState.map((p, i) => {
+          const link = i === 0 ? undefined : links[p.key];
+          return (
+            <li key={p.key} className="flex flex-col">
+              {i === 0 ? null : (
+                <span aria-hidden="true" className="flex items-center gap-2 py-1.5 pl-[31px] text-[11.5px] text-muted-foreground">
+                  <span className="h-5 w-[1.5px] bg-border-strong" />
+                  {link}
+                </span>
+              )}
+              <PhaseCard
+                phase={p}
+                index={i}
+                open={opened.includes(p.key)}
+                onToggle={() => {
+                  toggle(p.key);
+                }}
+                filter={filter}
+                onPick={onPick}
+              />
+            </li>
+          );
+        })}
+      </ol>
+      <div role="group" aria-label="Legend" className="flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-4 text-[12px] text-muted-foreground">
+        {STATE_ORDER.map((st) => (
+          <span key={st} className="flex items-center gap-1.5">
+            <StateMark state={st} />
+            {STATE_WORD[st].replace(' on you', '')[0]?.toUpperCase()}
+            {STATE_WORD[st].replace(' on you', '').slice(1)}
+            {st === 'waiting' ? ' on you' : ''}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TeamMap({
   team,
   gate1,
@@ -161,6 +414,7 @@ export function TeamMap({
   readonly collapsed?: boolean;
   readonly onToggle?: () => void;
 }) {
+  const [full, setFull] = useState(false);
   const select = (id: string): void => {
     onFilter(filter === id ? null : id);
   };
@@ -278,19 +532,63 @@ export function TeamMap({
         )}
         {/* One header line whatever happens: in the row, the filter chip takes the legend's place. */}
         {(collapsed || filter !== null) && !column ? null : legend}
-        {onToggle === undefined || column ? null : (
-          <button
-            type="button"
-            aria-expanded={!collapsed}
-            onClick={onToggle}
-            className={`inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${collapsed || filter !== null ? 'ml-auto' : ''}`}
-          >
-            {collapsed ? 'Show map' : 'Hide map'}
-            <Icon name="chevron" size={12} className={collapsed ? '' : 'rotate-180'} />
-          </button>
+        {column ? null : (
+          <span className={`flex items-center gap-1 ${collapsed || filter !== null ? 'ml-auto' : ''}`}>
+            {empty ? null : (
+              <button
+                type="button"
+                aria-label="Open the team map full screen"
+                onClick={() => {
+                  setFull(true);
+                }}
+                className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5" />
+                </svg>
+                Full screen
+              </button>
+            )}
+            {onToggle === undefined ? null : (
+              <button
+                type="button"
+                aria-expanded={!collapsed}
+                onClick={onToggle}
+                className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                {collapsed ? 'Show map' : 'Hide map'}
+                <Icon name="chevron" size={12} className={collapsed ? '' : 'rotate-180'} />
+              </button>
+            )}
+          </span>
         )}
       </div>
       {collapsed && !column ? null : body}
+      {column ? null : (
+        <Modal
+          open={full}
+          onClose={() => {
+            setFull(false);
+          }}
+          label="Blackwing's team"
+          className="max-w-[760px]"
+        >
+          <PhaseMap
+            team={team}
+            gate1={gate1}
+            gate3={gate3}
+            ended={ended}
+            filter={filter}
+            onClose={() => {
+              setFull(false);
+            }}
+            onPick={(id) => {
+              onFilter(id);
+              setFull(false);
+            }}
+          />
+        </Modal>
+      )}
     </section>
   );
 }

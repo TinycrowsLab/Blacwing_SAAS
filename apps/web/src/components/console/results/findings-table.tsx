@@ -11,7 +11,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 
 import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
-import { IssueStatus } from './issue-list';
+import { IssueStatus, ReleaseAll } from './issue-list';
 import { LocalTime } from './local-time';
 import { FINDING_STATUSES, seenBeforeText, SEVERITIES, type FindingSummary } from './model';
 import { NavLink } from './nav-link';
@@ -334,6 +334,10 @@ export function FindingsTable({
           ) : null}
         </div>
       </div>
+
+      {/* Release every proven issue still awaiting release in the current view, with one shared reason. Hidden when
+          fewer than two are awaiting (ReleaseAll returns null), so it never shows on a filtered-to-one list. */}
+      <ReleaseAll ids={shown.filter((f) => f.status === 'confirmed').map((f) => f.id)} />
 
       {shown.length === 0 ? (
         <div className="mx-auto w-full max-w-[560px]">

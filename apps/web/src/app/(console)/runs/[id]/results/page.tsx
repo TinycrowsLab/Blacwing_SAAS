@@ -5,7 +5,7 @@ import { cache, Fragment, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
-import { ContinueCard, stoppedAtLimit } from '../../../../../components/console/results/continue-card';
+import { ContinueCard } from '../../../../../components/console/results/continue-card';
 import { NotTestedList, YourDecisions } from '../../../../../components/console/results/decisions';
 import { ExecutiveSummary } from '../../../../../components/console/results/executive-summary';
 import { ExternalExposure } from '../../../../../components/console/results/external-exposure';
@@ -161,7 +161,7 @@ export default async function ResultsPage({
   return (
     <div className="mx-auto grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
       <section className="flex min-w-0 flex-col gap-5" aria-labelledby="results-h">
-        {live || !stoppedAtLimit(run.coverage?.endReason) || untried === 0 ? null : (
+        {live || untried === 0 ? null : (
           <ContinueCard
             requestId={run.requestId}
             runId={run.id}

@@ -20,9 +20,12 @@ const LIMIT_WORDS: Readonly<Record<string, string>> = {
   cost_cap: 'its spending limit',
 };
 
-/** Whether a run's end reason is one of its limits (the card shows only then). */
-export const stoppedAtLimit = (endReason: string | null | undefined): boolean =>
-  endReason !== null && endReason !== undefined && endReason in LIMIT_WORDS;
+/** How the run ended, in words, for the card's heading. A limit reason reads "at its time limit"; anything else
+ *  (a round cap, an error, a manual stop) just reads "early", because the point is only that cases are left. */
+const endedPhrase = (endReason: string): string => {
+  const limit = LIMIT_WORDS[endReason];
+  return limit === undefined ? 'early' : `at ${limit}`;
+};
 
 export function ContinueCard({
   requestId,
@@ -64,12 +67,13 @@ export function ContinueCard({
   const cases = untried === 1 ? '1 test case' : `${untried} test cases`;
   return (
     <section
+      id="continue"
       aria-label="Continue this audit"
-      className="mx-4 mt-3 flex flex-col gap-3 rounded-[14px] border border-gold-line bg-gold-soft p-4 md:mx-6"
+      className="mx-4 mt-3 flex scroll-mt-4 flex-col gap-3 rounded-[14px] border border-gold-line bg-gold-soft p-4 md:mx-6"
     >
       <div className="flex flex-col gap-1">
         <h2 className="m-0 text-[15px] font-semibold leading-[22px]">
-          Stopped at {LIMIT_WORDS[endReason] ?? 'a limit'} with {cases} left. Continue where it left off?
+          This audit stopped {endedPhrase(endReason)} with {cases} not finished. Continue where it left off?
         </h2>
         <p className="m-0 text-[13px] leading-5 text-muted-foreground">
           The next audit picks up the untried cases and skips what is already proven. Pick its limits; you approve the plan before it starts.

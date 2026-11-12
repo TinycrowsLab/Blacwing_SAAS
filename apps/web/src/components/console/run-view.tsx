@@ -550,6 +550,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests', short: 'Paused' } : polled;
   const waitsText = `${pending.length} ${pending.length === 1 ? 'decision waits' : 'decisions wait'} for you`;
   const resultsHref = `/runs/${encodeURIComponent(run.id)}/results`;
+  // Cases the run never finished: the "Continue where it left off" menu item shows only when some are left.
+  const untriedCount = run.coverage?.cases.filter((c) => c.status === 'not_run' || c.status === 'blocked').length ?? 0;
 
   // The pill names the same stage the spine marks current, so the two never disagree.
   const stage = spine.find((x) => x.state === 'current');
@@ -795,6 +797,19 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 >
                   <Icon name="repeat" size={15} />
                   Run this audit again
+                </DropdownMenuItem>
+              ) : null}
+              {terminal && untriedCount > 0 ? (
+                <DropdownMenuItem
+                  className="gap-2.5"
+                  onSelect={() => {
+                    // Continue where it left off: the fuller picker (limits, carried-forward findings) lives on the
+                    // results page; this jumps there so the choice is deliberate.
+                    router.push(`${resultsHref}#continue`);
+                  }}
+                >
+                  <Icon name="repeat" size={15} />
+                  Continue where it left off
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuSeparator />
