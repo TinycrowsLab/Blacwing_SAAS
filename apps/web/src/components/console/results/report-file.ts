@@ -672,6 +672,11 @@ pre{background:var(--code);border:1px solid var(--line);border-radius:10px;paddi
 .ai{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 14px;background:var(--gold-soft)}
 .ai p{margin:6px 0}
 ul.limits{padding-left:20px;color:var(--muted);font-size:14px}
+ol.steps{margin:6px 0 10px;padding-left:22px}
+ol.steps li{margin:4px 0;padding-left:4px}
+ul.refs{margin:6px 0;padding-left:20px;font-size:13.5px}
+ul.refs li{margin:3px 0}
+a{color:var(--gold-ink);text-decoration:underline;text-underline-offset:2px}
 footer{margin-top:44px;padding:18px 44px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:var(--panel)}
 @media (max-width:640px){main{padding:0 20px 40px}.cover{padding:30px 20px}.badge{position:static;display:inline-block;margin-top:10px}.tiles{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}dl{grid-template-columns:1fr}dt{font-weight:600;color:var(--fg)}article{padding:16px}footer{padding:16px 20px}}
 @media print{body{background:#fff}.sheet{max-width:none;box-shadow:none}main{padding:0 6px}.cover{border-radius:0}article,.dash,.chart,.tile{break-inside:avoid}h2{break-after:avoid}footer{background:#fff}}
@@ -694,6 +699,51 @@ ${
 }${intel.discoveredHosts.length === 0 ? '' : `\n<p class="meta">Hosts discovered in public sources outside the approved scope (reported, not tested): ${esc(intel.discoveredHosts.join(', '))}</p>`}`;
 }
 
+/**
+ * A representative CVSS v3.1 base score and vector for each qualitative severity. The runner records a severity, not a
+ * measured vector, so this is derived from that rating and labelled as such in the report — never presented as a scored
+ * analysis of the specific issue.
+ */
+const CVSS: Readonly<Record<string, { score: string; vector: string | null }>> = {
+  critical: { score: '9.8', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' },
+  high: { score: '7.5', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N' },
+  medium: { score: '5.3', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N' },
+  low: { score: '3.7', vector: 'CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N' },
+  info: { score: '0.0', vector: null },
+};
+
+/** The CWE/OWASP mapping table, with a link to the CWE definition when the id is well-formed. */
+function mappingHtml(f: FindingDetail): string {
+  const rows: string[] = [];
+  const cweNum = /^CWE-(\d+)$/i.exec(f.cwe ?? '');
+  if (f.cwe !== null && f.cwe !== '')
+    rows.push(
+      `<tr><th>CWE</th><td>${
+        cweNum === null
+          ? esc(f.cwe)
+          : `<a href="https://cwe.mitre.org/data/definitions/${cweNum[1]}.html">${esc(f.cwe)}</a>`
+      }</td></tr>`,
+    );
+  if (f.owasp !== null && f.owasp !== '')
+    rows.push(`<tr><th>OWASP</th><td>${esc(f.owasp)}</td></tr>`);
+  if (rows.length === 0) return '<p class="meta">No weakness mapping was recorded.</p>';
+  return `<table>${rows.join('')}</table>`;
+}
+
+/** External references for the finding: the CWE definition and the OWASP Top 10 category. */
+function referencesHtml(f: FindingDetail): string {
+  const refs: string[] = [];
+  const cweNum = /^CWE-(\d+)$/i.exec(f.cwe ?? '');
+  if (cweNum !== null)
+    refs.push(
+      `<li><a href="https://cwe.mitre.org/data/definitions/${cweNum[1]}.html">${esc(f.cwe ?? '')}: MITRE CWE definition</a></li>`,
+    );
+  if (f.owasp !== null && f.owasp !== '')
+    refs.push(`<li><a href="https://owasp.org/Top10/">OWASP Top 10 — ${esc(f.owasp)}</a></li>`);
+  if (refs.length === 0) return '';
+  return `<h4>References</h4>\n<ul class="refs">${refs.join('')}</ul>`;
+}
+
 export function renderHtml(
   src: ReportSource,
   findings: readonly FindingDetail[],
@@ -707,26 +757,50 @@ export function renderHtml(
       const remediation = f.evidence.remediation?.trim() ?? '';
       const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
       const released = releaseLine(f);
+      const cvss = CVSS[f.severity] ?? CVSS.info ?? { score: '—', vector: null };
+      const overview =
+        f.description !== null && f.description.trim() !== ''
+          ? `<div class="ai">${markdownToHtml(f.description.trim())}</div>`
+          : `<p>${esc(`A ${f.severity}-severity issue was proven on this target.`)}</p>`;
+      const steps = [
+        `<li>Send the probe request <code>${esc(sideWords(f.evidence.probe))}</code>${f.reproCurl === '' ? '.' : ' (full command below).'}</li>`,
+        check === null
+          ? '<li>Observe that the response shows the issue, as proven below.</li>'
+          : `<li>Observe that ${esc(check)}.</li>`,
+        `<li>${esc(replaySummary(f))} Blackwing replayed this deterministically to confirm it was not a one-off.</li>`,
+      ].join('');
       return `<article class="sev-${esc(f.severity)}">
 <h3><span class="chip" style="${SEV_STYLE[f.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(f.severity))}</span>${i + 1}. ${esc(f.title)}</h3>
 <p class="meta">${esc(meta(f))}</p>${released === null ? '' : `\n<p class="meta">${esc(released)}</p>`}
-<h4>${esc(proof.heading)} <span>· ${esc(PROOF_BY)}</span></h4>
+<h4>Overview${f.description === null || f.description.trim() === '' ? '' : ' <span>· Blackwing AI’s explanation, not verified</span>'}</h4>
+${overview}
+<h4>CVSS v3.1 <span>· representative, derived from the assessed severity</span></h4>
+<table>
+<tr><th>Base score</th><td><b>${esc(cvss.score)}</b> (${esc(cap(f.severity))})</td></tr>${
+        cvss.vector === null ? '' : `\n<tr><th>Vector</th><td><code>${esc(cvss.vector)}</code></td></tr>`
+      }
+</table>
+<h4>Weakness mapping</h4>
+${mappingHtml(f)}
+<h4>Affected location</h4>
+<p><code>${esc(sideWords(f.evidence.probe))}</code></p>
+<h4>Steps to reproduce</h4>
+<ol class="steps">${steps}</ol>${f.reproCurl === '' ? '' : `\n<pre>${esc(f.reproCurl)}</pre>\n<p class="meta">Run it only against a copy you own.</p>`}
+<h4>Evidence &amp; verification <span>· ${esc(PROOF_BY)}</span></h4>
 <p class="${proof.proven ? 'proof' : 'meta'}">${esc(proof.text)}</p>${check === null ? '' : `\n<p class="meta">${esc(checkedLine(f, check))}</p>`}
 <table>
 <tr><th>Probe</th><td><code>${esc(sideWords(f.evidence.probe))}</code><br><span class="meta">The request that shows the issue.</span></td></tr>
 <tr><th>Control</th><td><code>${esc(sideWords(f.evidence.control))}</code><br><span class="meta">${esc(cap(controlNote(f)))}.</span></td></tr>
-</table>${shotsHtml(f, images)}${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${controlExcerpt(f) === '' ? '' : `\n<p class="meta">What the site answered to the control (excerpt):</p>\n<pre>${esc(controlExcerpt(f))}</pre>`}
-<p class="meta">${esc(replaySummary(f))}</p>${
+</table>${shotsHtml(f, images)}${excerpt === '' ? '' : `\n<p class="meta">What the site answered to the probe (excerpt):</p>\n<pre>${esc(excerpt)}</pre>`}${controlExcerpt(f) === '' ? '' : `\n<p class="meta">What the site answered to the control (excerpt):</p>\n<pre>${esc(controlExcerpt(f))}</pre>`}${
         replayRows(f).length === 0
           ? ''
           : `\n<table><tr><th>Replay</th><th>HTTP status</th><th>Expected result shown</th></tr>${replayRows(f)
               .map((r) => `<tr><td>${r.n}</td><td>${r.status}</td><td>${r.matched ? 'yes' : 'no'}</td></tr>`)
               .join('')}</table>`
-      }${f.reproCurl === '' ? '' : `\n<p class="meta">Reproduce it (run it only against a copy you own):</p>\n<pre>${esc(f.reproCurl)}</pre>`}${
-        f.description === null || f.description.trim() === ''
-          ? ''
-          : `\n<h4>What it means <span>· Blackwing AI’s explanation, not verified</span></h4>\n<div class="ai">${markdownToHtml(f.description.trim())}</div>`
-      }${remediation === '' ? '' : `\n<h4>How to fix it <span>· Blackwing AI’s suggestion, not verified</span></h4>\n<div>${markdownToHtml(remediation)}</div>`}
+      }
+<h4>Remediation${remediation === '' ? '' : ' <span>· Blackwing AI’s suggestion, not verified</span>'}</h4>
+${remediation === '' ? '<p class="meta">No remediation guidance was recorded for this issue.</p>' : `<div class="ai">${markdownToHtml(remediation)}</div>`}
+${referencesHtml(f)}
 </article>`;
     })
     .join('\n');
