@@ -1025,10 +1025,14 @@ export function TeamMap({
   return (
     <section
       aria-label="Blackwing's team"
-      className={column ? '' : 'rounded-[14px] border border-border bg-surface px-3.5 pb-3 pt-2.5'}
+      className={
+        column
+          ? ''
+          : 'rounded-[14px] border border-border bg-card px-3.5 pb-3 pt-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+      }
     >
       <div
-        className={`flex flex-wrap items-center gap-2.5 text-[12.5px] font-semibold ${collapsed && !column ? '' : 'mb-2'}`}
+        className={`flex flex-wrap items-center gap-2.5 text-[13px] font-semibold ${collapsed && !column ? '' : 'mb-2'}`}
       >
         <Icon name="team" size={15} />
         Blackwing&apos;s team

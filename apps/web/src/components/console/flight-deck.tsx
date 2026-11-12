@@ -364,11 +364,11 @@ export function FoundPanel({
   readonly release?: 'hold' | 'auto';
 }) {
   return (
-    <section aria-labelledby="found-h">
-      <h2
-        id="found-h"
-        className="mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold"
-      >
+    <section
+      aria-labelledby="found-h"
+      className="rounded-[12px] border border-border bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+    >
+      <h2 id="found-h" className="mb-2 flex min-w-0 items-baseline gap-2 text-[13px] font-semibold">
         <span className="shrink-0 whitespace-nowrap">{ended ? 'Found' : 'Found so far'}</span>
         <span className="ml-auto min-w-0 truncate text-right text-[11.5px] font-normal text-muted-foreground">
           {release === 'auto' ? 'proven issues release themselves' : 'private until you release'}

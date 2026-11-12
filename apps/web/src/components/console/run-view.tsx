@@ -487,7 +487,7 @@ function RailDisclosure({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="border-b border-dashed border-border pb-3 last:border-b-0">
+    <section className="rounded-[12px] border border-border bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <button
         type="button"
         aria-expanded={open}
@@ -496,7 +496,7 @@ function RailDisclosure({
         }}
         className="flex w-full items-baseline gap-2 rounded-md py-0.5 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
       >
-        <span className="text-[12.5px] font-semibold text-foreground">{title}</span>
+        <span className="text-[13px] font-semibold text-foreground">{title}</span>
         {open ? null : (
           <span className="ml-auto truncate text-[11.5px] font-normal text-muted-foreground tabular-nums">
             {summary}
