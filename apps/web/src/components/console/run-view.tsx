@@ -39,6 +39,7 @@ import {
 } from './flight-deck';
 import { plainWhy } from './gate2-view';
 import { KillButton } from './kill-dialog';
+import { Modal } from './modal';
 import { runAgainAction } from './results/actions';
 import { RunAgain } from './results/report-download';
 import { ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
@@ -138,9 +139,11 @@ function useExchanges(runId: string) {
 
 function readMapCollapsed(): boolean {
   try {
-    return window.localStorage.getItem(MAP_KEY) === '1';
+    // Calm by default: the team map starts collapsed until the person chooses to keep it open ('0' is stored only
+    // when they expand it), so the conversation has the room and the page is not busy on first open.
+    return window.localStorage.getItem(MAP_KEY) !== '0';
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -317,6 +320,15 @@ function RailDisclosure({
   );
 }
 
+/** Two diagonal arrows: the "open full screen" affordance (no such glyph in the icon set). */
+function ExpandIcon({ size = 14 }: { readonly size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" />
+    </svg>
+  );
+}
+
 function download(name: string, text: string): void {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const a = document.createElement('a');
@@ -353,6 +365,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const [panel, setPanel] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mapCollapsed, setMapCollapsed] = useState(false);
+  // Focus mode: the active tab (conversation or flight deck) opens full screen, so the person can read one thing with
+  // nothing else around it.
+  const [focusTab, setFocusTab] = useState(false);
   const [showDecision, setShowDecision] = useState(0);
   const moreRef = useRef<HTMLButtonElement>(null);
   const callOrigin = useRef<HTMLElement | null>(null);
@@ -700,6 +715,61 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       </p>
     </>
   );
+  // The active tab's content, defined once so it renders inline and, in focus mode, full screen.
+  const tabContent: ReactNode =
+    tab !== 'conversation' && !mounted ? null : tab === 'conversation' ? (
+      <Conversation
+        items={shownItems}
+        gate2={gate2}
+        viewerName={viewerName}
+        resultsHref={resultsHref}
+        onOpenCall={openExchange}
+        onOpenPlan={onOpenPlan}
+        showDecision={showDecision}
+        waitingFirst={!terminal && !items.some((i) => i.type === 'turn' || i.type === 'thread')}
+        emptyText={
+          filter !== null
+            ? `Nothing from the ${agentName(filter)} yet.`
+            : terminal
+              ? 'This run ended before any agent spoke.'
+              : 'Waiting for the first agent…'
+        }
+      />
+    ) : tab === 'plan' ? (
+      <TestPlanTab
+        cases={shownCases}
+        waiting={heldCases}
+        ended={terminal}
+        filterName={filter === null ? null : agentName(filter)}
+        total={cases.length}
+        onClearFilter={() => {
+          setFilter(null);
+        }}
+      />
+    ) : tab === 'requests' ? (
+      <RequestsTab
+        items={shownExchanges}
+        state={exchanges.state}
+        onOpen={openExchange}
+        onRetry={() => {
+          void exchanges.load();
+        }}
+      />
+    ) : (
+      <FlightDeck
+        lanes={shownLanes}
+        rows={shownRows}
+        cases={shownCases}
+        candidates={cands}
+        release={autoRelease ? 'auto' : 'hold'}
+        nowMs={end}
+        running={!terminal}
+        pausedFrom={pausedFrom}
+        summary={run.summary}
+        startMs={start}
+      />
+    );
+  const tabLabel = TABS.find((t) => t.id === tab)?.label ?? 'View';
   const liveShown = !terminal && !queued && mounted && synced;
   const statePillEl: ReactNode =
     pending.length > 0 && !terminal ? (
@@ -1014,16 +1084,27 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 <Icon name="x" size={12} />
               </button>
             )}
-            <span className="ml-auto hidden items-center gap-3 text-[11px] text-muted-foreground xl:flex">
-              <span className="flex items-center gap-1.5">
+            <div className="ml-auto flex items-center gap-2">
+              <span
+                className="hidden items-center gap-1.5 text-[11px] text-muted-foreground xl:flex"
+                title="Blackwing AI's messages are its own words and stay unverified until the validator proves them. Counts and requests come from the run's own events."
+              >
                 <VoiceTag voice="claude" />
-                own words, not verified
+                Unverified until proven
               </span>
-              <span className="flex items-center gap-1.5">
-                <img src="/brand/crow-shield.png" alt="" width={12} height={12} className="object-contain" />
-                Blackwing, from run events
-              </span>
-            </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFocusTab(true);
+                }}
+                aria-label={`Open ${tabLabel} full screen`}
+                title="Full screen"
+                className="hidden h-8 items-center gap-1.5 rounded-full border border-border px-3 text-[12px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus md:inline-flex"
+              >
+                <ExpandIcon size={13} />
+                Full screen
+              </button>
+            </div>
           </div>
           <div
             role="tabpanel"
@@ -1031,57 +1112,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             aria-labelledby={`tab-${tab}`}
             className={`relative flex min-h-0 flex-1 flex-col ${tab === 'conversation' ? '' : 'overflow-y-auto pb-6 pt-3 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]'}`}
           >
-            {tab !== 'conversation' && !mounted ? null : tab === 'conversation' ? (
-              <Conversation
-                items={shownItems}
-                gate2={gate2}
-                viewerName={viewerName}
-                resultsHref={resultsHref}
-                onOpenCall={openExchange}
-                onOpenPlan={onOpenPlan}
-                showDecision={showDecision}
-                waitingFirst={!terminal && !items.some((i) => i.type === 'turn' || i.type === 'thread')}
-                emptyText={
-                  filter !== null
-                    ? `Nothing from the ${agentName(filter)} yet.`
-                    : terminal
-                      ? 'This run ended before any agent spoke.'
-                      : 'Waiting for the first agent…'
-                }
-              />
-            ) : tab === 'plan' ? (
-              <TestPlanTab
-                cases={shownCases}
-                waiting={heldCases}
-                ended={terminal}
-                filterName={filter === null ? null : agentName(filter)}
-                total={cases.length}
-                onClearFilter={() => {
-                  setFilter(null);
-                }}
-              />
-            ) : tab === 'requests' ? (
-              <RequestsTab
-                items={shownExchanges}
-                state={exchanges.state}
-                onOpen={openExchange}
-                onRetry={() => {
-                  void exchanges.load();
-                }}
-              />
+            {focusTab ? (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+                <p className="m-0 text-[13px]">{tabLabel} is open full screen.</p>
+                <button type="button" className={buttonClass('secondary', 'h-9 px-3.5 text-[13px]')} onClick={() => { setFocusTab(false); }}>
+                  Exit full screen
+                </button>
+              </div>
             ) : (
-              <FlightDeck
-                lanes={shownLanes}
-                rows={shownRows}
-                cases={shownCases}
-                candidates={cands}
-                release={autoRelease ? 'auto' : 'hold'}
-                nowMs={end}
-                running={!terminal}
-                pausedFrom={pausedFrom}
-                summary={run.summary}
-                startMs={start}
-              />
+              tabContent
             )}
           </div>
         </div>
@@ -1090,6 +1129,33 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </aside>
       </div>
 
+      <Modal
+        open={focusTab}
+        onClose={() => {
+          setFocusTab(false);
+        }}
+        label={`${tabLabel}, full screen`}
+        className="h-[calc(100dvh-24px)] w-[calc(100vw-24px)] max-w-[1200px]"
+      >
+        <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+          <h2 className="m-0 text-[14px] font-semibold">{tabLabel}</h2>
+          <button
+            type="button"
+            onClick={() => {
+              setFocusTab(false);
+            }}
+            aria-label="Exit full screen"
+            className="inline-flex size-9 items-center justify-center rounded-[10px] border border-border text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+        <div className={`flex min-h-0 flex-1 flex-col px-4 ${tab === 'conversation' ? '' : 'overflow-y-auto py-3'}`}>
+          {focusTab ? tabContent : null}
+        </div>
+        </div>
+      </Modal>
       <RunDetailsSheet
         run={run}
         model={model}
