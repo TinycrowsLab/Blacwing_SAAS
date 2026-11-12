@@ -30,7 +30,10 @@ export function Disclosure({
     <span className="text-[13px] font-medium text-foreground">{title}</span>
   );
   return (
-    <details open={defaultOpen} className="group flex flex-col">
+    <details
+      open={defaultOpen}
+      className={`group flex flex-col ${heading ? 'rounded-[14px] border border-border bg-card px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]' : ''}`}
+    >
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md py-1 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
         <Icon
           name="chevron"

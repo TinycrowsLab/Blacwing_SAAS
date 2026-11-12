@@ -12,7 +12,10 @@ export function ExternalExposure({ intel }: { readonly intel: Intel | null }) {
   if (intel === null) return null;
   const skipped = intel.skipped;
   return (
-    <section aria-labelledby="exposure-h" className="flex flex-col gap-1">
+    <section
+      aria-labelledby="exposure-h"
+      className="flex flex-col gap-1 rounded-[14px] border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+    >
       <h2 id="exposure-h" className="m-0 mb-1 text-[17px] font-semibold text-foreground">
         External exposure
       </h2>
@@ -22,7 +25,9 @@ export function ExternalExposure({ intel }: { readonly intel: Intel | null }) {
           : `${skipped}.`}
       </p>
       {intel.items.length === 0 ? (
-        <p className="m-0 mt-1 text-[13.5px] text-muted-foreground">No exposure items were found.</p>
+        <p className="m-0 mt-1 text-[13.5px] text-muted-foreground">
+          No exposure items were found.
+        </p>
       ) : (
         <ul className="m-0 list-none p-0">
           {intel.items.map((item) => (
@@ -43,8 +48,11 @@ export function ExternalExposure({ intel }: { readonly intel: Intel | null }) {
       )}
       {intel.discoveredHosts.length === 0 ? null : (
         <p className="m-0 mt-2 break-words text-[13px] leading-5 text-muted-foreground">
-          <b className="font-semibold text-foreground">{intel.discoveredHosts.length} more hosts of the organisation</b> appear in public
-          sources outside the approved scope. They were reported and not tested: {intel.discoveredHosts.join(', ')}.
+          <b className="font-semibold text-foreground">
+            {intel.discoveredHosts.length} more hosts of the organisation
+          </b>{' '}
+          appear in public sources outside the approved scope. They were reported and not tested:{' '}
+          {intel.discoveredHosts.join(', ')}.
         </p>
       )}
       {intel.sources.length === 0 ? null : (

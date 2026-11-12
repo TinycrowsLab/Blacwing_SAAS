@@ -6,7 +6,10 @@ export function ExecutiveSummary({ markdown }: { readonly markdown: string | nul
   const body = (markdown ?? '').replace(/^#{1,2}\s*Executive summary\s*\n/i, '').trim();
   if (body === '') return null;
   return (
-    <section aria-labelledby="exec-summary-h" className="flex flex-col gap-2">
+    <section
+      aria-labelledby="exec-summary-h"
+      className="flex flex-col gap-2 rounded-[14px] border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h2 id="exec-summary-h" className="m-0 text-[17px] font-semibold text-foreground">
           Executive summary
