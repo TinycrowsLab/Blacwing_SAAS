@@ -281,6 +281,42 @@ export function RunViewLoader({ id, viewerName }: { readonly id: string; readonl
   );
 }
 
+/**
+ * A right-rail section the person can collapse. Collapsed it shows a compact one-line summary, so the busy run page
+ * stays calm (the reference-style detail is one click away). Keeps its own open state per-section; the live findings
+ * list is never wrapped in one, so results stay in view.
+ */
+function RailDisclosure({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  readonly title: string;
+  readonly summary: string;
+  readonly defaultOpen?: boolean;
+  readonly children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="border-b border-dashed border-border pb-3 last:border-b-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
+        className="flex w-full items-baseline gap-2 rounded-md py-0.5 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+      >
+        <span className="text-[12.5px] font-semibold text-foreground">{title}</span>
+        {open ? null : <span className="ml-auto truncate text-[11.5px] font-normal text-muted-foreground tabular-nums">{summary}</span>}
+        <Icon name="chevron" size={14} className={`${open ? 'ml-auto' : ''} shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open ? <div className="mt-2">{children}</div> : null}
+    </section>
+  );
+}
+
 function download(name: string, text: string): void {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const a = document.createElement('a');
@@ -627,10 +663,23 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const autoRelease = release === 'auto' || teamMap.autoReleased;
   const roles = run.pins.request?.testAccounts?.map((a) => a.role) ?? run.coverage?.rolesConfigured ?? [];
   const used = accountUse(events);
+  // Compact one-line summaries for the collapsed rail sections (the detail is one click away).
+  const fmtMin = (s: number): string => (s < 60 ? `${Math.floor(s)}s` : `${Math.round(s / 60)}m`);
+  const limitsSummary = `${fmtMin(elapsedS)} · ${requestsUsed.toLocaleString('en-US')} req · ${run.costUsd.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`;
+  const accountsTotal = roles.reduce((n, r) => n + (used.get(r) ?? 0), 0);
+  const accountsSummary = `${roles.length} ${roles.length === 1 ? 'account' : 'accounts'} · ${accountsTotal.toLocaleString('en-US')} sent`;
+  const doneCount = cases.filter((c) => c.status === 'executed').length;
+  const planSummary = cases.length === 0 ? (terminal ? 'none recorded' : 'not recorded yet') : `${doneCount} of ${cases.length} done`;
   const sidePanel: ReactNode = (
     <>
-      <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} />
-      <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} />
+      <RailDisclosure title="Limits you approved" summary={limitsSummary}>
+        <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} headless />
+      </RailDisclosure>
+      {roles.length === 0 ? null : (
+        <RailDisclosure title="Account use" summary={accountsSummary}>
+          <AccountsPanel roles={roles} used={used} warned={events.some((e) => e.kind === 'accounts.unused')} headless />
+        </RailDisclosure>
+      )}
       {/* Beside the flight deck the panel carries its test cases and candidate findings (design 1a), in its words. */}
       {tab === 'deck' ? (
         <>
@@ -639,7 +688,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </>
       ) : (
         <>
-          <PlanPanel cases={cases} waiting={heldCases} ended={terminal} />
+          <RailDisclosure title="Test plan" summary={planSummary} defaultOpen>
+            <PlanPanel cases={cases} waiting={heldCases} ended={terminal} headless />
+          </RailDisclosure>
           <FoundPanel items={cands} ended={terminal} release={autoRelease ? 'auto' : 'hold'} />
         </>
       )}

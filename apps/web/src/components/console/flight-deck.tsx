@@ -65,18 +65,23 @@ export function LimitsPanel({
   budget,
   requestsUsed,
   costUsd,
+  headless = false,
 }: {
   readonly elapsedS: number;
   readonly budget: { readonly seconds: number; readonly requests: number; readonly costUsd: number };
   readonly requestsUsed: number;
   readonly costUsd: number;
+  /** Omit the panel's own heading: a disclosure around it already carries the title and a compact summary. */
+  readonly headless?: boolean;
 }) {
   return (
-    <section aria-labelledby="limits-h">
-      <h2 id="limits-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
-        Limits you approved
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">stops at the first</span>
-      </h2>
+    <section aria-labelledby={headless ? undefined : 'limits-h'} aria-label={headless ? 'Limits you approved' : undefined}>
+      {headless ? null : (
+        <h2 id="limits-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+          Limits you approved
+          <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">stops at the first</span>
+        </h2>
+      )}
       <Limit label="Time" value={minutes(elapsedS)} cap={minutes(budget.seconds)} pct={(elapsedS / Math.max(1, budget.seconds)) * 100} />
       <Limit
         label="Requests"
@@ -97,19 +102,24 @@ export function AccountsPanel({
   roles,
   used,
   warned,
+  headless = false,
 }: {
   readonly roles: readonly string[];
   readonly used: ReadonlyMap<string, number>;
   readonly warned: boolean;
+  /** Omit the panel's own heading: a disclosure around it already carries the title and a compact summary. */
+  readonly headless?: boolean;
 }) {
   if (roles.length === 0) return null;
   const total = roles.reduce((n, r) => n + (used.get(r) ?? 0), 0);
   return (
-    <section aria-labelledby="accounts-h">
-      <h2 id="accounts-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
-        Account use
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">requests sent as</span>
-      </h2>
+    <section aria-labelledby={headless ? undefined : 'accounts-h'} aria-label={headless ? 'Account use' : undefined}>
+      {headless ? null : (
+        <h2 id="accounts-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+          Account use
+          <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">requests sent as</span>
+        </h2>
+      )}
       <dl className="m-0 flex flex-col gap-[3px] text-[12px] text-muted-foreground">
         {roles.map((r) => (
           <div key={r} className="flex items-center gap-1.5">
@@ -173,22 +183,27 @@ export function PlanPanel({
   cases,
   waiting,
   ended,
+  headless = false,
 }: {
   readonly cases: readonly TestCase[];
   readonly waiting: ReadonlySet<string>;
   readonly ended: boolean;
+  /** Omit the panel's own heading: a disclosure around it already carries the title and a compact summary. */
+  readonly headless?: boolean;
 }) {
   const counts = new Map<PlanPart, number>();
   for (const c of cases) counts.set(planPart(c, waiting, ended), (counts.get(planPart(c, waiting, ended)) ?? 0) + 1);
   const parts = PLAN_PARTS.filter((p) => (counts.get(p.key) ?? 0) > 0 || p.key === 'done' || (p.key === 'queued' && !ended));
   return (
-    <section aria-labelledby="plan-h">
-      <h2 id="plan-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
-        Test plan
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
-          {cases.length === 0 ? (ended ? 'none recorded' : 'not recorded yet') : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
-        </span>
-      </h2>
+    <section aria-labelledby={headless ? undefined : 'plan-h'} aria-label={headless ? 'Test plan' : undefined}>
+      {headless ? null : (
+        <h2 id="plan-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+          Test plan
+          <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
+            {cases.length === 0 ? (ended ? 'none recorded' : 'not recorded yet') : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
+          </span>
+        </h2>
+      )}
       {cases.length === 0 ? (
         <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">{ended ? 'No test plan was recorded: the audit ended first.' : 'The planner records the test plan after recon maps the site.'}</p>
       ) : (
