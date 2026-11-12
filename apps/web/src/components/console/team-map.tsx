@@ -2,34 +2,49 @@
 'use client';
 
 // Blackwing's team (experience spec §5.2 item 3): Your approval → Planner → one node per subagent in the run.started
-// manifest → Validator → Your review → Report. Node states come from teamNodes() in run-model.ts; clicking a node
-// filters the conversation to that agent. A node spins only while its agent spoke in the last 10 s, never under reduced
-// motion. Plain name first, the mono agent id second (spec §1, prototype 04); the gate names sit in tooltips. Every
-// node has the same fixed height and the connectors a fixed width, so the map never changes size mid-run. Desktop draws
-// a row (collapsible); the phone's Team sheet draws the same nodes as a column.
-// The header's Full screen button opens a Modal with the phase view (PhaseMap): one card per phase with its agent count and
-// live states; a card expands to list its agents, and picking one filters the conversation to it.
-// The map row has 4px padding because its horizontal scroll box clips the selected and focus rings otherwise.
-import { useState } from 'react';
+// manifest → Validator → Your review → Report, drawn as a true connected node-graph. Node states come from
+// teamNodes() in run-model.ts; clicking a node filters the conversation to that agent.
+//
+// Why it is built this way (one source of truth, no DOM measurement):
+// every node AND every connector is placed from the SAME layout model in one fixed coordinate space (`buildRow` /
+// `buildColumn` below). The whole scene is then scaled uniformly to fit its container with a single CSS transform, so
+// an edge can never drift away from a node — nodes and edges scale together. Connectors are drawn in an SVG layer that
+// sits *behind* the opaque node cards and overshoot a couple of pixels into them, so a join can never show a gap. The
+// human gates are diamonds (a different shape, so the row never reads as a list of identical cards); the planner fans
+// out to the specialists through one shared junction point and they fan back into the validator, which is what makes it
+// look like one wire splitting and re-joining rather than three stray lines.
+//
+// The desktop inline map draws the horizontal graph (collapsible); the phone's Team sheet draws the same model as a
+// vertical graph. The header's Full screen button opens the same horizontal graph, larger, on a faint dot grid, with a
+// side drawer that shows the picked agent and a button to read only its part of the conversation.
+import { useEffect, useRef, useState, type RefObject } from 'react';
 
 import { Icon } from './design';
 import { Modal } from './modal';
 
 import type { Team, TeamNode } from './run-model';
 
+type GState = TeamNode['state'];
+
 function Ring({ className = '' }: { readonly className?: string }) {
-  return <span aria-hidden="true" className={`size-[9px] shrink-0 rounded-full border-2 border-current ${className}`} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={`size-[9px] shrink-0 rounded-full border-2 border-current ${className}`}
+    />
+  );
 }
 
-const TONE: Readonly<Record<TeamNode['state'], string>> = {
+const TONE: Readonly<Record<GState, string>> = {
   working: 'border-slate bg-surface',
-  waiting: 'border-[1.5px] border-gold-ink bg-[repeating-linear-gradient(135deg,var(--gold-soft)_0_6px,var(--surface)_6px_12px)]',
+  waiting:
+    'border-[1.5px] border-gold-ink bg-[repeating-linear-gradient(135deg,var(--gold-soft)_0_6px,var(--surface)_6px_12px)]',
   done: 'border-border bg-surface',
   idle: 'border-border bg-surface',
   stopped: 'border-dashed border-border-strong bg-surface-2',
 };
 
-const STATE_WORD: Readonly<Record<TeamNode['state'], string>> = {
+const STATE_WORD: Readonly<Record<GState, string>> = {
   working: 'working',
   waiting: 'waiting on you',
   done: 'done',
@@ -37,130 +52,11 @@ const STATE_WORD: Readonly<Record<TeamNode['state'], string>> = {
   stopped: 'stopped',
 };
 
-function NodeButton({
-  node,
-  mono,
-  selected,
-  onSelect,
-  wide = false,
-  stacked = false,
-}: {
-  readonly node: TeamNode;
-  /** The technical id, shown in the tooltip (or "replay engine" for the validator). */
-  readonly mono: string;
-  readonly selected: boolean;
-  readonly onSelect: (id: string) => void;
-  /** Column layout (phones): full width with a taller touch target. */
-  readonly wide?: boolean;
-  /** A narrow row node (planner, validator): the action gets two lines. */
-  readonly stacked?: boolean;
-}) {
-  const tone = TONE[node.state];
-  const word = STATE_WORD[node.state];
-  const said = node.sub.startsWith(word) ? `${node.name}: ${node.sub}` : `${node.name}, ${word}: ${node.sub}`;
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      title={`${node.name} (${mono}): ${node.sub}. Click to show only its part of the conversation.`}
-      aria-label={`${said}. Show only its part of the conversation.`}
-      onClick={() => {
-        onSelect(node.id);
-      }}
-      className={`flex w-full min-w-0 flex-col rounded-[10px] border px-2 py-1 text-left text-[12px] leading-4 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${wide ? 'min-h-11 justify-center' : ''} ${tone} ${selected ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
-    >
-      {/* Line 1: the plain name, with the whole width (the state mark sits on line 2, so it never pushes the name). */}
-      <span className="min-w-0 truncate font-semibold text-foreground">{node.name}</span>
-      {/* Line 2: the mono id and the state mark. The id is short enough never to be cut at the widths the row allows.
-          Line 3: the latest action, which gives way first; the narrow planner and validator give it two lines. Fixed
-          lines (the tooltip has everything), so the map never changes size mid-run. */}
-      <span className="flex min-w-0 items-center gap-1">
-        <span className="min-w-0 truncate font-mono text-[10.5px] leading-[14px] text-muted-foreground">{mono}</span>
-        {node.state === 'done' ? <span aria-hidden="true" className="ml-auto size-[7px] shrink-0 rounded-full bg-ok" /> : null}
-        {node.state === 'stopped' ? <span aria-hidden="true" className="ml-auto h-[2px] w-2 shrink-0 rounded-full bg-muted-foreground" /> : null}
-        {node.state === 'working' ? (
-          <Ring className={`ml-auto text-slate ${node.spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`} />
-        ) : null}
-      </span>
-      <span
-        className={`text-[11px] leading-[14px] ${stacked ? 'line-clamp-2 h-7 break-words' : 'truncate'} ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
-      >
-        {node.sub}
-      </span>
-    </button>
-  );
-}
-
-function Diamond({ label, term, who, done }: { readonly label: string; readonly term: string; readonly who: string; readonly done: boolean }) {
-  return (
-    <div title={term} className="flex shrink-0 flex-col items-center gap-0.5 whitespace-nowrap text-[10.5px] text-muted-foreground">
-      <span>
-        {label}
-        <span className="sr-only"> ({term})</span>
-      </span>
-      <i
-        aria-hidden="true"
-        className={`my-[3px] size-4 rotate-45 rounded-[2px] border-[1.5px] ${done ? 'border-ok bg-ok-soft' : 'border-border-strong bg-surface'}`}
-      />
-      <b className="text-[10.5px] font-semibold text-foreground">{who}</b>
-    </div>
-  );
-}
-
-/** A connector. `wide` ones keep room for a count ("3 proven") from the start, so a label appearing moves nothing. */
-function Arrow({ label, wide = false, className = '' }: { readonly label?: string | undefined; readonly wide?: boolean; readonly className?: string }) {
-  return (
-    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-12' : 'w-4'} ${className}`}>
-      <small className="whitespace-nowrap text-[10.5px] text-muted-foreground">{label ?? '\u00a0'}</small>
-      <span aria-hidden="true" className="relative h-[1.5px] w-full bg-border-strong">
-        <span className="absolute -right-px -top-[3px] border-y-[3.5px] border-l-[5px] border-y-transparent border-l-border-strong" />
-      </span>
-      <small aria-hidden="true" className="invisible text-[10.5px]">.</small>
-    </span>
-  );
-}
-
-/** The fan between one node and the stack: one curve per specialist, drawn to the stack's rows. */
-function Fan({ rows, reverse = false }: { readonly rows: number; readonly reverse?: boolean }) {
-  const ys = Array.from({ length: rows }, (_, i) => ((i + 0.5) / Math.max(rows, 1)) * 100);
-  const d = ys.map((y) => (reverse ? `M0 ${y} C13 ${y} 13 50 26 50` : `M0 50 C13 50 13 ${y} 26 ${y}`)).join(' ');
-  return (
-    <svg aria-hidden="true" viewBox="0 0 26 100" preserveAspectRatio="none" className="h-full w-4 shrink-0 self-stretch">
-      <path d={d} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" style={{ stroke: 'var(--border2)' }} />
-    </svg>
-  );
-}
-
-/** Column layout's connector, with optional words. */
-function Down({ label }: { readonly label?: string | undefined }) {
-  return (
-    <span className="flex items-center gap-2 py-0.5 pl-5 text-[11px] text-muted-foreground">
-      <span aria-hidden="true" className="h-4 w-[1.5px] bg-border-strong" />
-      {label}
-    </span>
-  );
-}
-
-const plural = (n: number, one: string, many: string): string => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
-
-type PhaseState = TeamNode['state'];
-
-interface Phase {
-  readonly key: string;
-  readonly name: string;
-  readonly blurb: string;
-  readonly agents: readonly TeamNode[];
-  /** The agents' technical label when the node has none of its own (planner, validator). */
-  readonly mono: string | null;
-  /** Phases without agents (the human gates, the report) show this instead of a count. */
-  readonly note: string | null;
-  readonly state: PhaseState;
-}
-
-const STATE_ORDER: readonly PhaseState[] = ['working', 'waiting', 'done', 'idle', 'stopped'];
+const plural = (n: number, one: string, many: string): string =>
+  `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 
 /** The phase's headline state: someone waiting on you outranks work, work outranks the rest. */
-function phaseState(agents: readonly TeamNode[]): PhaseState {
+function groupState(agents: readonly TeamNode[]): GState {
   if (agents.length === 0) return 'idle';
   if (agents.some((n) => n.state === 'waiting')) return 'waiting';
   if (agents.some((n) => n.state === 'working')) return 'working';
@@ -169,119 +65,801 @@ function phaseState(agents: readonly TeamNode[]): PhaseState {
   return 'idle';
 }
 
-function StateMark({ state, spinning = false }: { readonly state: PhaseState; readonly spinning?: boolean }) {
+function StateMark({
+  state,
+  spinning = false,
+}: {
+  readonly state: GState;
+  readonly spinning?: boolean;
+}) {
   if (state === 'working') {
-    return <Ring className={`text-slate ${spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`} />;
+    return (
+      <Ring
+        className={`text-slate ${spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`}
+      />
+    );
   }
-  if (state === 'waiting') return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-[2px] border-[1.5px] border-gold-ink bg-gold-soft" />;
-  if (state === 'done') return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-full bg-ok" />;
-  if (state === 'stopped') return <i aria-hidden="true" className="h-[2px] w-2.5 shrink-0 rounded-full bg-muted-foreground" />;
-  return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-full border-[1.5px] border-border-strong" />;
+  if (state === 'waiting')
+    return (
+      <i
+        aria-hidden="true"
+        className="size-[9px] shrink-0 rounded-[2px] border-[1.5px] border-gold-ink bg-gold-soft motion-safe:animate-pulse"
+      />
+    );
+  if (state === 'done')
+    return <i aria-hidden="true" className="size-[9px] shrink-0 rounded-full bg-ok" />;
+  if (state === 'stopped')
+    return (
+      <i aria-hidden="true" className="h-[2px] w-2.5 shrink-0 rounded-full bg-muted-foreground" />
+    );
+  return (
+    <i
+      aria-hidden="true"
+      className="size-[9px] shrink-0 rounded-full border-[1.5px] border-border-strong"
+    />
+  );
 }
 
-function stateSummary(agents: readonly TeamNode[]): string {
-  return STATE_ORDER.map((st) => ({ st, n: agents.filter((a) => a.state === st).length }))
-    .filter((x) => x.n > 0)
-    .map((x) => `${x.n.toLocaleString('en-US')} ${STATE_WORD[x.st]}`)
-    .join(' · ');
+// ---------------------------------------------------------------------------
+// Layout model. One coordinate space; nodes and edges both read from it.
+// ---------------------------------------------------------------------------
+
+type EdgeTone = 'active' | 'done' | 'pending';
+
+interface GNode {
+  readonly key: string;
+  readonly role: 'agent' | 'gate' | 'report';
+  readonly name: string;
+  readonly mono: string | null;
+  readonly sub: string | null;
+  readonly state: GState;
+  readonly spinning: boolean;
+  /** Gate only: who/when under the diamond (e.g. "You, 2:02 pm"). */
+  readonly who: string | null;
+  /** Gate/report tooltip term. */
+  readonly term: string | null;
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+  /** The id handed to onFilter when picked, or null for the gates/report (not filterable). */
+  readonly filterId: string | null;
 }
 
-function PhaseCard({
-  phase,
-  index,
-  open,
-  onToggle,
-  filter,
+interface GEdge {
+  readonly d: string;
+  readonly tone: EdgeTone;
+}
+
+interface GJoint {
+  readonly x: number;
+  readonly y: number;
+  readonly tone: EdgeTone;
+}
+
+interface GCaption {
+  readonly x: number;
+  readonly y: number;
+  readonly text: string;
+}
+
+interface Scene {
+  readonly nodes: readonly GNode[];
+  readonly edges: readonly GEdge[];
+  readonly joints: readonly GJoint[];
+  readonly captions: readonly GCaption[];
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Edge arriving at a real node: gold only once that node is done, animated while it is live and its predecessor is done. */
+const eInto = (predDone: boolean, s: GState): EdgeTone =>
+  s === 'done' ? 'done' : predDone && (s === 'working' || s === 'waiting') ? 'active' : 'pending';
+/** Edge leaving a real node. */
+const eOut = (s: GState): EdgeTone =>
+  s === 'done' ? 'done' : s === 'working' || s === 'waiting' ? 'active' : 'pending';
+
+// Horizontal geometry.
+const AW = 158;
+const AH = 58;
+const RW = 112;
+const GS = 44; // gate diamond side
+const GAP = 78; // vertical spacing between stacked specialists
+const INSET = 2; // overshoot: edges start/end this far inside the node, hidden under its opaque fill
+
+const halfW = (n: GNode): number =>
+  n.role === 'gate' ? 29 : n.role === 'report' ? RW / 2 : AW / 2;
+const rightOf = (n: GNode): { x: number; y: number } => ({ x: n.x + halfW(n) - INSET, y: n.y });
+const leftOf = (n: GNode): { x: number; y: number } => ({ x: n.x - halfW(n) + INSET, y: n.y });
+
+interface Pt {
+  readonly x: number;
+  readonly y: number;
+}
+const cubicH = (a: Pt, b: Pt): string => {
+  const dx = Math.max(22, Math.abs(b.x - a.x) * 0.5);
+  return `M${a.x} ${a.y} C${a.x + dx} ${a.y} ${b.x - dx} ${b.y} ${b.x} ${b.y}`;
+};
+const line = (a: Pt, b: Pt): string => `M${a.x} ${a.y} L${b.x} ${b.y}`;
+const cubicV = (a: Pt, b: Pt): string => {
+  const dy = Math.max(18, Math.abs(b.y - a.y) * 0.5);
+  return `M${a.x} ${a.y} C${a.x} ${a.y + dy} ${b.x} ${b.y - dy} ${b.x} ${b.y}`;
+};
+
+function buildRow(
+  team: Team,
+  gate1: string,
+  gate3: string,
+  ended: boolean,
+  withCaptions: boolean,
+): Scene {
+  const specs = team.specialists;
+  const n = Math.max(specs.length, 1);
+  const span = (n - 1) * GAP;
+  const height = Math.max(190, span + AH + 76);
+  const spineY = height / 2;
+
+  const gate1X = 46;
+  const plannerX = 196;
+  const specX = 460;
+  const valX = 726;
+  const gate3X = 892;
+  const reportX = 1016;
+  const width = reportX + RW / 2 + 24;
+
+  const reviewDone = (team.autoReleased && team.proven > 0) || gate3 === 'Review complete';
+  const report = `${team.proven.toLocaleString('en-US')} proven${ended ? '' : ' so far'}`;
+
+  const gate1Node: GNode = {
+    key: 'gate1',
+    role: 'gate',
+    name: 'Your approval',
+    mono: null,
+    sub: null,
+    state: 'done',
+    spinning: false,
+    who: gate1,
+    term: 'Gate 1: scope approval',
+    x: gate1X,
+    y: spineY,
+    w: GS,
+    h: GS,
+    filterId: null,
+  };
+  const planner: GNode | null =
+    team.planner === null
+      ? null
+      : {
+          key: 'planner',
+          role: 'agent',
+          name: team.planner.name,
+          mono: 'orchestrator',
+          sub: team.planner.sub,
+          state: team.planner.state,
+          spinning: team.planner.spinning,
+          who: null,
+          term: null,
+          x: plannerX,
+          y: spineY,
+          w: AW,
+          h: AH,
+          filterId: team.planner.id,
+        };
+  const specNodes: GNode[] = specs.map((s, i) => ({
+    key: s.id,
+    role: 'agent',
+    name: s.name,
+    mono: s.id,
+    sub: s.sub,
+    state: s.state,
+    spinning: s.spinning,
+    who: null,
+    term: null,
+    x: specX,
+    y: spineY + (i - (specs.length - 1) / 2) * GAP,
+    w: AW,
+    h: AH,
+    filterId: s.id,
+  }));
+  const validator: GNode | null =
+    team.validator === null
+      ? null
+      : {
+          key: 'validator',
+          role: 'agent',
+          name: team.validator.name,
+          mono: 'replay engine',
+          sub: team.validator.sub,
+          state: team.validator.state,
+          spinning: team.validator.spinning,
+          who: null,
+          term: null,
+          x: valX,
+          y: spineY,
+          w: AW,
+          h: AH,
+          filterId: 'validator',
+        };
+  const gate3Node: GNode = {
+    key: 'gate3',
+    role: 'gate',
+    name: 'Your review',
+    mono: null,
+    sub: null,
+    state: reviewDone ? 'done' : 'idle',
+    spinning: false,
+    who: gate3,
+    term: 'Gate 3: triage and release',
+    x: gate3X,
+    y: spineY,
+    w: GS,
+    h: GS,
+    filterId: null,
+  };
+  const reportNode: GNode = {
+    key: 'report',
+    role: 'report',
+    name: 'Report',
+    mono: null,
+    sub: report,
+    state: ended ? 'done' : 'idle',
+    spinning: false,
+    who: null,
+    term: 'The final write-up',
+    x: reportX,
+    y: spineY,
+    w: RW,
+    h: AH,
+    filterId: null,
+  };
+
+  const nodes: GNode[] = [gate1Node];
+  const edges: GEdge[] = [];
+  const joints: GJoint[] = [];
+
+  // gate1 → planner (or straight on to the specialists / validator if no planner yet)
+  const head = planner ?? null;
+  if (planner) {
+    nodes.push(planner);
+    edges.push({
+      d: cubicH(rightOf(gate1Node), leftOf(planner)),
+      tone: eInto(true, planner.state),
+    });
+  }
+  const source = head ?? gate1Node;
+
+  if (specNodes.length > 0) {
+    const gs = groupState(specs);
+    const tJoint: Pt = { x: rightOf(source).x + 26, y: spineY };
+    const mTarget = validator ?? gate3Node;
+    const mJoint: Pt = { x: leftOf(mTarget).x - 26, y: spineY };
+    // source → split junction
+    edges.push({ d: line(rightOf(source), tJoint), tone: eInto(source.state === 'done', gs) });
+    joints.push({ ...tJoint, tone: eOut(gs) });
+    for (const s of specNodes) {
+      nodes.push(s);
+      edges.push({ d: cubicH(tJoint, leftOf(s)), tone: eInto(source.state === 'done', s.state) });
+      edges.push({ d: cubicH(rightOf(s), mJoint), tone: eOut(s.state) });
+    }
+    const allSpecsDone = specs.length > 0 && specs.every((s) => s.state === 'done');
+    joints.push({
+      ...mJoint,
+      tone: allSpecsDone
+        ? 'done'
+        : specs.some((s) => s.state === 'working' || s.state === 'waiting')
+          ? 'active'
+          : 'pending',
+    });
+    // merge junction → validator
+    edges.push({ d: line(mJoint, leftOf(mTarget)), tone: eInto(allSpecsDone, mTarget.state) });
+  } else if (validator) {
+    edges.push({
+      d: cubicH(rightOf(source), leftOf(validator)),
+      tone: eInto(source.state === 'done', validator.state),
+    });
+  }
+
+  if (validator) {
+    nodes.push(validator);
+    edges.push({
+      d: cubicH(rightOf(validator), leftOf(gate3Node)),
+      tone: eInto(validator.state === 'done', gate3Node.state),
+    });
+  } else if (specNodes.length === 0) {
+    edges.push({
+      d: cubicH(rightOf(source), leftOf(gate3Node)),
+      tone: eInto(source.state === 'done', gate3Node.state),
+    });
+  }
+  nodes.push(gate3Node, reportNode);
+  edges.push({
+    d: cubicH(rightOf(gate3Node), leftOf(reportNode)),
+    tone: eInto(gate3Node.state === 'done', reportNode.state),
+  });
+
+  const captions: GCaption[] = [];
+  if (withCaptions && specNodes.length > 0) {
+    const bottom = Math.max(...specNodes.map((s) => s.y));
+    captions.push({
+      x: specX,
+      y: bottom + AH / 2 + 14,
+      text: plural(specNodes.length, 'specialist, in parallel', 'specialists, in parallel'),
+    });
+  }
+
+  return { nodes, edges, joints, captions, width, height };
+}
+
+// Vertical geometry for the phone Team sheet: the same model, top to bottom, with the specialists bracketed off a left rail.
+const VW = 320;
+const VCX = 164;
+const VAW = 226;
+const VAH = 54;
+const VSW = 198;
+const VRAIL = 34;
+const VGAP = 64;
+
+const vHalf = (n: GNode): number => (n.role === 'gate' ? 24 : n.h / 2);
+const vTop = (n: GNode): Pt => ({ x: n.x, y: n.y - vHalf(n) + INSET });
+const vBot = (n: GNode): Pt => ({ x: n.x, y: n.y + vHalf(n) - INSET });
+
+function buildColumn(team: Team, gate1: string, gate3: string, ended: boolean): Scene {
+  const specs = team.specialists;
+  const reviewDone = (team.autoReleased && team.proven > 0) || gate3 === 'Review complete';
+  const report = `${team.proven.toLocaleString('en-US')} proven${ended ? '' : ' so far'}`;
+
+  let y = 30;
+  const gate1Node: GNode = {
+    key: 'gate1',
+    role: 'gate',
+    name: 'Your approval',
+    mono: null,
+    sub: null,
+    state: 'done',
+    spinning: false,
+    who: gate1,
+    term: 'Gate 1: scope approval',
+    x: VCX,
+    y,
+    w: GS,
+    h: GS,
+    filterId: null,
+  };
+  y += 76;
+  const planner: GNode | null =
+    team.planner === null
+      ? null
+      : {
+          key: 'planner',
+          role: 'agent',
+          name: team.planner.name,
+          mono: 'orchestrator',
+          sub: team.planner.sub,
+          state: team.planner.state,
+          spinning: team.planner.spinning,
+          who: null,
+          term: null,
+          x: VCX,
+          y,
+          w: VAW,
+          h: VAH,
+          filterId: team.planner.id,
+        };
+  if (planner) y += VAH / 2 + 30;
+  else y += 4;
+  const specNodes: GNode[] = specs.map((s, i) => ({
+    key: s.id,
+    role: 'agent',
+    name: s.name,
+    mono: s.id,
+    sub: s.sub,
+    state: s.state,
+    spinning: s.spinning,
+    who: null,
+    term: null,
+    x: VCX + (VAW - VSW) / 2,
+    y: y + VAH / 2 + i * VGAP,
+    w: VSW,
+    h: VAH,
+    filterId: s.id,
+  }));
+  if (specNodes.length > 0) y = (specNodes[specNodes.length - 1]?.y ?? y) + VAH / 2 + 30;
+  const validator: GNode | null =
+    team.validator === null
+      ? null
+      : {
+          key: 'validator',
+          role: 'agent',
+          name: team.validator.name,
+          mono: 'replay engine',
+          sub: team.validator.sub,
+          state: team.validator.state,
+          spinning: team.validator.spinning,
+          who: null,
+          term: null,
+          x: VCX,
+          y: y + VAH / 2,
+          w: VAW,
+          h: VAH,
+          filterId: 'validator',
+        };
+  if (validator) y = validator.y + VAH / 2 + 46;
+  const gate3Node: GNode = {
+    key: 'gate3',
+    role: 'gate',
+    name: 'Your review',
+    mono: null,
+    sub: null,
+    state: reviewDone ? 'done' : 'idle',
+    spinning: false,
+    who: gate3,
+    term: 'Gate 3: triage and release',
+    x: VCX,
+    y: y + 2,
+    w: GS,
+    h: GS,
+    filterId: null,
+  };
+  y = gate3Node.y + 68;
+  const reportNode: GNode = {
+    key: 'report',
+    role: 'report',
+    name: 'Report',
+    mono: null,
+    sub: report,
+    state: ended ? 'done' : 'idle',
+    spinning: false,
+    who: null,
+    term: 'The final write-up',
+    x: VCX,
+    y: y + VAH / 2,
+    w: VAW,
+    h: VAH,
+    filterId: null,
+  };
+  const height = reportNode.y + VAH / 2 + 26;
+
+  const nodes: GNode[] = [gate1Node];
+  const edges: GEdge[] = [];
+  const joints: GJoint[] = [];
+  if (planner) {
+    nodes.push(planner);
+    edges.push({ d: cubicV(vBot(gate1Node), vTop(planner)), tone: eInto(true, planner.state) });
+  }
+  const source = planner ?? gate1Node;
+  if (specNodes.length > 0) {
+    const gs = groupState(specs);
+    const railTop: Pt = { x: VRAIL, y: vBot(source).y + 14 };
+    const mTarget = validator ?? gate3Node;
+    const railBot: Pt = { x: VRAIL, y: vTop(mTarget).y - 14 };
+    edges.push({
+      d: `M${vBot(source).x} ${vBot(source).y} C${vBot(source).x} ${vBot(source).y + 14} ${railTop.x} ${railTop.y - 14} ${railTop.x} ${railTop.y}`,
+      tone: eInto(source.state === 'done', gs),
+    });
+    edges.push({ d: line(railTop, railBot), tone: eOut(gs) });
+    joints.push({ ...railTop, tone: eOut(gs) });
+    for (const s of specNodes) {
+      nodes.push(s);
+      const sleft: Pt = { x: s.x - VSW / 2 + INSET, y: s.y };
+      edges.push({
+        d: cubicH({ x: VRAIL, y: s.y }, sleft),
+        tone: eInto(source.state === 'done', s.state),
+      });
+    }
+    const allSpecsDone = specs.every((s) => s.state === 'done');
+    edges.push({
+      d: `M${railBot.x} ${railBot.y} C${railBot.x} ${railBot.y + 14} ${vTop(mTarget).x} ${vTop(mTarget).y - 14} ${vTop(mTarget).x} ${vTop(mTarget).y}`,
+      tone: eInto(allSpecsDone, mTarget.state),
+    });
+    joints.push({
+      ...railBot,
+      tone: allSpecsDone
+        ? 'done'
+        : specs.some((s) => s.state === 'working' || s.state === 'waiting')
+          ? 'active'
+          : 'pending',
+    });
+  } else if (validator) {
+    edges.push({
+      d: cubicV(vBot(source), vTop(validator)),
+      tone: eInto(source.state === 'done', validator.state),
+    });
+  }
+  if (validator) {
+    nodes.push(validator);
+    edges.push({
+      d: cubicV(vBot(validator), vTop(gate3Node)),
+      tone: eInto(validator.state === 'done', gate3Node.state),
+    });
+  } else if (specNodes.length === 0) {
+    edges.push({
+      d: cubicV(vBot(source), vTop(gate3Node)),
+      tone: eInto(source.state === 'done', gate3Node.state),
+    });
+  }
+  nodes.push(gate3Node, reportNode);
+  edges.push({
+    d: cubicV(vBot(gate3Node), vTop(reportNode)),
+    tone: eInto(gate3Node.state === 'done', reportNode.state),
+  });
+
+  return { nodes, edges, joints, captions: [], width: VW, height };
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+const EDGE_FLOW = `@keyframes bwflow{to{stroke-dashoffset:-16}}.bw-edge-active{stroke-dasharray:3 5;animation:bwflow .9s linear infinite}@media (prefers-reduced-motion:reduce){.bw-edge-active{animation:none}}`;
+const edgeStroke = (t: EdgeTone): string =>
+  t === 'pending' ? 'var(--border-strong)' : 'var(--gold-ink)';
+
+function EdgeLayer({ scene }: { readonly scene: Scene }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width={scene.width}
+      height={scene.height}
+      viewBox={`0 0 ${scene.width} ${scene.height}`}
+      className="pointer-events-none absolute left-0 top-0 overflow-visible"
+    >
+      <defs>
+        <style>{EDGE_FLOW}</style>
+      </defs>
+      {scene.edges.map((e, i) => (
+        <path
+          key={i}
+          d={e.d}
+          fill="none"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          className={e.tone === 'active' ? 'bw-edge-active' : ''}
+          style={{
+            stroke: edgeStroke(e.tone),
+            strokeWidth: e.tone === 'pending' ? 1.25 : 1.5,
+            opacity: e.tone === 'done' ? 0.5 : 1,
+          }}
+        />
+      ))}
+      {scene.joints.map((j, i) => (
+        <circle
+          key={`j${i}`}
+          cx={j.x}
+          cy={j.y}
+          r={2.4}
+          style={{ fill: edgeStroke(j.tone), opacity: j.tone === 'done' ? 0.5 : 1 }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function NodeView({
+  node,
+  selected,
   onPick,
 }: {
-  readonly phase: Phase;
-  readonly index: number;
-  readonly open: boolean;
-  readonly onToggle: () => void;
-  readonly filter: string | null;
-  readonly onPick: (id: string) => void;
+  readonly node: GNode;
+  readonly selected: boolean;
+  readonly onPick: (n: GNode) => void;
 }) {
-  const count = phase.agents.length;
-  const expandable = count > 0;
-  const listId = `team-phase-${phase.key}`;
-  const head = (
-    <>
-      <span
-        aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 font-mono text-[12px] font-semibold text-muted-foreground"
-      >
-        {index + 1}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-x-2 text-[15px] font-semibold text-foreground">
-          {phase.name}
-          {expandable ? (
-            <span className="rounded-full bg-gold-soft px-2 py-px text-[11.5px] font-medium text-gold-ink">{plural(count, 'agent', 'agents')}</span>
-          ) : null}
-        </span>
-        <span className="text-[12.5px] text-muted-foreground">{expandable ? stateSummary(phase.agents) : (phase.note ?? phase.blurb)}</span>
-      </span>
-      <StateMark state={phase.state} spinning={phase.agents.some((a) => a.spinning)} />
-      {expandable ? <Icon name="chevron" size={14} className={`shrink-0 text-muted-foreground ${open ? 'rotate-180' : ''}`} /> : null}
-    </>
-  );
-  const frame = `flex w-full items-center gap-3 rounded-[14px] border px-4 py-3.5 text-left ${TONE[phase.state]}`;
-  return (
-    <div className="flex flex-col">
-      {expandable ? (
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-label={`${phase.name}: ${plural(count, 'agent', 'agents')}, ${stateSummary(phase.agents)}. ${open ? 'Hide' : 'Show'} the agents.`}
-          onClick={onToggle}
-          className={`${frame} min-h-14 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus`}
+  const pos = {
+    position: 'absolute' as const,
+    left: node.x - node.w / 2,
+    top: node.y - node.h / 2,
+    width: node.w,
+    height: node.h,
+  };
+
+  if (node.role === 'gate') {
+    return (
+      <>
+        <span
+          aria-hidden="true"
+          style={{ position: 'absolute', left: node.x - 58, top: node.y - GS / 2 - 18, width: 116 }}
+          className="text-center text-[10.5px] leading-[14px] text-muted-foreground"
         >
-          {head}
-        </button>
-      ) : (
-        <div className={frame}>{head}</div>
+          {node.name}
+        </span>
+        <i
+          title={node.term ?? undefined}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: node.x - GS / 2,
+            top: node.y - GS / 2,
+            width: GS,
+            height: GS,
+          }}
+          className={`rotate-45 rounded-[4px] border-[1.5px] ${node.state === 'done' ? 'border-ok bg-ok-soft' : 'border-border-strong bg-surface'}`}
+        />
+        <b
+          style={{ position: 'absolute', left: node.x - 58, top: node.y + GS / 2 + 3, width: 116 }}
+          className="text-center text-[10.5px] font-semibold leading-[14px] text-foreground"
+        >
+          {node.who}
+        </b>
+      </>
+    );
+  }
+
+  if (node.role === 'report') {
+    return (
+      <div
+        title={node.term ?? undefined}
+        style={pos}
+        className={`flex flex-col justify-center rounded-[12px] border px-2.5 ${TONE[node.state]}`}
+      >
+        <span className="text-[12.5px] font-semibold leading-4 text-foreground">{node.name}</span>
+        <span className="truncate text-[11px] leading-[14px] text-muted-foreground">
+          {node.sub}
+        </span>
+      </div>
+    );
+  }
+
+  const word = STATE_WORD[node.state];
+  const said = node.sub?.startsWith(word)
+    ? `${node.name}: ${node.sub}`
+    : `${node.name}, ${word}${node.sub ? `: ${node.sub}` : ''}`;
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      title={`${node.name}${node.mono ? ` (${node.mono})` : ''}${node.sub ? `: ${node.sub}` : ''}. Click to show only its part of the conversation.`}
+      aria-label={`${said}. Show only its part of the conversation.`}
+      onClick={() => {
+        onPick(node);
+      }}
+      style={pos}
+      className={`flex flex-col justify-center gap-0.5 overflow-hidden rounded-[12px] border px-2.5 text-left transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${TONE[node.state]} ${selected ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
+    >
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold leading-4 text-foreground">
+          {node.name}
+        </span>
+        <StateMark state={node.state} spinning={node.spinning} />
+      </span>
+      {node.mono === null ? null : (
+        <span className="truncate font-mono text-[10.5px] leading-[13px] text-muted-foreground">
+          {node.mono}
+        </span>
       )}
-      {expandable && open ? (
-        <ul id={listId} className="m-0 mt-2 flex list-none flex-col gap-1.5 p-0 pl-4 sm:pl-11">
-          {phase.agents.map((n) => (
-            <li key={n.id}>
-              <button
-                type="button"
-                aria-pressed={filter === n.id}
-                aria-label={`${n.name}, ${STATE_WORD[n.state]}: ${n.sub}. Show only its part of the conversation.`}
-                onClick={() => {
-                  onPick(n.id);
-                }}
-                className={`flex min-h-11 w-full items-start gap-3 rounded-[10px] border px-3 py-2 text-left transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${TONE[n.state]} ${filter === n.id ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
-              >
-                <span className="mt-[5px]">
-                  <StateMark state={n.state} spinning={n.spinning} />
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="text-[13.5px] font-semibold text-foreground">{n.name}</span>
-                    <span className="font-mono text-[11px] text-muted-foreground">{phase.mono ?? n.id}</span>
-                  </span>
-                  <span className={`break-words text-[12.5px] ${n.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}>{n.sub}</span>
-                </span>
-                <Icon name="arrow" size={13} className="mt-1 shrink-0 text-muted-foreground" />
-              </button>
-            </li>
+      {node.sub === null ? null : (
+        <span
+          className={`truncate text-[11px] leading-[14px] ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+        >
+          {node.sub}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** Uniform fit scale. The ONLY measurement; it feeds a single transform, so nodes and edges always scale together. */
+function useFitScale(
+  width: number,
+  height: number,
+  min: number,
+  max: number,
+  byHeight: boolean,
+): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(byHeight ? min : max);
+  useEffect(() => {
+    const el = ref.current;
+    if (el === null) return;
+    const measure = (): void => {
+      const bw = el.clientWidth;
+      const bh = el.clientHeight;
+      let s = bw / width;
+      if (byHeight && bh > 0) s = Math.min(s, bh / height);
+      s = Math.min(max, Math.max(min, s));
+      setScale((prev) => (Math.abs(prev - s) < 0.004 ? prev : s));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+    };
+  }, [width, height, min, max, byHeight]);
+  return [ref, scale];
+}
+
+function GraphScene({
+  scene,
+  filter,
+  onPick,
+  variant,
+}: {
+  readonly scene: Scene;
+  readonly filter: string | null;
+  readonly onPick: (n: GNode) => void;
+  readonly variant: 'inline' | 'full' | 'column';
+}) {
+  const full = variant === 'full';
+  const [ref, scale] = useFitScale(
+    scene.width,
+    scene.height,
+    full ? 0.55 : variant === 'column' ? 0.62 : 0.52,
+    full ? 1.9 : 1,
+    full,
+  );
+  return (
+    <div
+      ref={ref}
+      className={
+        full
+          ? 'relative flex w-full flex-1 items-center justify-center overflow-auto p-2'
+          : 'relative w-full overflow-x-auto'
+      }
+    >
+      <div
+        className={`relative shrink-0 origin-top-left ${full ? 'rounded-[16px] border border-border bg-[radial-gradient(var(--border)_0.7px,transparent_0.7px)] [background-size:18px_18px]' : ''}`}
+        style={{ width: scene.width * scale, height: scene.height * scale }}
+      >
+        <div
+          className="absolute left-0 top-0 origin-top-left"
+          style={{ width: scene.width, height: scene.height, transform: `scale(${scale})` }}
+        >
+          <EdgeLayer scene={scene} />
+          {scene.nodes.map((node) => (
+            <NodeView
+              key={node.key}
+              node={node}
+              selected={node.filterId !== null && filter === node.filterId}
+              onPick={onPick}
+            />
           ))}
-        </ul>
-      ) : null}
+          {scene.captions.map((c, i) => (
+            <span
+              key={`c${i}`}
+              aria-hidden="true"
+              style={{ position: 'absolute', left: c.x - 110, top: c.y, width: 220 }}
+              className="text-center text-[11px] font-medium text-muted-foreground"
+            >
+              {c.text}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-function PhaseMap({
+function Legend({ className = '' }: { readonly className?: string }) {
+  return (
+    <span
+      className={`flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-normal text-muted-foreground ${className}`}
+    >
+      <span className="flex items-center gap-1.5">
+        <Ring className="text-slate" />
+        Working
+      </span>
+      <span className="flex items-center gap-1.5">
+        <i
+          aria-hidden="true"
+          className="size-[9px] rounded-[2px] border-[1.5px] border-gold-ink bg-gold-soft"
+        />
+        Waiting on you
+      </span>
+      <span className="flex items-center gap-1.5">
+        <i aria-hidden="true" className="size-[7px] rounded-full bg-ok" />
+        Done
+      </span>
+    </span>
+  );
+}
+
+/** Full-screen graph: the same horizontal scene, larger, plus a side drawer for the picked agent. */
+function FullGraph({
   team,
   gate1,
   gate3,
   ended,
   filter,
-  onPick,
+  onFilter,
   onClose,
 }: {
   readonly team: Team;
@@ -289,47 +867,17 @@ function PhaseMap({
   readonly gate3: string;
   readonly ended: boolean;
   readonly filter: string | null;
-  readonly onPick: (id: string) => void;
+  readonly onFilter: (id: string | null) => void;
   readonly onClose: () => void;
 }) {
-  const [opened, setOpened] = useState<readonly string[]>(['specialists']);
-  const toggle = (key: string): void => {
-    setOpened((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]));
-  };
-  const reviewDone = (team.autoReleased && team.proven > 0) || gate3 === 'Review complete';
-  const phases: readonly Phase[] = [
-    { key: 'approval', name: 'Approval', blurb: 'Scope approval', agents: [], mono: null, note: `Your approval: ${gate1}`, state: 'done' },
-    { key: 'plan', name: 'Recon and plan', blurb: 'Plans the work', agents: team.planner === null ? [] : [team.planner], mono: 'orchestrator', note: null, state: 'idle' },
-    { key: 'specialists', name: 'Specialists', blurb: 'Test the target', agents: team.specialists, mono: null, note: null, state: 'idle' },
-    { key: 'validation', name: 'Validation', blurb: 'Proves each finding', agents: team.validator === null ? [] : [team.validator], mono: 'replay engine', note: null, state: 'idle' },
-    {
-      key: 'review',
-      name: 'Your review',
-      blurb: 'Triage and release',
-      agents: [],
-      mono: null,
-      note: `${gate3}${team.proven === 0 ? '' : ` · ${plural(team.proven, 'proven issue', 'proven issues')}`}`,
-      state: reviewDone ? 'done' : 'idle',
-    },
-    {
-      key: 'report',
-      name: 'Report',
-      blurb: 'The final write-up',
-      agents: [],
-      mono: null,
-      note: `${plural(team.proven, 'proven issue', 'proven issues')}${ended ? '' : ' so far'}`,
-      state: ended ? 'done' : 'idle',
-    },
-  ];
-  const withState = phases.map((p) => (p.agents.length === 0 ? p : { ...p, state: phaseState(p.agents) }));
-  const total = withState.reduce((n, p) => n + p.agents.length, 0);
-  const links: Readonly<Record<string, string | undefined>> = {
-    plan: team.tasks === 0 ? undefined : plural(team.tasks, 'task given', 'tasks given'),
-    validation: team.candidates === 0 ? undefined : plural(team.candidates, 'candidate', 'candidates'),
-    review: team.proven === 0 ? undefined : plural(team.proven, 'proven issue', 'proven issues'),
-  };
+  const scene = buildRow(team, gate1, gate3, ended, true);
+  const [detail, setDetail] = useState<GNode | null>(
+    () => scene.nodes.find((nd) => nd.filterId !== null && nd.filterId === filter) ?? null,
+  );
+  const total =
+    team.specialists.length + (team.planner === null ? 0 : 1) + (team.validator === null ? 0 : 1);
   return (
-    <div className="flex flex-col gap-5 p-5 sm:p-7">
+    <div className="flex h-full flex-col gap-4 p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h2 className="m-0 flex items-center gap-2 text-[18px] font-semibold text-foreground">
@@ -337,53 +885,83 @@ function PhaseMap({
             Blackwing&apos;s team
           </h2>
           <p className="m-0 text-[13px] text-muted-foreground">
-            {plural(total, 'agent', 'agents')} across {withState.length.toLocaleString('en-US')} phases. Open a phase to see who is in it, then pick an agent to read only its part of the conversation.
+            {plural(total, 'agent', 'agents')} from your approval through to the report. Pick any
+            agent to read only its part of the conversation.
           </p>
         </div>
+        <Legend className="mt-1 hidden md:flex" />
         <button
           type="button"
           data-autofocus
           aria-label="Close full screen team view"
           onClick={onClose}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
         >
           <Icon name="x" size={16} />
         </button>
       </div>
-      <ol aria-label="Phases" className="m-0 flex list-none flex-col p-0">
-        {withState.map((p, i) => {
-          const link = i === 0 ? undefined : links[p.key];
-          return (
-            <li key={p.key} className="flex flex-col">
-              {i === 0 ? null : (
-                <span aria-hidden="true" className="flex items-center gap-2 py-1.5 pl-[31px] text-[11.5px] text-muted-foreground">
-                  <span className="h-5 w-[1.5px] bg-border-strong" />
-                  {link}
+      <div className="flex min-h-0 flex-1 gap-4">
+        <GraphScene
+          scene={scene}
+          filter={filter}
+          variant="full"
+          onPick={(n) => {
+            setDetail(n);
+            if (n.filterId !== null) onFilter(n.filterId);
+          }}
+        />
+        {detail === null ? null : (
+          <aside className="flex w-[300px] shrink-0 flex-col gap-3 overflow-y-auto rounded-[14px] border border-border bg-surface p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <StateMark state={detail.state} spinning={detail.spinning} />
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {STATE_WORD[detail.state]}
                 </span>
-              )}
-              <PhaseCard
-                phase={p}
-                index={i}
-                open={opened.includes(p.key)}
-                onToggle={() => {
-                  toggle(p.key);
+              </div>
+              <button
+                type="button"
+                aria-label="Close agent detail"
+                onClick={() => {
+                  setDetail(null);
                 }}
-                filter={filter}
-                onPick={onPick}
-              />
-            </li>
-          );
-        })}
-      </ol>
-      <div role="group" aria-label="Legend" className="flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-4 text-[12px] text-muted-foreground">
-        {STATE_ORDER.map((st) => (
-          <span key={st} className="flex items-center gap-1.5">
-            <StateMark state={st} />
-            {STATE_WORD[st].replace(' on you', '')[0]?.toUpperCase()}
-            {STATE_WORD[st].replace(' on you', '').slice(1)}
-            {st === 'waiting' ? ' on you' : ''}
-          </span>
-        ))}
+                className="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                <Icon name="x" size={13} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <h3 className="m-0 text-[15px] font-semibold text-foreground">{detail.name}</h3>
+              {detail.mono === null ? null : (
+                <span className="font-mono text-[11.5px] text-muted-foreground">{detail.mono}</span>
+              )}
+            </div>
+            {detail.sub === null ? null : (
+              <p
+                className={`m-0 text-[13px] leading-5 ${detail.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+              >
+                {detail.sub}
+              </p>
+            )}
+            {detail.filterId === null ? (
+              <p className="m-0 text-[12px] leading-5 text-muted-foreground">
+                This is a checkpoint, not an agent — nothing to read in the conversation.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onFilter(detail.filterId);
+                  onClose();
+                }}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-gold-soft px-3 text-[13px] font-medium text-gold-ink hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              >
+                Read only its conversation
+                <Icon name="arrow" size={13} />
+              </button>
+            )}
+          </aside>
+        )}
       </div>
     </div>
   );
@@ -408,114 +986,45 @@ export function TeamMap({
   /** The run is over: counts are final, not "so far". */
   readonly ended: boolean;
   readonly filter: string | null;
-  readonly onFilter: (agent: string | null) => void;
+  readonly onFilter: (id: string | null) => void;
   readonly layout?: 'row' | 'column';
-  /** Row layout only: the map folds to its title bar to give the conversation room. */
   readonly collapsed?: boolean;
-  readonly onToggle?: () => void;
+  readonly onToggle?: (() => void) | undefined;
 }) {
   const [full, setFull] = useState(false);
-  const select = (id: string): void => {
-    onFilter(filter === id ? null : id);
-  };
   const column = layout === 'column';
-  const anyStopped = [team.planner, ...team.specialists, team.validator].some((n) => n?.state === 'stopped');
-  const legend = (
-    <span className={`flex flex-wrap gap-3 text-[11px] font-normal text-muted-foreground ${column ? 'basis-full' : 'ml-auto'}`}>
-      <span className="flex items-center gap-1.5">
-        <Ring className="text-slate" />
-        Working
-      </span>
-      <span className="flex items-center gap-1.5">
-        <i aria-hidden="true" className="size-[9px] rounded-[2px] border-[1.5px] border-gold-ink bg-gold-soft" />
-        Waiting on you
-      </span>
-      <span className="flex items-center gap-1.5">
-        <i aria-hidden="true" className="size-[7px] rounded-full bg-ok" />
-        Done
-      </span>
-      {anyStopped ? (
-        <span className="flex items-center gap-1.5">
-          <i aria-hidden="true" className="h-[2px] w-2 rounded-full bg-muted-foreground" />
-          Stopped
-        </span>
-      ) : null}
-    </span>
-  );
-  const report = `${team.proven.toLocaleString('en-US')} proven${ended ? '' : ' so far'}`;
-  const proven = team.proven === 0 ? undefined : `${team.proven.toLocaleString('en-US')} proven`;
+  const select = (n: GNode): void => {
+    if (n.filterId === null) return;
+    onFilter(filter === n.filterId ? null : n.filterId);
+  };
   const empty = team.planner === null && team.specialists.length === 0;
+  const scene = column
+    ? buildColumn(team, gate1, gate3, ended)
+    : buildRow(team, gate1, gate3, ended, false);
 
   const body = empty ? (
     <p className="m-0 py-3 text-[12.5px] text-muted-foreground">
-      {ended ? 'No agent started: the run ended before testing began.' : 'The team appears when the run starts.'}
+      {ended
+        ? 'No agent started: the run ended before testing began.'
+        : 'The team appears when the run starts.'}
     </p>
-  ) : column ? (
-    <div className="flex flex-col">
-      <p className="m-0 text-[12px] text-muted-foreground">
-        Your approval: <b className="font-semibold text-foreground">{gate1}</b>
-      </p>
-      <Down />
-      {team.planner === null ? null : <NodeButton node={team.planner} mono="orchestrator" wide selected={filter === team.planner.id} onSelect={select} />}
-      <Down label={team.tasks === 0 ? undefined : plural(team.tasks, 'task given', 'tasks given')} />
-      <div className="flex flex-col gap-1.5">
-        {team.specialists.map((n) => (
-          <NodeButton key={n.id} node={n} mono={n.id} wide selected={filter === n.id} onSelect={select} />
-        ))}
-      </div>
-      <Down label={team.candidates === 0 ? undefined : plural(team.candidates, 'candidate', 'candidates')} />
-      {team.validator === null ? null : (
-        <NodeButton node={team.validator} mono="replay engine" wide selected={filter === 'validator'} onSelect={select} />
-      )}
-      <Down label={proven} />
-      <p className="m-0 text-[12px] text-muted-foreground">
-        Your review: <b className="font-semibold text-foreground">{gate3}</b> · Report: {report}
-      </p>
-    </div>
   ) : (
-    <div className="flex items-center overflow-x-auto p-[4px] [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]">
-      {/* Narrow desktops: the approval (also on the spine) and the report count (also in the side panel) give way, so
-          the agents keep their full names without a sideways scroll. */}
-      <span className="contents max-[1359px]:hidden">
-        <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
-        <Arrow />
-      </span>
-      {team.planner === null ? null : (
-        <div className="w-[108px] shrink-0">
-          <NodeButton node={team.planner} mono="orchestrator" stacked selected={filter === team.planner.id} onSelect={select} />
-        </div>
-      )}
-      {team.specialists.length === 0 ? (
-        <Arrow wide label={team.tasks === 0 ? undefined : plural(team.tasks, 'task', 'tasks')} />
-      ) : (
-        <>
-          <Fan rows={team.specialists.length} />
-          <div className="flex min-w-[170px] max-w-[300px] flex-1 flex-col gap-[5px]">
-            {team.specialists.map((n) => (
-              <NodeButton key={n.id} node={n} mono={n.id} selected={filter === n.id} onSelect={select} />
-            ))}
-          </div>
-          <Fan rows={team.specialists.length} reverse />
-        </>
-      )}
-      {team.validator === null ? null : (
-        <div className="w-[132px] shrink-0">
-          <NodeButton node={team.validator} mono="replay engine" stacked selected={filter === 'validator'} onSelect={select} />
-        </div>
-      )}
-      <Arrow wide label={proven} />
-      <Diamond label="Your review" term="Gate 3: triage and release" who={gate3} done={(team.autoReleased && team.proven > 0) || gate3 === 'Review complete'} />
-      <Arrow className="max-[1359px]:hidden" />
-      <div className="max-w-[74px] shrink-0 max-[1359px]:hidden rounded-[10px] border border-border bg-surface px-2.5 py-1.5 text-[12px] leading-4">
-        <b className="font-semibold">Report</b>
-        <div className="text-[11px] text-muted-foreground">{report}</div>
-      </div>
-    </div>
+    <GraphScene
+      scene={scene}
+      filter={filter}
+      variant={column ? 'column' : 'inline'}
+      onPick={select}
+    />
   );
 
   return (
-    <section aria-label="Blackwing's team" className={column ? '' : 'rounded-[14px] border border-border bg-surface px-3.5 pb-3 pt-2.5'}>
-      <div className={`flex flex-wrap items-center gap-2.5 text-[12.5px] font-semibold ${collapsed && !column ? '' : 'mb-2'}`}>
+    <section
+      aria-label="Blackwing's team"
+      className={column ? '' : 'rounded-[14px] border border-border bg-surface px-3.5 pb-3 pt-2.5'}
+    >
+      <div
+        className={`flex flex-wrap items-center gap-2.5 text-[12.5px] font-semibold ${collapsed && !column ? '' : 'mb-2'}`}
+      >
         <Icon name="team" size={15} />
         Blackwing&apos;s team
         {filter === null ? null : (
@@ -530,10 +1039,11 @@ export function TeamMap({
             <Icon name="x" size={11} />
           </button>
         )}
-        {/* One header line whatever happens: in the row, the filter chip takes the legend's place. */}
-        {(collapsed || filter !== null) && !column ? null : legend}
+        {(collapsed || filter !== null) && !column ? null : <Legend className="ml-auto" />}
         {column ? null : (
-          <span className={`flex items-center gap-1 ${collapsed || filter !== null ? 'ml-auto' : ''}`}>
+          <span
+            className={`flex items-center gap-1 ${collapsed || filter !== null ? 'ml-auto' : ''}`}
+          >
             {empty ? null : (
               <button
                 type="button"
@@ -543,7 +1053,17 @@ export function TeamMap({
                 }}
                 className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5" />
                 </svg>
                 Full screen
@@ -571,19 +1091,16 @@ export function TeamMap({
             setFull(false);
           }}
           label="Blackwing's team"
-          className="max-w-[760px]"
+          className="h-[min(88vh,720px)] max-w-[1180px]"
         >
-          <PhaseMap
+          <FullGraph
             team={team}
             gate1={gate1}
             gate3={gate3}
             ended={ended}
             filter={filter}
+            onFilter={onFilter}
             onClose={() => {
-              setFull(false);
-            }}
-            onPick={(id) => {
-              onFilter(id);
               setFull(false);
             }}
           />
