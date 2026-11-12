@@ -15,16 +15,20 @@ import { useNudge } from './nudge';
 
 const FORMATS = [
   { key: 'html', label: 'HTML' },
+  { key: 'pdf', label: 'PDF' },
   { key: 'md', label: 'Markdown' },
   { key: 'json', label: 'JSON' },
   { key: 'sarif', label: 'SARIF' },
 ] as const;
 type Format = (typeof FORMATS)[number]['key'];
-export const FINDING_FORMATS: readonly Format[] = ['html', 'md'];
+export const FINDING_FORMATS: readonly Format[] = ['html', 'pdf', 'md'];
 
 const FILENAME = /filename="([^"]+)"/;
 const TOAST_MS = 2400;
 const REVOKE_MS = 1000;
+// Let the print iframe lay out its fonts and SVG charts before printing, and keep it alive well past the dialog.
+const PRINT_SETTLE_MS = 350;
+const PRINT_KEEP_MS = 120_000;
 
 export function ReportDownload({
   href,
@@ -42,9 +46,9 @@ export function ReportDownload({
 }) {
   const offered = FORMATS.filter((f) => formats.includes(f.key));
   const [format, setFormat] = useState<Format>('html');
-  const [state, setState] = useState<'idle' | 'done' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'done' | 'printed' | 'failed'>('idle');
   useEffect(() => {
-    if (state !== 'done') return;
+    if (state !== 'done' && state !== 'printed') return;
     const t = window.setTimeout(() => {
       setState('idle');
     }, TOAST_MS);
@@ -53,9 +57,54 @@ export function ReportDownload({
     };
   }, [state]);
 
+  // PDF has no server renderer (the report route has no headless browser): we fetch the branded HTML and hand it to the
+  // browser's own print-to-PDF, which every modern browser offers as "Save as PDF". The iframe must outlive the print
+  // dialog — removing it mid-print cancels the job — so it is cleaned up on `afterprint`, with a long fallback.
+  async function printToPdf(): Promise<void> {
+    const response = await fetch(`${href}?format=html`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(String(response.status));
+    const html = await response.text();
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.setAttribute('tabindex', '-1');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(frame);
+    let gone = false;
+    const drop = (): void => {
+      if (gone) return;
+      gone = true;
+      frame.remove();
+    };
+    await new Promise<void>((resolve, reject) => {
+      frame.addEventListener('load', () => {
+        resolve();
+      });
+      frame.addEventListener('error', () => {
+        reject(new Error('iframe'));
+      });
+      frame.srcdoc = html;
+    });
+    const win = frame.contentWindow;
+    if (win === null) {
+      drop();
+      throw new Error('no print window');
+    }
+    win.addEventListener('afterprint', drop);
+    // Let fonts and the inline-SVG charts lay out before the snapshot the print dialog takes.
+    await new Promise((r) => window.setTimeout(r, PRINT_SETTLE_MS));
+    win.focus();
+    win.print();
+    window.setTimeout(drop, PRINT_KEEP_MS);
+  }
+
   async function download(): Promise<void> {
     setState('idle');
     try {
+      if (format === 'pdf') {
+        await printToPdf();
+        setState('printed');
+        return;
+      }
       const response = await fetch(`${href}?format=${format}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(String(response.status));
       const blob = await response.blob();
@@ -80,6 +129,11 @@ export function ReportDownload({
   const message = (where: string) => (
     <div aria-live="polite" className={where}>
       {state === 'done' ? <InlineMessage tone="ok">Report downloaded.</InlineMessage> : null}
+      {state === 'printed' ? (
+        <InlineMessage tone="ok">
+          Print dialog open — choose &ldquo;Save as PDF&rdquo; as the destination.
+        </InlineMessage>
+      ) : null}
       {state === 'failed' ? (
         <InlineMessage tone="bad">
           The report couldn&rsquo;t be built. Your findings are safe.{' '}
@@ -94,7 +148,7 @@ export function ReportDownload({
     <PendingButton
       variant={primary ? 'primary' : 'secondary'}
       icon="download"
-      pendingLabel="Building the report…"
+      pendingLabel={format === 'pdf' ? 'Preparing the PDF…' : 'Building the report…'}
       stayPending
       onAction={async () => {
         await download();
@@ -102,7 +156,7 @@ export function ReportDownload({
       }}
       className={extra}
     >
-      Download report
+      {format === 'pdf' ? 'Save as PDF' : 'Download report'}
     </PendingButton>
   );
   return (

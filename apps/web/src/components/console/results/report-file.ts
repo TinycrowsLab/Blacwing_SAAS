@@ -480,25 +480,187 @@ const SEV_STYLE: Readonly<Record<string, string>> = {
   info: 'background:#f0f1f3;color:#4b5160',
 };
 
+// Solid, brand-aligned fills for the charts (the chips keep their soft pairs above). Inline SVG only: the file is
+// downloaded and must render offline, so no chart library and no external script ever runs in it.
+const SEV_FILL: Readonly<Record<string, string>> = {
+  critical: '#6e1520',
+  high: '#c0392b',
+  medium: '#c2740a',
+  low: '#6b7280',
+  info: '#a5abb5',
+};
+const COVER_FILL: Readonly<Record<string, string>> = {
+  executed: '#1b7a3e',
+  blocked: '#c2740a',
+  model_declined: '#9aa0ab',
+  skipped: '#b8bcc4',
+  not_run: '#e0ddd4',
+};
+const COVER_LABEL: Readonly<Record<string, string>> = {
+  executed: 'Executed',
+  blocked: 'Blocked',
+  model_declined: 'Model declined',
+  skipped: 'Skipped',
+  not_run: 'Not run',
+};
+const COVER_ORDER = ['executed', 'blocked', 'model_declined', 'skipped', 'not_run'] as const;
+
+interface Seg {
+  readonly label: string;
+  readonly value: number;
+  readonly color: string;
+}
+
+/** A donut from segments, sized to its viewBox with the total in the hole; an empty set shows one faint ring. */
+function donutSvg(segments: readonly Seg[], centreTop: string, centreSub: string): string {
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  const R = 52;
+  const C = 2 * Math.PI * R;
+  const cx = 70;
+  const cy = 70;
+  const sw = 20;
+  let offset = 0;
+  const arcs =
+    total === 0
+      ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="${sw}"/>`
+      : segments
+          .filter((s) => s.value > 0)
+          .map((s) => {
+            const len = (s.value / total) * C;
+            const el = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+            offset += len;
+            return el;
+          })
+          .join('');
+  return `<svg viewBox="0 0 140 140" width="132" height="132" role="img" aria-label="${esc(`${centreTop} ${centreSub}`)}">${arcs}<text x="70" y="66" text-anchor="middle" font-size="30" font-weight="700" fill="var(--fg)">${esc(centreTop)}</text><text x="70" y="86" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(centreSub)}</text></svg>`;
+}
+
+/** A legend of segments: swatch, label, value. Zero-value segments are dropped. */
+function legendHtml(segments: readonly Seg[]): string {
+  const rows = segments.filter((s) => s.value > 0);
+  if (rows.length === 0) return '<p class="meta" style="margin:0">No data recorded.</p>';
+  return `<ul class="legend">${rows
+    .map((s) => `<li><span class="sw" style="background:${s.color}"></span>${esc(s.label)}<b>${s.value.toLocaleString('en-GB')}</b></li>`)
+    .join('')}</ul>`;
+}
+
+/** A full-width stacked bar; widths as SVG percentages so it scales. Empty renders one faint track. */
+function stackedBar(segments: readonly Seg[]): string {
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  if (total === 0)
+    return '<div class="bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none"><rect width="100" height="8" fill="var(--line)"/></svg></div>';
+  let x = 0;
+  const rects = segments
+    .filter((s) => s.value > 0)
+    .map((s) => {
+      const w = (s.value / total) * 100;
+      const r = `<rect x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="8" fill="${s.color}"/>`;
+      x += w;
+      return r;
+    })
+    .join('');
+  return `<div class="bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none">${rects}</svg></div>`;
+}
+
+const fmt = (n: number): string => n.toLocaleString('en-GB');
+
+/** The headline metric tiles of the dashboard, from the plan and what the runner recorded. */
+function metricTiles(src: ReportSource, findings: readonly FindingDetail[]): { value: string; label: string; sub: string }[] {
+  const crit = findings.filter((f) => f.severity === 'critical').length;
+  const high = findings.filter((f) => f.severity === 'high').length;
+  const cases = src.coverage?.cases ?? [];
+  const ran = cases.filter((c) => c.status === 'executed').length;
+  const took =
+    src.run.startedAt === null || src.run.finishedAt === null
+      ? '—'
+      : duration(Date.parse(src.run.finishedAt) - Date.parse(src.run.startedAt));
+  return [
+    { value: fmt(findings.length), label: 'Issues released', sub: 'proven, in this report' },
+    { value: fmt(crit + high), label: 'Critical & high', sub: 'need priority attention' },
+    { value: cases.length === 0 ? '—' : `${ran}/${cases.length}`, label: 'Test cases run', sub: 'executed of planned' },
+    { value: fmt(src.run.requestsUsed), label: 'Requests sent', sub: `of ${fmt(src.run.budget.requests)} allowed` },
+    { value: took, label: 'Duration', sub: 'wall-clock' },
+    { value: usd(src.run.costUsd), label: 'Model spend', sub: `of ${usd(src.run.budget.costUsd)}` },
+  ];
+}
+
+/** The "Summary at a glance" dashboard: metric tiles, a severity donut and a coverage bar. */
+function dashboard(src: ReportSource, findings: readonly FindingDetail[]): string {
+  const sevSegs: Seg[] = SEVERITIES.map((s) => ({
+    label: cap(s),
+    value: findings.filter((f) => f.severity === s).length,
+    color: SEV_FILL[s] ?? SEV_FILL.info ?? '#999',
+  }));
+  const cases = src.coverage?.cases ?? [];
+  const covSegs: Seg[] = COVER_ORDER.map((k) => ({
+    label: COVER_LABEL[k] ?? k,
+    value: cases.filter((c) => c.status === k).length,
+    color: COVER_FILL[k] ?? '#ccc',
+  }));
+  const tiles = metricTiles(src, findings)
+    .map((m) => `<div class="tile"><div class="tv">${esc(m.value)}</div><div class="tl">${esc(m.label)}</div><div class="ts">${esc(m.sub)}</div></div>`)
+    .join('');
+  return `<section class="dash" aria-label="Summary at a glance">
+<div class="tiles">${tiles}</div>
+<div class="charts">
+<figure class="chart"><figcaption>Findings by severity</figcaption><div class="chart-body">${donutSvg(sevSegs, fmt(findings.length), 'released')}${legendHtml(sevSegs)}</div></figure>
+<figure class="chart"><figcaption>Test coverage${cases.length === 0 ? '' : ` · ${cases.length} planned`}</figcaption><div class="chart-body col">${stackedBar(covSegs)}${legendHtml(covSegs)}</div></figure>
+</div>
+</section>`;
+}
+
 const STYLE = `<style>
-:root{color-scheme:light;--fg:#17150f;--muted:#625d52;--line:#ece9e2;--line2:#d9d4c9;--code:#fbfaf7;--gold:#e2b23a;--gold-ink:#8a6310;--gold-soft:#fbf4e2;--ok:#1b7a3e}
+:root{color-scheme:light;--fg:#17150f;--muted:#625d52;--faint:#8c8678;--line:#ece9e2;--line2:#d9d4c9;--code:#f7f5f0;--panel:#fbfaf7;--gold:#e2b23a;--gold-ink:#8a6310;--gold-soft:#fbf4e2;--ok:#1b7a3e;--crit:#6e1520;--high:#c0392b;--med:#c2740a;--low:#6b7280}
 *{box-sizing:border-box}
-body{margin:0;background:#fff;color:var(--fg);font:15px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:860px;margin:0 auto;padding:40px 24px 64px}
-.brand{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink)}
-.brand i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gold)}
-h1{font-size:28px;line-height:1.25;margin:10px 0 4px;letter-spacing:-.01em}
-.sub{margin:0;color:var(--muted);font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.lede{font-size:17px;margin:24px 0 8px}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#f1efe9;color:var(--fg);font:15px/1.62 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.sheet{max-width:900px;margin:0 auto;background:#fff;box-shadow:0 1px 40px rgba(20,18,12,.08)}
+main{padding:0 44px 52px}
+.cover{position:relative;overflow:hidden;background:linear-gradient(135deg,#1c1a14 0%,#2a2619 55%,#3a3320 100%);color:#f5f1e6;padding:40px 44px 32px}
+.cover::after{content:"";position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(226,178,58,.32),transparent 70%)}
+.cover .brand{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.cover .brand i{display:inline-block;width:13px;height:13px;border-radius:4px;background:var(--gold);box-shadow:0 0 0 4px rgba(226,178,58,.18)}
+.badge{position:absolute;top:40px;right:44px;border:1px solid rgba(245,241,230,.35);border-radius:999px;padding:4px 13px;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#f5f1e6}
+.cover h1{font-size:33px;line-height:1.15;margin:24px 0 10px;letter-spacing:-.02em;font-weight:700}
+.cover .target{font-size:18px;font-weight:600;margin:0;color:#fff}
+.cover .sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:rgba(245,241,230,.72);margin:4px 0 0}
+.cmeta{display:flex;flex-wrap:wrap;gap:14px 30px;margin-top:26px;padding-top:20px;border-top:1px solid rgba(245,241,230,.18)}
+.cmeta .k{color:rgba(245,241,230,.6);text-transform:uppercase;letter-spacing:.08em;font-size:10px;margin-bottom:3px}
+.cmeta .v{color:#fff;font-weight:600;font-size:13px}
+.lede{font-size:17px;line-height:1.5;margin:28px 0 6px}
+.dash{margin:22px 0 6px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel)}
+.tile .tv{font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.tile .tl{font-size:12.5px;font-weight:600;margin-top:4px}
+.tile .ts{font-size:11.5px;color:var(--muted);margin-top:1px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.chart{margin:0;border:1px solid var(--line);border-radius:12px;padding:15px 18px;background:#fff}
+.chart figcaption{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.chart-body{display:flex;align-items:center;gap:18px}
+.chart-body.col{flex-direction:column;align-items:stretch;gap:12px}
+.bar{width:100%;height:12px;border-radius:6px;overflow:hidden;background:var(--line)}
+.bar svg{display:block;width:100%;height:12px}
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:12.5px;min-width:0;flex:1}
+.legend li{display:flex;align-items:center;gap:8px}
+.legend .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.legend b{margin-left:auto;font-variant-numeric:tabular-nums}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;padding:0;list-style:none}
 .chip{display:inline-block;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600}
-h2{font-size:18px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-dl{display:grid;grid-template-columns:170px minmax(0,1fr);gap:8px 16px;margin:0;font-size:14px}
+h2{font-size:17px;margin:40px 0 14px;padding-bottom:9px;border-bottom:2px solid var(--line);position:relative;letter-spacing:-.01em}
+h2::before{content:"";position:absolute;left:0;bottom:-2px;width:46px;height:2px;background:var(--gold)}
+h2 .meta{font-weight:400}
+dl{display:grid;grid-template-columns:180px minmax(0,1fr);gap:9px 18px;margin:0;font-size:14px}
 dt{color:var(--muted)}dd{margin:0}
-article{border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0;break-inside:avoid-page}
-article h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:17px;margin:0 0 4px}
+article{border:1px solid var(--line);border-left:4px solid var(--line2);border-radius:12px;padding:18px 22px 20px;margin:14px 0;break-inside:avoid;background:#fff}
+article.sev-critical{border-left-color:var(--crit)}
+article.sev-high{border-left-color:var(--high)}
+article.sev-medium{border-left-color:var(--med)}
+article.sev-low{border-left-color:var(--low)}
+article.sev-info{border-left-color:var(--low)}
+article h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:16.5px;margin:0 0 4px}
 .meta{margin:0;color:var(--muted);font-size:13px}
-h4{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:20px 0 6px;color:var(--fg)}
+h4{font-size:11px;letter-spacing:.07em;text-transform:uppercase;margin:18px 0 6px;color:var(--faint)}
 h4 span{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)}
 .proof{color:var(--ok);font-weight:600;margin:0 0 6px}
 table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
@@ -507,12 +669,12 @@ th{background:var(--code);font-weight:600;width:110px}
 code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
 td code{word-break:break-all}
 pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;margin:6px 0}
-.ai{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;background:var(--code)}
+.ai{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 14px;background:var(--gold-soft)}
 .ai p{margin:6px 0}
 ul.limits{padding-left:20px;color:var(--muted);font-size:14px}
-footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
-@media (max-width:600px){dl{grid-template-columns:1fr}dt{font-weight:600;color:var(--fg)}article{padding:16px}}
-@media print{main{padding:0}article{border-color:#ccc}}
+footer{margin-top:44px;padding:18px 44px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:var(--panel)}
+@media (max-width:640px){main{padding:0 20px 40px}.cover{padding:30px 20px}.badge{position:static;display:inline-block;margin-top:10px}.tiles{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}dl{grid-template-columns:1fr}dt{font-weight:600;color:var(--fg)}article{padding:16px}footer{padding:16px 20px}}
+@media print{body{background:#fff}.sheet{max-width:none;box-shadow:none}main{padding:0 6px}.cover{border-radius:0}article,.dash,.chart,.tile{break-inside:avoid}h2{break-after:avoid}footer{background:#fff}}
 </style>`;
 
 function exposureHtml(intel: Intel | null): string {
@@ -538,9 +700,6 @@ export function renderHtml(
   generatedAt: string,
   images?: ShotImages,
 ): string {
-  const counts = SEVERITIES.map(
-    (s) => [s, findings.filter((f) => f.severity === s).length] as const,
-  ).filter(([, n]) => n > 0);
   const issues = findings
     .map((f, i) => {
       const proof = proofOf(f);
@@ -548,7 +707,7 @@ export function renderHtml(
       const remediation = f.evidence.remediation?.trim() ?? '';
       const excerpt = f.evidence.probe.response?.bodyExcerpt ?? '';
       const released = releaseLine(f);
-      return `<article>
+      return `<article class="sev-${esc(f.severity)}">
 <h3><span class="chip" style="${SEV_STYLE[f.severity] ?? SEV_STYLE.info ?? ''}">${esc(cap(f.severity))}</span>${i + 1}. ${esc(f.title)}</h3>
 <p class="meta">${esc(meta(f))}</p>${released === null ? '' : `\n<p class="meta">${esc(released)}</p>`}
 <h4>${esc(proof.heading)} <span>· ${esc(PROOF_BY)}</span></h4>
@@ -606,12 +765,24 @@ export function renderHtml(
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title(src))} · Blackwing report</title>
 ${STYLE}</head>
-<body><main>
-<div class="brand"><i></i>Blackwing · Security audit report</div>
+<body><div class="sheet">
+<header class="cover">
+<div class="brand"><i></i>Blackwing · Security Assessment</div>
+<span class="badge">Confidential</span>
 <h1>${esc(title(src))}</h1>
+<p class="target">${esc(src.asset.name)}</p>
 <p class="sub">${esc(src.asset.baseUrl)}</p>
+<div class="cmeta">
+<div><div class="k">Report ID</div><div class="v">${esc(src.run.id.slice(0, 8).toUpperCase())}</div></div>
+<div><div class="k">Assessment date</div><div class="v">${esc(when(src.run.startedAt) ?? '—')}</div></div>
+<div><div class="k">Authorised by</div><div class="v">${esc(src.request.approver?.name ?? 'An administrator')}</div></div>
+<div><div class="k">Prepared by</div><div class="v">Blackwing</div></div>
+</div>
+</header>
+<main>
 <p class="lede">${esc(reportLede(findings))}</p>
-${summaryBody(src) === null ? '' : `<h2>Executive summary <span class="meta">· ${esc(SUMMARY_TAG)}</span></h2>\n<div class="ai">${markdownToHtml(summaryBody(src) ?? '')}</div>\n`}${counts.length === 0 ? '' : `<ul class="chips">${counts.map(([s, n]) => `<li class="chip" style="${SEV_STYLE[s] ?? ''}">${n} ${esc(cap(s))}</li>`).join('')}</ul>`}
+${dashboard(src, findings)}
+${summaryBody(src) === null ? '' : `<h2>Executive summary <span class="meta">· ${esc(SUMMARY_TAG)}</span></h2>\n<div class="ai">${markdownToHtml(summaryBody(src) ?? '')}</div>\n`}
 <h2>About this audit</h2>
 <dl>
 ${facts(src)
@@ -626,8 +797,9 @@ ${gapsHtml}
 <ul class="limits">${LIMITS.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
 <h2>Appendix: kept-back findings (not proven)</h2>
 ${keptHtml}
+</main>
 <footer>Generated by Blackwing on ${esc(when(generatedAt) ?? generatedAt)}. Every decision behind it is sealed in the workspace ledger.</footer>
-</main></body></html>
+</div></body></html>
 `;
 }
 
